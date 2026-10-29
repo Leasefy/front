@@ -22,7 +22,9 @@ import {
   MENSAJES_DE_LA_AGENDA,
   errorDeLaFecha,
 } from '@/lib/agenda/limites-de-la-agenda';
-import { DatePicker, TimePicker } from '@leasefy/cadence';
+import { TimePicker } from '@leasefy/cadence';
+// Nico, 29-10-2026: el calendario con el mes y el año a la mano (el de Cadence sólo tenía flechas).
+import { SelectorDeFecha as DatePicker } from '@/components/ui/SelectorDeFecha';
 import { Button, Textarea } from '@/components/ui';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';

@@ -20,7 +20,8 @@
  */
 
 import { forwardRef, useCallback, useEffect, useRef } from 'react';
-import { DatePicker } from '@leasefy/cadence';
+// Nico, 29-10-2026: el calendario con el mes y el año a la mano (el de Cadence sólo tenía flechas).
+import { SelectorDeFecha as DatePicker } from '@/components/ui/SelectorDeFecha';
 
 import { aFechaIso, fechaLocal } from '@/lib/fechas-locales';
 import { cn } from '@/lib/utils';

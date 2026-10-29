@@ -78,3 +78,12 @@ describe('los datos de ejemplo de Contratos', () => {
     expect(hayDatosDeEjemplo('contratos')).toBe(true);
   });
 });
+
+describe('los datos de ejemplo de Solicitudes', () => {
+  it('seis solicitudes con su resumen (una vencida) y la sección cuenta como «con datos»', () => {
+    const l = lecturaDeLaDemo('/inmobiliaria/pqrs') as { resumen: { total: number; vencidas: number }; solicitudes: unknown[] };
+    expect(l.solicitudes).toHaveLength(6);
+    expect(l.resumen).toMatchObject({ total: 6, vencidas: 1 });
+    expect(hayDatosDeEjemplo('solicitudes')).toBe(true);
+  });
+});

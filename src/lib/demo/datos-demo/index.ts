@@ -7,6 +7,7 @@
  */
 import { CONTRATOS_DEMO } from './contratos';
 import { SERVICIOS_PUBLICOS_DEMO } from './servicios-publicos';
+import { SOLICITUDES_DEMO } from './solicitudes';
 
 export interface LecturaDeLaDemo {
   /** El camino del back, sin el dominio (con su `?query`). */
@@ -14,10 +15,10 @@ export interface LecturaDeLaDemo {
   respuesta: (camino: string) => unknown;
 }
 
-const LECTURAS: readonly LecturaDeLaDemo[] = [...SERVICIOS_PUBLICOS_DEMO, ...CONTRATOS_DEMO];
+const LECTURAS: readonly LecturaDeLaDemo[] = [...SERVICIOS_PUBLICOS_DEMO, ...CONTRATOS_DEMO, ...SOLICITUDES_DEMO];
 
 /** Las secciones del panel (su clave en `arquitectura-del-panel.ts`) que ya tienen datos de ejemplo. */
-const SECCIONES_CON_DATOS_DE_EJEMPLO: ReadonlySet<string> = new Set(['servicios-publicos', 'contratos']);
+const SECCIONES_CON_DATOS_DE_EJEMPLO: ReadonlySet<string> = new Set(['servicios-publicos', 'contratos', 'solicitudes']);
 
 export function hayDatosDeEjemplo(claveDelModulo: string | null | undefined): boolean {
   return Boolean(claveDelModulo && SECCIONES_CON_DATOS_DE_EJEMPLO.has(claveDelModulo));

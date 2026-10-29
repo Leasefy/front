@@ -138,6 +138,7 @@ const NOMBRES: Record<string, string> = {
   mantenimientos: 'los mantenimientos',
   documentos: 'los documentos',
   'servicios-publicos': 'los servicios públicos',
+  solicitudes: 'las solicitudes',
 };
 
 /** Lo que ve quien entra a una parte cerrada (antes del 20-10: activar gratis). */

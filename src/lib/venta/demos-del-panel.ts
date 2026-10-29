@@ -123,7 +123,8 @@ const DE_LA_INMOBILIARIA: Record<string, DemoDelModulo> = {
     titulo: 'Las solicitudes, respondidas a tiempo',
     promesa: 'Cada petición, queja o reclamo con su número, su plazo de ley y su respuesta por escrito.',
     puntos: ['Plazos en días hábiles', 'Respuestas sugeridas', 'Todo queda registrado'],
-    capturas: [TABLERO],
+    capturas: [cap('demo-solicitudes', 'Solicitudes con datos de ejemplo')],
+    video: video('solicitudes', 'Recorrido por Solicitudes con datos de ejemplo: las vencidas, las por vencer y la búsqueda'),
   },
   reportes: {
     titulo: 'Tu inmobiliaria en cifras',

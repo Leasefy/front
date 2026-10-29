@@ -15,12 +15,19 @@
  * offline porque hay muchos apartamentos donde no hay señal». Por eso la foto
  * dejó de ser sólo un enlace: se toma con la cámara del teléfono ahí mismo y
  * se guarda en el borrador local; la subida es después, cuando haya señal
- * (`use-borrador-de-inventario.ts`). El campo de enlace sigue para quien ya
- * tiene la foto publicada en otro lado.
+ * (`use-borrador-de-inventario.ts`).
+ *
+ * 🔴 Nico (reunión con Portofino, 29-10-2026): agregar al inventario va en un
+ * CAJÓN, no en un modal —se agrega sin perder de vista la lista ni lo que se
+ * estaba haciendo (crear un contrato)—, y la foto se distingue clara: TOMARLA
+ * con la cámara o ADJUNTAR una imagen del computador o del celular (también
+ * arrastrándola en escritorio), con su vista previa y «Quitar». El campo de
+ * «pega el enlace» confundía y se fue: la foto que ya tenía el ítem se
+ * conserva tal cual.
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { Camera, Trash } from '@phosphor-icons/react';
+import { Camera, ImageSquare, Trash } from '@phosphor-icons/react';
 import {
   Button,
   Input,
@@ -30,14 +37,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
+import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import type { InventoryItem } from '@/lib/types/inmobiliaria';
 
@@ -118,6 +119,7 @@ export function InventarioItemDialog({
   const [foto, setFoto] = useState<File | null>(null);
   const [errores, setErrores] = useState<{ name?: string; quantity?: string; foto?: string }>({});
   const entradaDeFoto = useRef<HTMLInputElement>(null);
+  const entradaDeImagen = useRef<HTMLInputElement>(null);
 
   // Cada apertura arranca del ítem que se edita (o en blanco).
   useEffect(() => {
@@ -145,11 +147,7 @@ export function InventarioItemDialog({
     return () => URL.revokeObjectURL(url);
   }, [foto]);
 
-  const elegirFoto = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const archivo = e.target.files?.[0];
-    // Limpiar el input deja volver a elegir el MISMO archivo después de un
-    // rechazo; sin esto el `change` no vuelve a dispararse.
-    e.target.value = '';
+  const tomarArchivo = (archivo: File | undefined) => {
     if (!archivo) return;
     const problema = revisarFoto(archivo);
     if (problema) {
@@ -160,7 +158,30 @@ export function InventarioItemDialog({
     setFoto(archivo);
   };
 
-  const vista = vistaLocal ?? vistaPreviaDeLaFoto ?? (photoUrl.trim() || null);
+  const elegirFoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const archivo = e.target.files?.[0];
+    // Limpiar el input deja volver a elegir el MISMO archivo después de un
+    // rechazo; sin esto el `change` no vuelve a dispararse.
+    e.target.value = '';
+    tomarArchivo(archivo);
+  };
+
+  // Escritorio: soltar la imagen encima del recuadro de la foto.
+  const [arrastrando, setArrastrando] = useState(false);
+  const soltar = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setArrastrando(false);
+    tomarArchivo(e.dataTransfer.files?.[0]);
+  };
+
+  // «Quitar» se lleva la nueva y también la que ya tenía el ítem.
+  const quitarFoto = () => {
+    setFoto(null);
+    setPhotoUrl('');
+    setErrores((v) => ({ ...v, foto: undefined }));
+  };
+
+  const vista = vistaLocal ?? (photoUrl.trim() ? vistaPreviaDeLaFoto ?? photoUrl.trim() : null);
 
   const enviar = (e: React.FormEvent) => {
     e.preventDefault();
@@ -189,18 +210,20 @@ export function InventarioItemDialog({
   };
 
   return (
-    <Dialog open={abierto} onOpenChange={(o) => !o && !guardando && onCerrar()}>
-      <DialogContent size="sm" data-testid="inventario-item-dialog">
-        <DialogHeader>
-          <DialogTitle>
-            {item ? t('inmobiliaria.acta.itemDialog.titleEdit') : t('inmobiliaria.acta.itemDialog.titleNew')}
-          </DialogTitle>
-          <DialogDescription>{t('inmobiliaria.acta.itemDialog.subtitle')}</DialogDescription>
-        </DialogHeader>
-
-        {/* El pie vive FUERA del <form> (el Content lo saca al pie fijo): el
-            botón de guardar lo apunta con `form=`. */}
-        <form id={ID_DEL_FORMULARIO} onSubmit={enviar} className="space-y-4">
+    <Cajon
+      abierto={abierto}
+      onOpenChange={(o) => !o && !guardando && onCerrar()}
+      tamano="sm"
+      data-testid="inventario-item-dialog"
+    >
+      <CajonCabecera
+        titulo={item ? t('inmobiliaria.acta.itemDialog.titleEdit') : t('inmobiliaria.acta.itemDialog.titleNew')}
+        descripcion={t('inmobiliaria.acta.itemDialog.subtitle')}
+      />
+      {/* `contents`: el cuerpo y el pie siguen siendo hijos de la columna del
+          cajón y el botón del pie es el `submit` del formulario. */}
+      <form id={ID_DEL_FORMULARIO} onSubmit={enviar} className="contents" noValidate>
+        <CajonCuerpo className="space-y-4">
           <div className="space-y-1.5">
             <label htmlFor="inv-name" className="text-sm font-medium text-fg">
               {t('inmobiliaria.acta.itemDialog.name')} <span className="text-danger">*</span>
@@ -255,13 +278,12 @@ export function InventarioItemDialog({
               <label htmlFor="inv-espacio" className="text-sm font-medium text-fg">
                 {t('inmobiliaria.inventarioDelInmueble.espacio')}
               </label>
-              <input
+              <Input
                 id="inv-espacio"
                 value={espacio}
                 onChange={(e) => setEspacio(e.target.value)}
                 placeholder={t('inmobiliaria.inventarioDelInmueble.espacioPlaceholder')}
                 maxLength={80}
-                className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-fg placeholder:text-fg-placeholder focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
             </div>
           )}
@@ -282,12 +304,44 @@ export function InventarioItemDialog({
           </div>
 
           <div className="space-y-1.5">
-            <span className="text-sm font-medium text-fg">
-              {t('inmobiliaria.acta.itemDialog.photo')}
-            </span>
-            <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-fg">{t('inmobiliaria.acta.itemDialog.photo')}</span>
+            {/* Dos entradas: la cámara (`capture` abre la trasera del teléfono
+                directo) y el selector de archivos (galería del celular o
+                carpeta del computador). En escritorio también se suelta aquí. */}
+            <input
+              ref={entradaDeFoto}
+              id="inv-foto"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              capture="environment"
+              className="sr-only"
+              onChange={elegirFoto}
+              data-testid="inventario-foto-archivo"
+            />
+            <input
+              ref={entradaDeImagen}
+              id="inv-imagen"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="sr-only"
+              onChange={elegirFoto}
+              data-testid="inventario-foto-adjuntar-archivo"
+            />
+            <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                setArrastrando(true);
+              }}
+              onDragLeave={() => setArrastrando(false)}
+              onDrop={soltar}
+              className={cn(
+                'flex flex-col gap-3 rounded-[16px] border border-dashed p-3 transition-colors sm:flex-row sm:items-center',
+                arrastrando ? 'border-primary bg-primary-soft' : 'border-border-strong bg-surface-muted',
+              )}
+              data-testid="inventario-foto-zona"
+            >
               {vista ? (
-                <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-surface-hover">
+                <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-[12px] bg-surface">
                   {/* eslint-disable-next-line @next/next/no-img-element -- la foto todavía no está subida: es una URL de objeto local */}
                   <img
                     src={vista}
@@ -297,83 +351,66 @@ export function InventarioItemDialog({
                   />
                 </div>
               ) : (
-                <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-md bg-surface-hover text-fg-subtle">
-                  <Camera className="h-6 w-6" />
+                <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-[12px] bg-surface text-fg-subtle">
+                  <ImageSquare className="h-7 w-7" aria-hidden />
                 </div>
               )}
-              <div className="flex flex-wrap items-center gap-2">
-                {/* `capture="environment"` abre la cámara trasera del teléfono
-                    directo: quien recorre un apartamento no anda buscando la
-                    foto en la galería. En un computador se comporta como un
-                    selector de archivo normal. */}
-                <input
-                  ref={entradaDeFoto}
-                  id="inv-foto"
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  capture="environment"
-                  className="sr-only"
-                  onChange={elegirFoto}
-                  data-testid="inventario-foto-archivo"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  hideArrow
-                  onClick={() => entradaDeFoto.current?.click()}
-                  data-testid="inventario-foto-tomar"
-                >
-                  <Camera className="h-4 w-4" />
-                  {foto
-                    ? t('inmobiliaria.acta.itemDialog.photoChange')
-                    : t('inmobiliaria.acta.itemDialog.photoTake')}
-                </Button>
-                {foto && (
+              <div className="min-w-0 space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Button
                     type="button"
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
                     hideArrow
-                    onClick={() => setFoto(null)}
-                    data-testid="inventario-foto-quitar"
+                    onClick={() => entradaDeFoto.current?.click()}
+                    data-testid="inventario-foto-tomar"
                   >
-                    <Trash className="h-4 w-4" />
-                    {t('inmobiliaria.acta.itemDialog.photoRemove')}
+                    <Camera className="h-4 w-4" aria-hidden />
+                    {t('inmobiliaria.acta.itemDialog.photoTake')}
                   </Button>
-                )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    hideArrow
+                    onClick={() => entradaDeImagen.current?.click()}
+                    data-testid="inventario-foto-adjuntar"
+                  >
+                    <ImageSquare className="h-4 w-4" aria-hidden />
+                    {vista ? t('inmobiliaria.acta.itemDialog.photoChange') : t('inmobiliaria.acta.itemDialog.photoAttach')}
+                  </Button>
+                  {vista && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      hideArrow
+                      onClick={quitarFoto}
+                      data-testid="inventario-foto-quitar"
+                    >
+                      <Trash className="h-4 w-4" aria-hidden />
+                      {t('inmobiliaria.acta.itemDialog.photoRemove')}
+                    </Button>
+                  )}
+                </div>
+                <p className="hidden text-caption text-fg-muted md:block">{t('inmobiliaria.acta.itemDialog.photoDrop')}</p>
               </div>
             </div>
             {errores.foto && <p className="text-caption text-danger">{errores.foto}</p>}
             <p className="text-caption text-fg-muted">{t('inmobiliaria.acta.itemDialog.photoHelp')}</p>
-            <Input
-              id="inv-photo"
-              type="url"
-              value={photoUrl}
-              onChange={(e) => setPhotoUrl(e.target.value)}
-              placeholder={t('inmobiliaria.acta.itemDialog.photoUrlPlaceholder')}
-              maxLength={LARGO_MAXIMO_DE_LA_URL_DE_LA_FOTO}
-              aria-label={t('inmobiliaria.acta.itemDialog.photoUrl')}
-            />
           </div>
-        </form>
+        </CajonCuerpo>
 
-        <DialogFooter>
-          <Button type="button" variant="outline" hideArrow onClick={onCerrar} disabled={guardando}>
+        <CajonPie>
+          <Button type="button" variant="ghost" hideArrow onClick={onCerrar} disabled={guardando}>
             {t('inmobiliaria.acta.itemDialog.cancel')}
           </Button>
-          <Button
-            type="submit"
-            form={ID_DEL_FORMULARIO}
-            hideArrow
-            isLoading={guardando}
-            data-testid="inventario-item-guardar"
-          >
+          <Button type="submit" hideArrow isLoading={guardando} data-testid="inventario-item-guardar">
             {item ? t('inmobiliaria.acta.itemDialog.save') : t('inmobiliaria.acta.itemDialog.saveNew')}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </CajonPie>
+      </form>
+    </Cajon>
   );
 }
 

@@ -9,6 +9,10 @@
  * la cuenta antes de guardar); la de SALIDA se paga con la garantía; el
  * AJUSTE («ajustes de conceptos facturados» de EPM) se le descuenta al
  * propietario.
+ *
+ * Portofino 29-10-2026 («esas facturas llegan con un corte atrasado»): las fechas son el CORTE (el período de
+ * consumo), no el mes de la factura; el mes en que se facturó va aparte y es opcional (sin él se estima el siguiente
+ * al corte). El mes facturado no puede ser anterior al corte: la misma regla y la misma frase del back.
  */
 
 import { useEffect, useMemo, useState } from 'react';
@@ -21,11 +25,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { MoneyInput } from '@/components/ui/money-input';
 import { CampoDeFecha } from '@/components/facturacion/CampoDeFecha';
+import { CampoDeMes } from '@/components/ui/campo-de-mes';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { ZonaDeArchivo } from '@/components/migracion/ZonaDeArchivo';
 import { TarjetaDeArchivo } from '@/components/migracion/TarjetaDeArchivo';
 import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { diasEntre, mesSiguiente, nombreDelMesCorto } from '@/lib/servicios-publicos/corte-de-la-factura';
 import {
   SERVICIOS,
   type FacturaQueSeRegistra,
@@ -64,10 +70,22 @@ interface Props {
   onCambio: (d: FacturaQueSeRegistra | null) => void;
 }
 
+/** La frase del back cuando el mes facturado es anterior al corte. */
+export const MES_ANTES_DEL_CORTE = 'La factura no se cobra antes de que termine el consumo: revisa el mes o el corte.';
+
+/** Por qué no sirve el mes facturado, o `null` (vacío sirve: es opcional). */
+export function problemaDelMesFacturado(mes: string, hasta: string): string | null {
+  if (!mes) return null;
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) return 'Escribe el mes de la factura como AAAA-MM.';
+  if (hasta && mes < hasta.slice(0, 7)) return MES_ANTES_DEL_CORTE;
+  return null;
+}
+
 /** `null` = le falta algo para poder mandarla. */
 function armar(e: Estado): FacturaQueSeRegistra | null {
   const valor = Number(e.valor);
   if (e.servicios.length === 0 || !e.desde || !e.hasta || !(valor > 0)) return null;
+  if (problemaDelMesFacturado(e.mesFacturado, e.hasta)) return null;
   if (e.tipo === 'ENTRADA' && !e.pagadaPor) return null;
   return {
     tipo: e.tipo,
@@ -77,6 +95,7 @@ function armar(e: Estado): FacturaQueSeRegistra | null {
     empresa: e.empresa,
     periodoDesde: e.desde,
     periodoHasta: e.hasta,
+    mesFacturado: e.mesFacturado || undefined,
     valorCop: valor,
     pagadaPor: e.tipo === 'ENTRADA' ? (e.pagadaPor ?? undefined) : undefined,
     entrega: e.tipo === 'ENTRADA' ? e.entrega || undefined : undefined,
@@ -87,13 +106,18 @@ function armar(e: Estado): FacturaQueSeRegistra | null {
   };
 }
 
+const conMayuscula = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+
 interface Estado {
   tipo: TipoDeFactura;
   /** Los que trae la factura, en el orden en que se marcaron (una de EPM trae energía, agua, gas y aseo). */
   servicios: Servicio[];
   empresa: string;
+  /** El CORTE: primer y último día del consumo. */
   desde: string;
   hasta: string;
+  /** `AAAA-MM`, opcional. */
+  mesFacturado: string;
   valor: string;
   pagadaPor: QuienPago | null;
   entrega: string;
@@ -110,6 +134,7 @@ export function FormularioDeFactura({ modo, entrega, devolucion, errores = {}, r
     empresa: '',
     desde: '',
     hasta: '',
+    mesFacturado: '',
     valor: '',
     pagadaPor: null,
     entrega: entrega ?? '',
@@ -124,7 +149,15 @@ export function FormularioDeFactura({ modo, entrega, devolucion, errores = {}, r
   const alternarServicio = (s: Servicio) =>
     setE((x) => ({ ...x, servicios: x.servicios.includes(s) ? x.servicios.filter((y) => y !== s) : [...x.servicios, s] }));
 
+  const [mesTocado, setMesTocado] = useState(false);
   const datos = useMemo(() => armar(e), [e]);
+  // El error del mes sale cuando la persona lo eligió (o lo dice el back), no mientras escribe el corte.
+  const errorDelMes = errores.mesFacturado ?? (mesTocado ? (problemaDelMesFacturado(e.mesFacturado, e.hasta) ?? undefined) : undefined);
+  const dias = e.desde && e.hasta && e.hasta >= e.desde ? diasEntre(e.desde, e.hasta) : null;
+  const corte =
+    dias !== null
+      ? `${dias === 1 ? '1 día' : `${dias} días`} de consumo: cuenta para ${nombreDelMesCorto(e.hasta.slice(0, 7), true)}.`
+      : null;
   useEffect(() => onCambio(datos), [datos, onCambio]);
 
   // La cuenta por días de la entrada se pide cuando el formulario la tiene completa.
@@ -202,28 +235,50 @@ export function FormularioDeFactura({ modo, entrega, devolucion, errores = {}, r
           />
         </fieldset>
         <div className="space-y-1.5">
-          <Label htmlFor="factura-empresa">Empresa</Label>
-          <Input
-            id="factura-empresa"
-            placeholder="EPM, Aguas de…"
-            value={e.empresa}
-            maxLength={120}
-            onChange={(x) => cambiar('empresa', x.target.value)}
-          />
-        </div>
-        <div className="space-y-1.5">
           <Label htmlFor="factura-desde" required>
-            Cobra desde
+            Corte desde (período de consumo)
           </Label>
           <CampoDeFecha id="factura-desde" value={e.desde} onChange={(v) => cambiar('desde', v)} invalido={!!errores.periodoDesde} testid="factura-desde" />
-          <ErrorDelCampo id="factura-desde-error" mensaje={errores.periodoDesde} />
+          <ErrorDelCampo id="factura-desde-error" mensaje={errores.periodoDesde} pista="El primer día del consumo que cobra la factura." />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="factura-hasta" required>
-            Hasta
+            Corte hasta (período de consumo)
           </Label>
           <CampoDeFecha id="factura-hasta" value={e.hasta} onChange={(v) => cambiar('hasta', v)} invalido={!!errores.periodoHasta} testid="factura-hasta" />
-          <ErrorDelCampo id="factura-hasta-error" mensaje={errores.periodoHasta} />
+          <ErrorDelCampo id="factura-hasta-error" mensaje={errores.periodoHasta} pista={corte ?? 'El último día del consumo.'} />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="factura-mes-facturado">Mes en que se facturó</Label>
+          <div className="flex items-center gap-2">
+            <CampoDeMes
+              id="factura-mes-facturado"
+              value={e.mesFacturado}
+              onChange={(v) => {
+                setMesTocado(true);
+                cambiar('mesFacturado', v);
+              }}
+              invalido={!!errorDelMes}
+              describedBy="factura-mes-facturado-error"
+              placeholder={e.hasta ? `${conMayuscula(nombreDelMesCorto(mesSiguiente(e.hasta.slice(0, 7)), true))} (estimado)` : 'Opcional'}
+              testid="factura-mes-facturado"
+            />
+            {e.mesFacturado && (
+              <button
+                type="button"
+                onClick={() => cambiar('mesFacturado', '')}
+                className="shrink-0 rounded-sm px-1 text-body-sm text-fg-muted underline-offset-4 hover:text-fg hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                data-testid="quitar-mes-facturado"
+              >
+                Quitar
+              </button>
+            )}
+          </div>
+          <ErrorDelCampo
+            id="factura-mes-facturado-error"
+            mensaje={errorDelMes}
+            pista="Opcional: el que dice la factura. Sin él, el siguiente al corte."
+          />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="factura-valor" required>
@@ -238,6 +293,16 @@ export function FormularioDeFactura({ modo, entrega, devolucion, errores = {}, r
             data-testid="factura-valor"
           />
           <ErrorDelCampo id="factura-valor-error" mensaje={errores.valorCop} />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="factura-empresa">Empresa</Label>
+          <Input
+            id="factura-empresa"
+            placeholder="EPM, Aguas de…"
+            value={e.empresa}
+            maxLength={120}
+            onChange={(x) => cambiar('empresa', x.target.value)}
+          />
         </div>
       </div>
 

@@ -702,11 +702,6 @@ function MantenimientosContent() {
     [handleRequestQuote, handleApproveQuote, handleViewMantenimiento, noApruebaCostos],
   );
 
-  // Consignaciones for form (rented properties only)
-  const rentedConsignaciones = useMemo(
-    () => consignaciones.filter((c) => c.availability === 'rented'),
-    [consignaciones]
-  );
 
   // Show loading state
   const isLoading = isLoadingMantenimientos || isLoadingConsignaciones;
@@ -999,7 +994,9 @@ function MantenimientosContent() {
           </CajonCuerpo>
         ) : (
           <MantenimientoForm
-            consignaciones={rentedConsignaciones}
+            // Portofino 29-10-2026: la solicitud va sobre CUALQUIER inmueble ya creado (también una
+            // captación nueva que necesita una reparación antes de arrendarse), no sólo los arrendados.
+            consignaciones={consignaciones}
             onSubmit={handleMantenimientoFormSubmit}
             onCancel={handleMantenimientoFormCancel}
             isSubmitting={isSubmittingMantenimiento}

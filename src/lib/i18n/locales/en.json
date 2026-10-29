@@ -5466,7 +5466,7 @@
       "property": "Property",
       "change": "Change",
       "searchProperty": "Search property...",
-      "noRentedProperties": "No rented properties yet: maintenance is reported on a property with an active lease.",
+      "noRentedProperties": "No properties yet: maintenance is reported on a property that is already in Leasefy.",
       "noPropertiesFound": "No properties found",
       "maintenanceType": "Maintenance type",
       "priorityLabel": "Priority",

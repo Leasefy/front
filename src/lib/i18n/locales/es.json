@@ -5501,7 +5501,7 @@
       "property": "Inmueble",
       "change": "Cambiar",
       "searchProperty": "Buscar inmueble...",
-      "noRentedProperties": "Todavía no tienes inmuebles arrendados: el mantenimiento se reporta sobre un inmueble con contrato vigente.",
+      "noRentedProperties": "Todavía no tienes inmuebles creados: el mantenimiento se reporta sobre un inmueble que ya está en Leasefy.",
       "noPropertiesFound": "No se encontraron inmuebles",
       "maintenanceType": "Tipo de mantenimiento",
       "priorityLabel": "Prioridad",

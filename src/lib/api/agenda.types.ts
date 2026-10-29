@@ -8,6 +8,8 @@
  * la UI se construye contra estos tipos con estado vacío honesto — NO hay data falsa.
  */
 
+import type { AreaDeLaAgenda } from '@/lib/agenda/areas-de-la-agenda';
+
 export type EventoTipo =
   | 'visita'
   | 'firma_pendiente'
@@ -67,6 +69,8 @@ export interface EventoAgenda {
   /** AG-13: quién creó la tarea (la fila dice «Tú» sólo a quien la creó). */
   creadaPorId?: string;
   creadaPorNombre?: string;
+  /** La agenda por área (29-10-2026): la guardada o la que sale de lo que dice. */
+  area?: AreaDeLaAgenda;
 }
 
 /** AG-02: las tres vistas de la agenda. */
@@ -107,6 +111,10 @@ export interface AgendaListResponse {
   /** AG-02: cuántos hay en cada vista (sólo cuando se pidió una vista). */
   porVista?: Record<VistaDeAgenda, number>;
   vista?: VistaDeAgenda;
+  /** Cuántos hay en cada área, con los demás filtros (para los chips). Un back anterior no lo manda. */
+  porArea?: Record<AreaDeLaAgenda, number>;
+  /** `false` = falta la migración del área: se filtra igual, pero no se puede elegir otra. */
+  areaSeGuarda?: boolean;
 }
 
 /** Lo que muestra la tabla de una (`DEFAULT_PAGE_SIZE` de `useTablePagination`). */
@@ -138,6 +146,8 @@ export interface CrearTareaInput {
   vinculoId?: string;
   vinculoLabel?: string;
   responsableUserId?: string;
+  /** La agenda por área: sin ella, el back la deduce de lo que dice la tarea. */
+  area?: AreaDeLaAgenda;
 }
 
 export interface ActualizarTareaInput extends Partial<CrearTareaInput> {

@@ -663,3 +663,34 @@ describe('agenda — abre en el calendario (Nico, 28-10-2026)', () => {
   })
 })
 
+
+describe('La agenda por área (29-10-2026)', () => {
+  const CON_AREAS = {
+    ...CON_VISITA_PENDIENTE,
+    porArea: { comercial: 1, contratos: 0, inspecciones: 0, cobranza: 2, mantenimientos: 0, servicios_publicos: 0, general: 0 },
+    areaSeGuarda: true,
+  }
+
+  it('las áreas con algo salen con su conteo; las vacías no; tocar una pide sólo esa', async () => {
+    getAgendaMock.mockResolvedValue(CON_AREAS)
+    await montar()
+    const fila = container.querySelector('[data-testid="agenda-areas"]')
+    expect(fila).not.toBeNull()
+    expect(container.querySelector('[data-testid="agenda-area-cobranza"]')?.textContent).toContain('2')
+    expect(container.querySelector('[data-testid="agenda-area-contratos"]')).toBeNull()
+    getAgendaMock.mockClear()
+    await act(async () => {
+      container.querySelector<HTMLElement>('[data-testid="agenda-area-cobranza"]')?.click()
+    })
+    await act(async () => {
+      await Promise.resolve()
+    })
+    expect(getAgendaMock).toHaveBeenCalledWith(expect.objectContaining({ areas: ['cobranza'] }))
+  })
+
+  it('un back sin `porArea` no pinta la fila de áreas', async () => {
+    getAgendaMock.mockResolvedValue(CON_VISITA_PENDIENTE)
+    await montar()
+    expect(container.querySelector('[data-testid="agenda-areas"]')).toBeNull()
+  })
+})

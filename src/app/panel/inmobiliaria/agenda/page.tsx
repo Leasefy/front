@@ -40,6 +40,15 @@ import { useMiUserId } from '@/lib/agenda/use-equipo';
 import { horaDeLaCasa, diaDeLaCasa, lunesDe } from '@/lib/agenda/hora-de-la-casa';
 import { aFechaIso } from '@/lib/fechas-locales';
 import { tareaIdOf, type VistaDeAgenda } from '@/lib/api/agenda.types';
+import { AREAS_DE_LA_AGENDA, NOMBRE_DEL_AREA, esAreaDeLaAgenda, type AreaDeLaAgenda } from '@/lib/agenda/areas-de-la-agenda';
+
+/** La agenda por área (Nico y Portofino, 29-10-2026): «Todas» o una. Queda en la URL (`?area=`). */
+type FiltroDeArea = AreaDeLaAgenda | 'todas';
+function areaDeLaUrl(): FiltroDeArea {
+  if (typeof window === 'undefined') return 'todas';
+  const v = new URLSearchParams(window.location.search).get('area');
+  return esAreaDeLaAgenda(v) ? v : 'todas';
+}
 
 /** Resumen por tipo de evento — color por tipo (estático). */
 const RESUMEN_ITEMS: { key: string; tono?: TonoDeCifra; field: keyof typeof RESUMEN_AGENDA_VACIO }[] = [
@@ -216,6 +225,22 @@ function AgendaContent() {
   /** AG-08: cancelar y rechazar desde la fila también preguntan el motivo. */
   const [motivoDe, setMotivoDe] = useState<{ visitId: string; cual: 'cancelar' | 'rechazar' } | null>(null);
   const [errorDelMotivo, setErrorDelMotivo] = useState<string | null>(null);
+  /** La agenda por área: el filtro arranca en lo que diga la URL (un enlace puede abrirla filtrada). */
+  const [area, setArea] = useState<FiltroDeArea>('todas');
+  useEffect(() => setArea(areaDeLaUrl()), []);
+  const areas = useMemo(() => (area === 'todas' ? undefined : [area]), [area]);
+  const cambiarArea = useCallback((v: FiltroDeArea) => {
+    setArea(v);
+    setPage(1);
+    try {
+      const url = new URL(window.location.href);
+      if (v === 'todas') url.searchParams.delete('area');
+      else url.searchParams.set('area', v);
+      window.history.replaceState(window.history.state, '', url);
+    } catch {
+      // Sin URL que escribir (pruebas): el filtro funciona igual.
+    }
+  }, []);
 
   const load = useCallback(() => {
     setIsLoading(true);
@@ -229,11 +254,11 @@ function AgendaContent() {
           })()
         : { vista: pestana as VistaDeAgenda, page, pageSize };
     agendaApi
-      .getAgenda({ ...semana, mias: soloLoMio })
+      .getAgenda({ ...semana, mias: soloLoMio, areas })
       .then(setData)
       .catch(setError)
       .finally(() => setIsLoading(false));
-  }, [page, pageSize, pestana, soloLoMio, lunes]);
+  }, [page, pageSize, pestana, soloLoMio, lunes, areas]);
 
   /**
    * En el calendario el back no manda los conteos de la lista: se piden aparte (una página de un evento) para avisar
@@ -245,13 +270,13 @@ function AgendaContent() {
     if (pestana !== 'semana') return;
     let vivo = true;
     agendaApi
-      .getAgenda({ vista: 'proximas', page: 1, pageSize: 1, mias: soloLoMio })
+      .getAgenda({ vista: 'proximas', page: 1, pageSize: 1, mias: soloLoMio, areas })
       .then((r) => vivo && setAtrasadasDelCalendario(r?.porVista?.vencidas ?? 0))
       .catch(() => vivo && setAtrasadasDelCalendario(0));
     return () => {
       vivo = false;
     };
-  }, [pestana, soloLoMio]);
+  }, [pestana, soloLoMio, areas]);
 
   /** Cambiar cuántas filas se ven vuelve a la primera página. */
   const cambiarTamano = useCallback((tamano: number) => {
@@ -723,6 +748,34 @@ function AgendaContent() {
             />
           </div>
         </div>
+        {/* La agenda por área (29-10-2026): las áreas con su conteo, de una (sin el cero). Un back anterior no
+            manda `porArea`: no se pinta. */}
+        {data?.porArea ? (
+          <div className="flex min-w-0 items-center gap-3 border-b border-border px-4 py-2" data-testid="agenda-areas">
+            <span className="shrink-0 font-mono text-label uppercase text-fg-subtle">{tr('Área')}</span>
+            <PestanasDeEstado<FiltroDeArea>
+              etiqueta={tr('Área de la agenda')}
+              valor={area}
+              onCambio={cambiarArea}
+              className="flex-1"
+              pestanas={[
+                {
+                  valor: 'todas',
+                  etiqueta: tr('Todas'),
+                  cuantos: AREAS_DE_LA_AGENDA.reduce((suma, a) => suma + (data.porArea?.[a] ?? 0), 0),
+                  fija: true,
+                  testid: 'agenda-area-todas',
+                },
+                ...AREAS_DE_LA_AGENDA.map((a) => ({
+                  valor: a,
+                  etiqueta: tr(NOMBRE_DEL_AREA[a]),
+                  cuantos: data.porArea?.[a] ?? 0,
+                  testid: `agenda-area-${a}`,
+                })),
+              ]}
+            />
+          </div>
+        ) : null}
         <EstadoDeDatos
           cargando={isLoading && data === null}
           error={error}
@@ -811,7 +864,11 @@ function AgendaContent() {
           <>
           {/* AG-14: a 390 px, tarjetas en vez de una tabla que se corre a los lados. */}
           <ul className="divide-y divide-border md:hidden" data-testid="agenda-tarjetas">
-            {total === 0 ? (
+            {total === 0 && area !== 'todas' ? (
+              <li>
+                <SinDatos queSon="eventos" hayFiltros onLimpiarFiltros={() => cambiarArea('todas')} />
+              </li>
+            ) : total === 0 ? (
               <li>
                 <SinDatos
                   queSon="eventos"
@@ -856,6 +913,7 @@ function AgendaContent() {
                       <span className="block text-caption text-fg-muted">
                         <span className="font-mono">{formatFechaCorta(e.fecha)}</span>
                         {e.hora ? ` · ${horaDeLaCasa(e.hora)}` : ''} · {t(k(`rowTipo_${e.tipo}`))}
+                        {e.area && area === 'todas' ? <EtiquetaDelArea area={e.area} nombre={tr(NOMBRE_DEL_AREA[e.area])} /> : null}
                         {!elTituloEsElInmueble(e) && e.vinculoLabel ? ` · ${e.vinculoLabel}` : ''}
                       </span>
                       {e.responsableNombre && (
@@ -895,7 +953,13 @@ function AgendaContent() {
               </TableRow>
             </TableHeader>
             <TableBodyAnimado>
-              {total === 0 ? (
+              {total === 0 && area !== 'todas' ? (
+                <TableRowAnimada key="vacio-del-area">
+                  <TableCell colSpan={COLUMNS.length} className="p-0">
+                    <SinDatos queSon="eventos" hayFiltros onLimpiarFiltros={() => cambiarArea('todas')} />
+                  </TableCell>
+                </TableRowAnimada>
+              ) : total === 0 ? (
                 <TableRowAnimada key="vacio">
                   <TableCell colSpan={COLUMNS.length} className="p-0">
                     <SinDatos
@@ -961,6 +1025,7 @@ function AgendaContent() {
                             <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', puntoDelEvento(e, pestana === 'vencidas'))} />
                             {t(k(`rowTipo_${e.tipo}`))}
                           </span>
+                          {e.area && area === 'todas' ? <EtiquetaDelArea area={e.area} nombre={tr(NOMBRE_DEL_AREA[e.area])} /> : null}
                           {!elTituloEsElInmueble(e) && e.vinculoLabel ? ` · ${e.vinculoLabel}` : ''}
                           {/* AG-13: «Tú» sólo a quien creó la tarea. Sin «· Sistema» (revisora r22, #3). */}
                           {/* Revisora r25: en una tarea sin responsable, quién la creó pasa a la columna Persona
@@ -1062,6 +1127,7 @@ function AgendaContent() {
         onOpenChange={setTareaOpen}
         onCreada={load}
         coordina={canAccess('operaciones', 'edit')}
+        areaSeGuarda={data?.areaSeGuarda !== false}
       />
       <EventoAgendaDrawer
         evento={seleccionado}
@@ -1069,8 +1135,22 @@ function AgendaContent() {
         onCambio={load}
         onAccionVisita={runCitaAction}
         puedeEditar={puedeEditar}
+        areaSeGuarda={data?.areaSeGuarda !== false}
       />
     </div>
+  );
+}
+
+/**
+ * El área de una fila, discreta: un rótulo mono después del tipo. Con un área elegida no se pinta (diría lo mismo
+ * en todas las filas).
+ */
+function EtiquetaDelArea({ area, nombre }: { area: AreaDeLaAgenda; nombre: string }) {
+  return (
+    <span className="font-mono text-label uppercase text-fg-subtle" data-testid="agenda-area-de-la-fila" data-area={area}>
+      {' · '}
+      {nombre}
+    </span>
   );
 }
 

@@ -277,6 +277,16 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   'Giros atrasados': 'Overdue payouts',
   'Mes de los giros': 'Payout month',
   'Este mes ya está girado: los cuatro pasos están hechos.': 'This month is fully paid out: all four steps are done.',
+  // Agenda por área (29-10)
+  'Área de la agenda': 'Agenda area',
+  'Todas': 'All',
+  'Comercial': 'Sales',
+  'Contratos': 'Leases',
+  'Inspecciones': 'Inspections',
+  'Cobranza': 'Collections',
+  'Mantenimientos': 'Maintenance',
+  'Servicios públicos': 'Utilities',
+  'General': 'General',
   // Decisión 17 (22-10): «Lo que falta del mes» en Giros a propietarios.
   'Calculando lo que falta del mes…': 'Working out what is left this month…',
   '{mes} no tiene giros': '{mes} has no payouts',

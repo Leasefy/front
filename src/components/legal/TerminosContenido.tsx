@@ -149,6 +149,17 @@ export function TerminosContenido({ conFicha = true }: { conFicha?: boolean } = 
                   Al cancelar, mantenemos tu información disponible para descarga
                   durante <strong className="text-foreground/90">sesenta (60) días</strong>.
                 </p>
+                {/* Nico 29-10-2026 (reunión con Juan): el CRM gratis — «hay que agregar en términos que nos vamos a quedar con
+                    esa información, la vamos a usufructuar». Borrador para que Nico lo revise antes de subir. */}
+                <p className="mt-3" data-testid="terminos-plan-gratis">
+                  <strong className="text-foreground/90">El plan gratis.</strong> Quien usa Leasefy sin pagar (el
+                  marketplace, Arrendamientos e Inquilinos) autoriza a Leasefy a conservar y usar la información que
+                  carga —inmuebles, propietarios, inquilinos, postulaciones y pedidos— para prestar y mejorar sus
+                  servicios, para el análisis del mercado inmobiliario y para ofrecer a esas personas inmuebles y
+                  servicios de Leasefy y de sus aliados. Los datos personales se tratan según la{" "}
+                  <a href="/privacidad" className="underline underline-offset-4">Política de tratamiento de datos</a>, y
+                  lo que se comparte con terceros o se publica va siempre sin datos que identifiquen a una persona.
+                </p>
               </section>
 
               <section>

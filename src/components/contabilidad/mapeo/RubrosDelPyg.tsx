@@ -82,6 +82,9 @@ import { AccionConMotivo, FaltaLaMigracion, Nota } from '../piezas';
 import { SelectorDeCuenta } from '../SelectorDeCuenta';
 import { useCuentas } from '../use-cuentas';
 import { usePuedeEscribir } from '../use-puede-escribir';
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
+import { codigoDelPucParaOrdenar } from '@/lib/contabilidad/codigo-del-puc-para-ordenar';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
 
 export function RubrosDelPyg() {
   const [mapeo, setMapeo] = useState<MapeoDeRubros | null>(null);
@@ -122,6 +125,15 @@ export function RubrosDelPyg() {
   );
   const sembrables = useMemo(() => (mapeo ? rubrosSembrables(mapeo) : []), [mapeo]);
   const faltan = useMemo(() => (mapeo ? faltantesSugeridos(mapeo) : []), [mapeo]);
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Sin tocar nada, el orden
+  // del back; «Cuentas del PUC» ordena por la primera cuenta del rubro, como el plan (sin cuentas, al final).
+  // Antes de las salidas tempranas (es un hook).
+  const rubros = useMemo(() => mapeo?.rubros ?? [], [mapeo]);
+  const { ordenadas, orden, ordenarPor } = useOrdenDeLaTabla(rubros, {
+    rubro: (r) => r.nombre,
+    naturaleza: (r) => NOMBRE_DE_LA_NATURALEZA[r.naturaleza],
+    cuentas: (r) => codigoDelPucParaOrdenar(r.cuentas.map((c) => c.codigo).sort()[0]),
+  });
 
   const marcar = (rubro: string, activo: boolean) =>
     setGuardando((previo) => {
@@ -291,14 +303,14 @@ export function RubrosDelPyg() {
           <Table className="max-md:block">
             <TableHeader className="max-md:hidden">
               <TableRow>
-                <TableHead className="min-w-[220px]">Rubro</TableHead>
-                <TableHead>Naturaleza</TableHead>
-                <TableHead className="min-w-[320px]">Cuentas del PUC</TableHead>
+                <EncabezadoOrdenable campo="rubro" orden={orden} onOrdenar={ordenarPor} className="min-w-[220px]">Rubro</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="naturaleza" orden={orden} onOrdenar={ordenarPor}>Naturaleza</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="cuentas" orden={orden} onOrdenar={ordenarPor} className="min-w-[320px]">Cuentas del PUC</EncabezadoOrdenable>
                 <TableHead className="min-w-[240px]">Agregar una cuenta</TableHead>
               </TableRow>
             </TableHeader>
             <TableBodyAnimado className="max-md:block">
-              {mapeo.rubros.map((r) => {
+              {ordenadas.map((r) => {
                 const segundaLectura = explicacionDeLaSegundaLectura(r);
                 const mayores = cuentasMayores(r);
                 const ocupada = guardando.has(r.rubro);

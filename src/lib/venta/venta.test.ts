@@ -106,3 +106,14 @@ describe('cada sección cerrada tiene su demo', () => {
     expect(demo.capturas.length).toBeGreaterThan(0)
   })
 })
+
+describe('las demos en video (Nico 28-10-2026: «las demos son videos»)', () => {
+  it('Servicios públicos trae su video (webm, mp4 y portada) y existen en public/', async () => {
+    const { existsSync } = await import('node:fs')
+    const { join } = await import('node:path')
+    const { demoDeLaInmobiliaria } = await import('./demos-del-panel')
+    const v = demoDeLaInmobiliaria('servicios-publicos').video
+    expect(v).toBeDefined()
+    for (const archivo of [v!.webm, v!.mp4, v!.poster]) expect(existsSync(join(process.cwd(), 'public', archivo))).toBe(true)
+  })
+})

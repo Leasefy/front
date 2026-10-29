@@ -181,10 +181,27 @@ function DemoEnGrande({
           <DialogTitle>Demo: {demo.titulo}</DialogTitle>
           <DialogDescription>
             {empresa ?? 'Tu cuenta'} · datos de ejemplo
-            <span className="font-mono tabular-nums"> · {Math.min(i, total - 1) + 1} / {total}</span>
+            {!demo.video && <span className="font-mono tabular-nums"> · {Math.min(i, total - 1) + 1} / {total}</span>}
           </DialogDescription>
         </DialogHeader>
         <div className="relative aspect-[16/10] w-full overflow-hidden rounded-lg bg-surface-muted">
+          {demo.video ? (
+            // Nico 28-10-2026: la demo es un video (sin voz). Con movimiento reducido no arranca solo: lo da play la persona.
+            <video
+              className="absolute inset-0 h-full w-full object-contain"
+              poster={demo.video.poster}
+              aria-label={demo.video.alt}
+              muted
+              loop
+              playsInline
+              controls
+              autoPlay={!movimientoReducido()}
+              data-testid="video-de-la-demo"
+            >
+              <source src={demo.video.webm} type="video/webm" />
+              <source src={demo.video.mp4} type="video/mp4" />
+            </video>
+          ) : (
           <AnimatePresence mode="wait" initial={false}>
             {pantalla && (
             <motion.div
@@ -199,7 +216,8 @@ function DemoEnGrande({
             </motion.div>
             )}
           </AnimatePresence>
-          {total > 1 && (
+          )}
+          {!demo.video && total > 1 && (
             <>
               <BotonDeLado lado="izquierda" onClick={() => setI((x) => (x - 1 + total) % total)} />
               <BotonDeLado lado="derecha" onClick={() => setI((x) => (x + 1) % total)} />
@@ -234,4 +252,8 @@ function BotonDeLado({ lado, onClick }: { lado: 'izquierda' | 'derecha'; onClick
       {lado === 'izquierda' ? <ArrowLeft size={18} aria-hidden="true" /> : <ArrowRight size={18} aria-hidden="true" />}
     </button>
   );
+}
+
+function movimientoReducido(): boolean {
+  return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
 }

@@ -17,12 +17,23 @@ export interface DemoDelModulo {
   promesa: string;
   puntos: readonly string[];
   capturas: readonly CapturaDeDemo[];
+  /**
+   * Nico 28-10-2026 («las demos son videos»): el recorrido de la sección con datos de ejemplo, grabado sin voz con el
+   * modo demo (`lib/demo/`). Si está, «Ver demo» lo reproduce en lugar de las capturas.
+   */
+  video?: { webm: string; mp4: string; poster: string; alt: string };
 }
 
 const P = '/landing-v2/producto';
 const cap = (nombre: string, alt: string): CapturaDeDemo => ({ src: `${P}/${nombre}.webp`, alt });
 
 const TABLERO = cap('erp-tablero', 'Tablero de la operación con recaudo, cartera y giros del mes');
+const video = (clave: string, alt: string): NonNullable<DemoDelModulo['video']> => ({
+  webm: `${P}/demo-${clave}.webm`,
+  mp4: `${P}/demo-${clave}.mp4`,
+  poster: `${P}/demo-${clave}.webp`,
+  alt,
+});
 
 /** Por la clave del módulo del panel (`arquitectura-del-panel.ts`). */
 const DE_LA_INMOBILIARIA: Record<string, DemoDelModulo> = {
@@ -104,7 +115,8 @@ const DE_LA_INMOBILIARIA: Record<string, DemoDelModulo> = {
     titulo: 'Los servicios públicos al día',
     promesa: 'El inquilino sube la factura pagada cada mes y tú ves de una quién está al día.',
     puntos: ['La factura del mes desde su portal', 'Recordatorios antes de que venza', 'La entrada y la salida liquidadas'],
-    capturas: [TABLERO],
+    capturas: [cap('demo-servicios-publicos', 'Servicios públicos con datos de ejemplo')],
+    video: video('servicios-publicos', 'Recorrido por Servicios públicos con datos de ejemplo: quién está al día, la factura por revisar y la cuenta de EPM'),
   },
   solicitudes: {
     titulo: 'Las solicitudes, respondidas a tiempo',

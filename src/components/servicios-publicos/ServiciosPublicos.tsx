@@ -279,24 +279,63 @@ export function ServiciosPublicos() {
             />
           )}
 
-          {/* El control de la tarea a la vista: el mes, por contrato o por inmueble, y el buscador. */}
-          <div className="flex flex-col gap-3 border-b border-border px-4 py-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between md:px-5">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <label htmlFor="mes-de-servicios" className="sr-only">
-                Mes del corte
-              </label>
-              <Select value={mes} onValueChange={(v) => enLaUrl('mes', v)}>
-                <SelectTrigger id="mes-de-servicios" className="h-9 w-full sm:w-[200px]" data-testid="mes-de-servicios">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {meses.map((m) => (
-                    <SelectItem key={m.valor} value={m.valor}>
-                      {m.rotulo.charAt(0).toUpperCase() + m.rotulo.slice(1)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {/* El control de la tarea a la vista: el buscador, el mes, qué trae la factura, el orden y por contrato o por
+              inmueble. 29-10 (revisión en pantalla): en UNA línea desde 1280 px (§12.3: antes eran dos renglones
+              desalineados a 1440); más angosto bajan de renglón y en el celular van uno debajo del otro. */}
+          <div className="flex flex-col gap-2 border-b border-border px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center md:px-5">
+            {/* El ancho va en una caja: la clase de SearchInput le cae al campo, no a su envoltorio. */}
+            <div className="w-full sm:basis-full xl:min-w-[12rem] xl:flex-1">
+              <SearchInput
+                value={busqueda}
+                onChange={(x) => setBusqueda(x.target.value)}
+                onClear={() => setBusqueda('')}
+                placeholder="Contrato, inquilino, inmueble o cuenta"
+                aria-label="Buscar contratos"
+                inputSize="md"
+                data-testid="buscar-servicios"
+              />
+            </div>
+            <label htmlFor="mes-de-servicios" className="sr-only">
+              Mes del corte
+            </label>
+            <Select value={mes} onValueChange={(v) => enLaUrl('mes', v)}>
+              <SelectTrigger id="mes-de-servicios" className="h-9 w-full sm:w-44" data-testid="mes-de-servicios">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {meses.map((m) => (
+                  <SelectItem key={m.valor} value={m.valor}>
+                    {m.rotulo.charAt(0).toUpperCase() + m.rotulo.slice(1)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={queTrae} onValueChange={(v) => setQueTrae(v as QueTrae)}>
+              <SelectTrigger className="h-9 w-full sm:w-56" aria-label="Qué trae la factura" data-testid="que-trae">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {QUE_TRAE.map((q) => (
+                  <SelectItem key={q.valor} value={q.valor}>
+                    {q.rotulo}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <SelectorDeOrden
+              orden={orden}
+              onCambiar={setOrden}
+              className="w-full sm:w-44"
+              formas={[
+                { campo: 'estado', sentido: 'asc', etiqueta: 'Lo que pide revisión' },
+                { campo: 'contrato', sentido: 'asc', etiqueta: 'Contrato (A–Z)' },
+                { campo: 'inmueble', sentido: 'asc', etiqueta: 'Inmueble (A–Z)' },
+                { campo: 'inquilino', sentido: 'asc', etiqueta: 'Inquilino (A–Z)' },
+                { campo: 'factura', sentido: 'desc', etiqueta: 'Corte más reciente' },
+                { campo: 'valor', sentido: 'desc', etiqueta: 'Valor más alto' },
+              ]}
+            />
+            <div className="sm:ml-auto">
               <SegmentedControl<Vista>
                 aria-label="Ver por contrato o por inmueble"
                 size="sm"
@@ -305,45 +344,6 @@ export function ServiciosPublicos() {
                 options={[
                   { value: 'contrato', label: 'Por contrato' },
                   { value: 'inmueble', label: 'Por inmueble' },
-                ]}
-              />
-            </div>
-            <div className="flex flex-col gap-2 md:flex-row md:items-center">
-              {/* El ancho va en una caja: la clase de SearchInput le cae al campo, no a su envoltorio. */}
-              <div className="w-full md:w-80">
-                <SearchInput
-                  value={busqueda}
-                  onChange={(x) => setBusqueda(x.target.value)}
-                  onClear={() => setBusqueda('')}
-                  placeholder="Contrato, inquilino, inmueble o cuenta"
-                  aria-label="Buscar contratos"
-                  inputSize="md"
-                  data-testid="buscar-servicios"
-                />
-              </div>
-              <Select value={queTrae} onValueChange={(v) => setQueTrae(v as QueTrae)}>
-                <SelectTrigger className="h-9 w-full md:w-56" aria-label="Qué trae la factura" data-testid="que-trae">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {QUE_TRAE.map((q) => (
-                    <SelectItem key={q.valor} value={q.valor}>
-                      {q.rotulo}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <SelectorDeOrden
-                orden={orden}
-                onCambiar={setOrden}
-                className="w-full md:w-52"
-                formas={[
-                  { campo: 'estado', sentido: 'asc', etiqueta: 'Lo que pide revisión' },
-                  { campo: 'contrato', sentido: 'asc', etiqueta: 'Contrato (A–Z)' },
-                  { campo: 'inmueble', sentido: 'asc', etiqueta: 'Inmueble (A–Z)' },
-                  { campo: 'inquilino', sentido: 'asc', etiqueta: 'Inquilino (A–Z)' },
-                  { campo: 'factura', sentido: 'desc', etiqueta: 'Corte más reciente' },
-                  { campo: 'valor', sentido: 'desc', etiqueta: 'Valor más alto' },
                 ]}
               />
             </div>
@@ -542,12 +542,23 @@ function EstadoDelMesDeLaFila({ fila }: { fila: FilaDelTablero }) {
   );
 }
 
-function BotonDeLaFila({ fila, onAbrir }: { fila: FilaDelTablero; onAbrir: (f: FilaDelTablero) => void }) {
+function BotonDeLaFila({
+  fila,
+  onAbrir,
+  enTarjeta = false,
+}: {
+  fila: FilaDelTablero;
+  onAbrir: (f: FilaDelTablero) => void;
+  /** En la tarjeta del celular, el botón callado se corre a la orilla del texto (su relleno lo sangraba ~12 px). */
+  enTarjeta?: boolean;
+}) {
   // Una sola chispa por pantalla: lo que pide revisión va en arena con su número; lo demás, callado.
+  const callado = fila.porRevisar === 0;
   return (
     <Button
       size="sm"
-      variant={fila.porRevisar > 0 ? 'outline' : 'ghost'}
+      variant={callado ? 'ghost' : 'outline'}
+      className={enTarjeta && callado ? '-ml-3' : undefined}
       hideArrow
       onClick={(e) => {
         e.stopPropagation();
@@ -644,7 +655,7 @@ function TarjetaDelContrato({ fila: f, vista, agrupada, onAbrir }: { fila: FilaD
           <SenalesDeLaFactura fila={f} />
         </div>
       )}
-      <BotonDeLaFila fila={f} onAbrir={onAbrir} />
+      <BotonDeLaFila fila={f} onAbrir={onAbrir} enTarjeta />
     </li>
   );
 }

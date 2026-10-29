@@ -908,4 +908,8 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   Estado: 'Status',
   'Vence primero': 'Due first',
   'Titular (A–Z)': 'Data subject (A–Z)',
+  // Revisión en pantalla con los datos de Portofino (29-10): el buscador y las columnas vacías del tablero de Mantenimientos.
+  'Arreglo, inmueble, inquilino o proveedor': 'Repair, property, tenant or vendor',
+  'Buscar una solicitud': 'Search a request',
+  'Sin solicitudes': 'No requests',
 }

@@ -345,8 +345,19 @@ function formulario(d: FacturaQueSeRegistra): FormData {
 export const serviciosPublicosApi = {
   tablero: (mes: string) => apiClient.get<TableroDeServicios>(`/inmobiliaria/servicios-publicos?mes=${mes}`),
   delContrato: (contractId: string) => apiClient.get<ServiciosDelContrato>(`/contracts/${contractId}/servicios-publicos`),
-  revisarEntrada: (contractId: string, d: Omit<FacturaQueSeRegistra, 'tipo' | 'soporte'>) =>
-    apiClient.post<LiquidacionDeEntrada>(`/contracts/${contractId}/servicios-publicos/entrada/revisar`, { ...d, tipo: 'ENTRADA' }),
+  /**
+   * 29-10 (revisión en pantalla con los datos de Portofino): `servicios` viaja como TEXTO separado por comas, igual
+   * que en el formulario de `registrar` (el DTO del back lo valida así). Antes iba como lista y el back contestaba
+   * 400 («Escoge los servicios de la lista»): la cuenta por días de la entrada nunca salía en el formulario.
+   */
+  revisarEntrada: (contractId: string, d: Omit<FacturaQueSeRegistra, 'tipo' | 'soporte'>) => {
+    const { servicios, ...resto } = d;
+    return apiClient.post<LiquidacionDeEntrada>(`/contracts/${contractId}/servicios-publicos/entrada/revisar`, {
+      ...resto,
+      ...(servicios && servicios.length > 1 ? { servicios: servicios.join(',') } : {}),
+      tipo: 'ENTRADA',
+    });
+  },
   registrar: (contractId: string, d: FacturaQueSeRegistra) =>
     enviarFormulario<FacturaDeServicio>(`/contracts/${contractId}/servicios-publicos/facturas`, formulario(d)),
   aprobar: (facturaId: string) =>

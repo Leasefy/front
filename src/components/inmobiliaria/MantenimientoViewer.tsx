@@ -717,14 +717,11 @@ export function MantenimientoViewer({
             debajo. */}
         <SheetHeader
           leading={
-            <div
-              className={cn(
-                'w-10 h-10 rounded-md flex items-center justify-center flex-shrink-0',
-                priorityStyle.bg
-              )}
-            >
-              <TypeIcon className={cn('w-5 h-5', priorityStyle.text)} />
-            </div>
+            // 29-10 (revisión en pantalla): el ícono del tipo suelto, sin cajita de color (vara: nada de cajas de ícono).
+            <TypeIcon
+              className={cn('mt-1 h-5 w-5 shrink-0', solicitud.priority === 'emergency' ? 'text-danger' : 'text-fg-muted')}
+              aria-hidden="true"
+            />
           }
           title={solicitud.title}
           description={`${typeInfo?.labelEs ?? ''} · ${fmtDate(solicitud.createdAt)}`}
@@ -811,10 +808,13 @@ export function MantenimientoViewer({
             <div className="p-4 rounded-lg border border-border bg-card space-y-3">
               <div>
                 <p className="font-medium text-foreground">{solicitud.propertyTitle}</p>
-                <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
-                  <MapPin className="w-3.5 h-3.5" />
-                  {solicitud.propertyAddress}
-                </p>
+                {/* 29-10 (datos de Portofino): sin dirección, o si repite el título, no queda el pin solo. */}
+                {solicitud.propertyAddress?.trim() && solicitud.propertyAddress.trim() !== solicitud.propertyTitle?.trim() ? (
+                  <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
+                    <MapPin className="w-3.5 h-3.5" aria-hidden="true" />
+                    {solicitud.propertyAddress}
+                  </p>
+                ) : null}
               </div>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>

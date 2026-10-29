@@ -63,7 +63,7 @@ vi.mock('@dnd-kit/core', async (importOriginal) => {
   };
 });
 
-import { MantenimientoKanban } from './MantenimientoKanban';
+import { MantenimientoKanban, cabenEnUnaFila } from './MantenimientoKanban';
 import { detectarColumnaDelPuntero } from './mantenimiento-kanban-colisiones';
 
 function hacerSolicitud(
@@ -387,5 +387,74 @@ describe('MantenimientoKanban — quién gestiona la reparación (Portofino, 29-
     });
     expect(alSoltar).toHaveBeenCalledWith(expect.objectContaining({ gestionadoPor: 'propietario' }), 'approved');
     expect(onStatusChange).not.toHaveBeenCalled();
+  });
+});
+
+
+describe('29-10 (datos de Portofino): cuando las columnas no caben en una fila', () => {
+  const ResizeObserverOriginal = globalThis.ResizeObserver;
+  afterEach(() => {
+    globalThis.ResizeObserver = ResizeObserverOriginal;
+  });
+
+  /** Un ResizeObserver que mide el tablero con el ancho que se le diga (happy-dom no mide). */
+  function medirCon(ancho: number) {
+    globalThis.ResizeObserver = class {
+      private cb: ResizeObserverCallback;
+      constructor(cb: ResizeObserverCallback) {
+        this.cb = cb;
+      }
+      observe() {
+        this.cb([{ contentRect: { width: ancho } } as unknown as ResizeObserverEntry], this as unknown as ResizeObserver);
+      }
+      unobserve() {}
+      disconnect() {}
+    } as unknown as typeof ResizeObserver;
+  }
+
+  it('la cuenta: a 1024 px (≈678 de tablero) tres abiertas y tres plegadas no caben; a 1440 (≈1092) sí', () => {
+    // 3 × 240 + 3 × 48 + 5 × 12 = 924
+    expect(cabenEnUnaFila(678, 3, 3)).toBe(false);
+    expect(cabenEnUnaFila(1092, 3, 3)).toBe(true);
+    // 2 × 240 + 4 × 48 + 5 × 12 = 732
+    expect(cabenEnUnaFila(678, 2, 4)).toBe(false);
+    // 4 × 240 + 2 × 48 + 5 × 12 = 1116: a 1440 bajan las vacías a la línea de fichas
+    expect(cabenEnUnaFila(1092, 4, 2)).toBe(false);
+  });
+
+  it('las vacías suben a una línea de fichas (siguen siendo zonas donde soltar) y no queda una plegada sola abajo', () => {
+    medirCon(678);
+    montar({
+      data: [
+        hacerSolicitud({ id: 'a', status: 'reported' }),
+        hacerSolicitud({ id: 'b', status: 'quoted' }),
+        hacerSolicitud({ id: 'c', status: 'in_progress' }),
+      ],
+    });
+    const fichas = container.querySelector('[data-testid="columnas-sin-solicitudes"]')!;
+    expect(fichas).not.toBeNull();
+    expect(fichas.textContent).toContain('Sin solicitudes');
+    const plegadas = Array.from(fichas.querySelectorAll('[data-plegada="si"]')).map((n) => n.getAttribute('data-testid'));
+    expect(plegadas).toEqual(['columna-approved', 'columna-completed', 'columna-cancelled']);
+    // Las abiertas, juntas y en su orden.
+    const abiertas = Array.from(
+      container.querySelectorAll('[data-testid^="columna-"]:not([data-plegada])'),
+    ).map((n) => n.getAttribute('data-testid'));
+    expect(abiertas).toEqual(['columna-reported', 'columna-quoted', 'columna-in_progress']);
+  });
+
+  it('si caben, todo en una fila con las vacías en vertical (lo que eligió Nico)', () => {
+    medirCon(1096);
+    montar({
+      data: [
+        hacerSolicitud({ id: 'a', status: 'reported' }),
+        hacerSolicitud({ id: 'b', status: 'quoted' }),
+        hacerSolicitud({ id: 'c', status: 'in_progress' }),
+      ],
+    });
+    expect(container.querySelector('[data-testid="columnas-sin-solicitudes"]')).toBeNull();
+    const plegada = container.querySelector('[data-testid="columna-approved"]') as HTMLElement;
+    expect(plegada.getAttribute('data-plegada')).toBe('si');
+    expect(plegada.className).toContain('sm:w-12');
   });
 });

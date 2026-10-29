@@ -34,7 +34,7 @@ import {
   filtrarPorGestion,
   gestionDeLaSolicitud,
 } from '@/lib/mantenimiento/gestionado-por';
-import { CrossFade, SegmentedControl } from '@leasefy/cadence';
+import { CrossFade, SearchInput, SegmentedControl } from '@leasefy/cadence';
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
 import { Cajon, CajonCabecera, CajonCuerpo } from '@/components/ui/cajon';
 import type {
@@ -113,6 +113,24 @@ type MantenimientoViewMode = 'cards' | 'kanban';
 // ============================================================================
 
 /** El número tal cual (sin separador de miles): la cuenta de solicitudes. */
+
+/** Sin tildes y en minúscula: «Plomería» se encuentra escribiendo «plomeria». */
+function sinTildes(s: string): string {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
+/**
+ * Revisión en pantalla con los datos de Portofino (29-10-2026): el buscador de la barra (§12.3) busca en lo que la
+ * persona reconoce de una solicitud: qué se dañó, el inmueble y su dirección, el inquilino, el propietario y el
+ * proveedor.
+ */
+function coincideConLaBusqueda(s: SolicitudMantenimiento, buscado: string): boolean {
+  if (!buscado) return true;
+  const q = sinTildes(buscado);
+  return [s.title, s.propertyTitle, s.propertyAddress, s.tenantName, s.propietarioName, s.proveedor?.nombre].some(
+    (v) => typeof v === 'string' && sinTildes(v).includes(q),
+  );
+}
 
 function getQuickStats(mantenimientos: SolicitudMantenimiento[]) {
   const activeMantenimientos = mantenimientos.filter((m) =>
@@ -233,11 +251,41 @@ function MantenimientosContent() {
     else url.searchParams.delete('gestiona');
     window.history.replaceState(window.history.state, '', url);
   }, []);
+  /*
+   * El buscador de la barra (revisión en pantalla del 29-10: el tablero y la lista no tenían ninguno). Busca mientras
+   * se escribe, con una pausa corta, y queda en la URL (`?buscar=`) como el filtro de gestión.
+   */
+  const [textoBuscado, setTextoBuscado] = useState('');
+  const [buscado, setBuscado] = useState('');
+  useEffect(() => {
+    const pedido = new URLSearchParams(window.location.search).get('buscar')?.trim();
+    if (pedido) {
+      setTextoBuscado(pedido);
+      setBuscado(pedido);
+    }
+  }, []);
+  useEffect(() => {
+    const pausa = setTimeout(() => {
+      const limpio = textoBuscado.trim();
+      setBuscado(limpio);
+      const url = new URL(window.location.href);
+      if (limpio) url.searchParams.set('buscar', limpio);
+      else url.searchParams.delete('buscar');
+      window.history.replaceState(window.history.state, '', url);
+    }, 250);
+    return () => clearTimeout(pausa);
+  }, [textoBuscado]);
   const mantenimientosVisibles = useMemo(
-    () => filtrarPorGestion(mantenimientos, filtroDeGestion),
-    [mantenimientos, filtroDeGestion],
+    () => filtrarPorGestion(mantenimientos, filtroDeGestion).filter((s) => coincideConLaBusqueda(s, buscado)),
+    [mantenimientos, filtroDeGestion, buscado],
   );
-  const vacioPorElFiltro = filtroDeGestion !== null && mantenimientos.length > 0 && mantenimientosVisibles.length === 0;
+  const hayFiltrosEnLaBarra = filtroDeGestion !== null || buscado !== '';
+  const limpiarLaBarra = useCallback(() => {
+    cambiarFiltroDeGestion(null);
+    setTextoBuscado('');
+    setBuscado('');
+  }, [cambiarFiltroDeGestion]);
+  const vacioPorElFiltro = hayFiltrosEnLaBarra && mantenimientos.length > 0 && mantenimientosVisibles.length === 0;
   // Acciones masivas (Nico, 10-10-2026): sólo en la vista de lista y con permiso de editar.
   const { marcadas, marcar, quitar: quitarLaSeleccion } = useFilasMarcadas();
   const arreglosMarcados = useMemo(
@@ -812,7 +860,8 @@ function MantenimientosContent() {
         // 28-10 (Juan Camilo y Nico): todo en Excel y la liquidación de proveedores del mes.
         acciones={<ExportarMantenimientos solicitudes={mantenimientos} />}
         accionPrincipal={
-          <div className="flex flex-col items-end gap-1">
+          // En el celular la principal va a lo ancho (el encabezado estira esta caja); desde `sm`, a la derecha.
+          <div className="flex flex-col items-stretch gap-1 sm:items-end">
             <Button
               size="sm"
               hideArrow
@@ -825,7 +874,7 @@ function MantenimientosContent() {
               {t('inmobiliaria.operaciones.maintenance.new')}
             </Button>
             {motivoParaNoCrear && (
-              <p className="max-w-xs text-right text-caption text-fg-muted" data-testid="nueva-solicitud-motivo">
+              <p className="max-w-xs text-caption text-fg-muted sm:text-right" data-testid="nueva-solicitud-motivo">
                 {motivoParaNoCrear}
               </p>
             )}
@@ -862,9 +911,17 @@ function MantenimientosContent() {
           total={stats.active}
           // Revisora r27: los tramos son las columnas del tablero (antes «Esperan al propietario» contaba otra vez la
           // misma solicitud de «Por aprobar»: queda sólo en el contexto); los que están en cero no se listan.
+          // 29-10 (con los datos de Portofino): «Por aprobar» es TODA la columna, también lo que espera al propietario
+          // (está en el contexto como parte de ella); sin eso la barra quedaba con un tramo gris sin nombre.
           tramos={[
             { clave: 'por-cotizar', etiqueta: 'Por cotizar', monto: etapas.porCotizar, tono: 'aviso', cifra: etapas.porCotizar },
-            { clave: 'por-aprobar', etiqueta: 'Por aprobar', monto: stats.quoted, tono: 'aviso', cifra: stats.quoted },
+            {
+              clave: 'por-aprobar',
+              etiqueta: 'Por aprobar',
+              monto: stats.quoted + stats.esperanAlPropietario,
+              tono: 'aviso',
+              cifra: stats.quoted + stats.esperanAlPropietario,
+            },
             { clave: 'en-arreglo', etiqueta: 'En arreglo', monto: etapas.enArreglo, tono: 'exito', cifra: etapas.enArreglo },
           ]}
           pie={
@@ -889,9 +946,10 @@ function MantenimientosContent() {
       {/* Las solicitudes, directo en la tarjeta: sin barra de pestañas porque
           ya no hay entre qué elegir. */}
       <div className="rounded-lg border border-border bg-card">
-        {/* View Toggle */}
+        {/* La barra de la tarjeta (§12.3): el buscador a la izquierda, el filtro de quién gestiona en la misma línea y
+            tablero ⇄ lista a la derecha. En el celular el buscador va a lo ancho. */}
         <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-border bg-muted/20">
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
             {/* El conteo se calla si no se pudo traer: «0 solicitudes
                 activas» sobre una consulta muerta es tranquilizar con
                 un dato que nadie tiene. */}
@@ -900,13 +958,26 @@ function MantenimientosContent() {
               <p className="text-sm text-fg-muted">Solicitudes sin cargar</p>
             ) : (
               <>
+                {/* El ancho va en esta caja: la clase de SearchInput es del campo y su envoltura es `w-full`. */}
+                <div className="w-full sm:w-72">
+                  <SearchInput
+                    value={textoBuscado}
+                    onChange={(e) => setTextoBuscado(e.target.value)}
+                    onClear={() => setTextoBuscado('')}
+                    placeholder={tr('Arreglo, inmueble, inquilino o proveedor')}
+                    aria-label={tr('Buscar una solicitud')}
+                    inputSize="md"
+                    className="w-full"
+                    data-testid="buscar-solicitudes"
+                  />
+                </div>
                 {/* Portofino 29-10: el filtro por quién gestiona, en la barra de la tarjeta (§12.3). */}
                 <Select
                   value={filtroDeGestion ?? 'todas'}
                   onValueChange={(v) => cambiarFiltroDeGestion(esGestionadoPor(v) ? v : null)}
                 >
                   <SelectTrigger
-                    className="h-9 w-auto min-w-[13rem]"
+                    className="h-9 w-full min-w-[13rem] sm:w-auto"
                     aria-label={tr('Filtrar por quién gestiona la reparación')}
                     data-testid="filtro-de-gestion"
                   >
@@ -921,13 +992,13 @@ function MantenimientosContent() {
                     ))}
                   </SelectContent>
                 </Select>
-                {filtroDeGestion ? (
+                {hayFiltrosEnLaBarra ? (
                   <Button
                     variant="link"
                     size="sm"
                     hideArrow
                     className="h-auto p-0 text-sm"
-                    onClick={() => cambiarFiltroDeGestion(null)}
+                    onClick={limpiarLaBarra}
                     data-testid="limpiar-filtro-de-gestion"
                   >
                     {tr('Limpiar')}
@@ -983,7 +1054,7 @@ function MantenimientosContent() {
                 queSon="arreglos"
                 icono={Wrench}
                 hayFiltros
-                onLimpiarFiltros={() => cambiarFiltroDeGestion(null)}
+                onLimpiarFiltros={limpiarLaBarra}
               />
             ) : mantenimientoView === 'kanban' ? (
               <div className="p-5">

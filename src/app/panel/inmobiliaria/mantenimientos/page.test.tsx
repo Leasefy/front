@@ -595,6 +595,40 @@ describe('Quién gestiona la reparación (Portofino, 29-10-2026)', () => {
     expect(window.location.search).toBe('')
   })
 
+  it('29-10: el buscador de la barra filtra el tablero (sin tildes, por inmueble o proveedor), queda en la URL y «Limpiar» lo quita', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      h.mantenimientos = [
+        sol('a', { title: 'Fuga en la cocina', propertyTitle: 'Apartamento en Sabaneta' }),
+        sol('b', { title: 'Calentador dañado', propertyTitle: 'Casa en Caldas', proveedor: { id: 'p1', nombre: 'Plomería El Rayo' } }),
+      ]
+      await render()
+      const campo = container.querySelector<HTMLInputElement>('[data-testid="buscar-solicitudes"] input, input[data-testid="buscar-solicitudes"]')!
+      expect(campo).not.toBeNull()
+      await act(async () => {
+        const fijar = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!
+        fijar.call(campo, 'plomeria')
+        campo.dispatchEvent(new Event('input', { bubbles: true }))
+      })
+      await act(async () => {
+        vi.advanceTimersByTime(300)
+      })
+      expect(visibles()).toEqual(['b'])
+      expect(new URLSearchParams(window.location.search).get('buscar')).toBe('plomeria')
+
+      await act(async () => {
+        container.querySelector<HTMLElement>('[data-testid="limpiar-filtro-de-gestion"]')!.click()
+      })
+      await act(async () => {
+        vi.advanceTimersByTime(300)
+      })
+      expect(visibles()).toEqual(['a', 'b'])
+      expect(window.location.search).toBe('')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('filtrado a cero no dice «todavía no tienes»: ofrece quitar el filtro', async () => {
     h.mantenimientos = [sol('a')]
     window.history.replaceState(null, '', '/panel/inmobiliaria/mantenimientos?gestiona=inquilino')

@@ -424,7 +424,8 @@ export function LiquidacionDeSalida({ contractId, activa, puedeCargar, onCargada
               )}
               <div className="flex items-baseline justify-between gap-3 border-t border-border pt-3">
                 <dt className="text-fg">{total.aDevolverCop > 0 ? 'Hay que devolverle' : 'Anticipo de servicios públicos'}</dt>
-                <dd className="font-mono text-h3 tabular-nums text-fg" data-testid="salida-total-cop">
+                {/* 29-10: sin `text-h3` (trae la letra de los títulos y le quitaba el mono a la cifra). */}
+                <dd className="font-mono text-[20px] leading-snug tracking-[-0.02em] tabular-nums text-fg" data-testid="salida-total-cop">
                   {formatCurrency(total.aDevolverCop > 0 ? total.aDevolverCop : total.totalCop)}
                 </dd>
               </div>

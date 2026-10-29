@@ -308,9 +308,12 @@ function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertyS
                 <p className="font-medium text-fg">
                   {selectedConsignacion.propertyTitle}
                 </p>
-                <p className="text-sm text-fg-muted dark:text-fg-subtle">
-                  {selectedConsignacion.propertyAddress}
-                </p>
+                {selectedConsignacion.propertyAddress?.trim() &&
+                selectedConsignacion.propertyAddress.trim() !== selectedConsignacion.propertyTitle?.trim() ? (
+                  <p className="text-sm text-fg-muted dark:text-fg-subtle">
+                    {selectedConsignacion.propertyAddress}
+                  </p>
+                ) : null}
                 <DatosDelInmueble consignacion={selectedConsignacion} tr={tr} />
               </div>
             </div>
@@ -389,9 +392,13 @@ function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertyS
                         <p className="font-medium text-fg truncate">
                           {consignacion.propertyTitle}
                         </p>
-                        <p className="text-sm text-fg-muted dark:text-fg-subtle truncate">
-                          {consignacion.propertyAddress}
-                        </p>
+                        {/* 29-10 (datos de Portofino): el título suele ser la dirección; no se dice dos veces. */}
+                        {consignacion.propertyAddress?.trim() &&
+                        consignacion.propertyAddress.trim() !== consignacion.propertyTitle?.trim() ? (
+                          <p className="text-sm text-fg-muted dark:text-fg-subtle truncate">
+                            {consignacion.propertyAddress}
+                          </p>
+                        ) : null}
                         <DatosDelInmueble consignacion={consignacion} contrato={contrato} tr={tr} />
                       </div>
                     </button>
@@ -468,18 +475,22 @@ function TypeSelector({ selected, onSelect, t }: TypeSelectorProps) {
         value={selected}
         onValueChange={(v) => onSelect(v as MantenimientoType)}
       >
-        {MANTENIMIENTO_TYPES.map((type) => (
-          <RadioCard
-            key={type.type}
-            value={type.type}
-            label={
-              <span className="flex items-center gap-2 text-sm font-medium">
-                <span className="text-base leading-none">{type.icon}</span>
-                {type.labelEs}
-              </span>
-            }
-          />
-        ))}
+        {MANTENIMIENTO_TYPES.map((type) => {
+          // 29-10 (revisión en pantalla): el ícono de la familia de Leasefy, no un emoji (vara: nada de emojis).
+          const Icono = TYPE_ICONS[type.type];
+          return (
+            <RadioCard
+              key={type.type}
+              value={type.type}
+              label={
+                <span className="flex items-center gap-2 text-sm font-medium">
+                  <Icono className="h-4 w-4 shrink-0 text-fg-muted" aria-hidden="true" />
+                  {type.labelEs}
+                </span>
+              }
+            />
+          );
+        })}
       </RadioCardGroup>
     </div>
   );
@@ -521,7 +532,8 @@ function PrioritySelector({ selected, onSelect, t }: PrioritySelectorProps) {
                   'font-medium',
                   priority.value === 'emergency' && 'text-danger',
                   priority.value === 'high' && 'text-warning',
-                  priority.value === 'medium' && 'text-primary',
+                  // 29-10: el azul es de la acción; la prioridad media va en tinta (como en el tablero).
+                  priority.value === 'medium' && 'text-fg',
                   priority.value === 'low' && 'text-fg-muted dark:text-fg-muted'
                 )}
               >

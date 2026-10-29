@@ -344,6 +344,8 @@ function AgendaContent() {
   }, [load]);
 
   const resumen = data?.resumen ?? RESUMEN_AGENDA_VACIO;
+  /** Los tipos con algo en el período: los que van en la franja (29-10). */
+  const resumenConAlgo = RESUMEN_ITEMS.filter((item) => resumen[item.field] > 0);
   const eventos = data?.eventos ?? [];
   /**
    * `total` es el feed ENTERO; `eventos` es sólo esta página. Si una respuesta
@@ -641,27 +643,42 @@ function AgendaContent() {
         <SectionLabel>
           {pestana === 'vencidas' ? 'Atrasadas' : pestana === 'hechas' ? 'Hechas (última semana)' : pestana === 'semana' ? 'Esta semana' : t(k('resumenLabel'))}
         </SectionLabel>
-        {/* Cadence 2: los seis tipos en UNA franja (antes, seis tarjetas sueltas). */}
-        <FranjaDeCifras data-testid="agenda-resumen">
-          {RESUMEN_ITEMS.map((item) => (
-            <Cifra
-              key={item.key}
-              etiqueta={t(k(`tipo_${item.key}`))}
-              // Revisora r24 (Agenda #5): el punto sólo cuando hay algo que mirar; nunca sobre un cero.
-              tono={!isLoading && !error && resumen[item.field] > 0 ? item.tono : undefined}
-              // Revisora r24 (Agenda #6): a 390 el rótulo va en dos renglones, entero («FIRMAS PENDIENTES»).
-              className="max-md:[&_.truncate]:whitespace-normal"
-              // El número entra a los cuatro estados: con la carga caída, la tabla decía «no se
-              // pudo cargar» y un renglón más arriba los tiles afirmaban «0 visitas · 0 firmas».
-              // Un cero es un dato; «no sé» no es cero.
-              valor={
-                <KpiValor cargando={isLoading} fallo={error}>
-                  {resumen[item.field]}
-                </KpiValor>
-              }
-            />
-          ))}
-        </FranjaDeCifras>
+        {/* Cadence 2: los seis tipos en UNA franja (antes, seis tarjetas sueltas).
+            Revisión en pantalla con los datos de Portofino (29-10): de seis cifras salían cuatro o cinco en cero
+            («Visitas 0 · Firmas 0 · Seguimientos 0…»). Ahora sólo los tipos que tienen algo (§12.4: un cero no es
+            una cifra) y, si todo está en cero, una línea. Mientras carga o si falló, los seis con su estado. */}
+        {!isLoading && !error && resumenConAlgo.length === 0 ? (
+          <p className="text-body-sm text-fg-muted" data-testid="agenda-resumen-vacio">
+            {pestana === 'vencidas'
+              ? 'Nada atrasado: estás al día.'
+              : pestana === 'hechas'
+                ? 'Nada hecho en la última semana.'
+                : pestana === 'semana'
+                  ? 'Nada en la agenda esta semana.'
+                  : 'Nada próximo en la agenda.'}
+          </p>
+        ) : (
+          <FranjaDeCifras data-testid="agenda-resumen">
+            {(isLoading || error ? RESUMEN_ITEMS : resumenConAlgo).map((item) => (
+              <Cifra
+                key={item.key}
+                etiqueta={t(k(`tipo_${item.key}`))}
+                // Revisora r24 (Agenda #5): el punto sólo cuando hay algo que mirar; nunca sobre un cero.
+                tono={!isLoading && !error && resumen[item.field] > 0 ? item.tono : undefined}
+                // Revisora r24 (Agenda #6): a 390 el rótulo va en dos renglones, entero («FIRMAS PENDIENTES»).
+                className="max-md:[&_.truncate]:whitespace-normal"
+                // El número entra a los cuatro estados: con la carga caída, la tabla decía «no se
+                // pudo cargar» y un renglón más arriba los tiles afirmaban «0 visitas · 0 firmas».
+                // Un cero es un dato; «no sé» no es cero.
+                valor={
+                  <KpiValor cargando={isLoading} fallo={error}>
+                    {resumen[item.field]}
+                  </KpiValor>
+                }
+              />
+            ))}
+          </FranjaDeCifras>
+        )}
       </section>
 
       {/* La tabla, sin título encima: no se nombran las tablas (Nico, 2026-09-03). */}
@@ -815,7 +832,10 @@ function AgendaContent() {
                   <CaretRight className="h-4 w-4" />
                 </Button>
               </div>
-              <div className="grid grid-cols-1 divide-y divide-border md:grid-cols-7 md:divide-x md:divide-y-0">
+              {/* 29-10 (con los datos de Portofino): a 768 y 1024 los siete días en columnas dejaban cada evento en
+                  «Vence el …» (no se sabía de qué contrato). Los siete en columnas desde xl; antes, día por día y
+                  sus eventos en dos o tres columnas. El título va en dos renglones, entero al pasar el puntero. */}
+              <div className="grid grid-cols-1 divide-y divide-border xl:grid-cols-7 xl:divide-x xl:divide-y-0">
                 {diasDeLaSemana.map((d) => {
                   const iso = aFechaIso(d);
                   const delDia = eventos.filter((e) => e.fecha.slice(0, 10) === iso);
@@ -825,7 +845,7 @@ function AgendaContent() {
                       <p className={cn('mb-2 text-caption font-medium', esHoy ? 'text-primary' : 'text-fg-muted')}>
                         {new Intl.DateTimeFormat('es-CO', { weekday: 'short', day: 'numeric' }).format(d)}
                       </p>
-                      <ul className="space-y-1.5">
+                      <ul className="space-y-1.5 md:grid md:grid-cols-2 md:gap-1.5 md:space-y-0 lg:grid-cols-3 xl:block xl:space-y-1.5">
                         <AnimatePresence initial={false}>
                           {delDia.map((e) => (
                             <motion.li
@@ -838,8 +858,9 @@ function AgendaContent() {
                               <button
                                 type="button"
                                 onClick={() => setSeleccionado(e)}
+                                title={e.titulo}
                                 className={cn(
-                                  'w-full rounded-md border border-border px-2 py-1.5 text-left text-caption hover:border-primary/40',
+                                  'h-full w-full rounded-md border border-border px-2 py-1.5 text-left text-caption hover:border-primary/40',
                                   e.estado === 'vencido' && 'border-danger/40',
                                   (e.estado === 'completado' || e.estado === 'cancelado') && 'opacity-60',
                                 )}
@@ -848,7 +869,7 @@ function AgendaContent() {
                                   <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', puntoDelEvento(e))} />
                                   <span className="tabular-nums text-fg-muted">{e.hora ? horaDeLaCasa(e.hora) : 'Todo el día'}</span>
                                 </span>
-                                <span className="mt-0.5 block truncate text-fg">{e.titulo}</span>
+                                <span className="mt-0.5 line-clamp-2 break-words text-fg">{e.titulo}</span>
                               </button>
                             </motion.li>
                           ))}

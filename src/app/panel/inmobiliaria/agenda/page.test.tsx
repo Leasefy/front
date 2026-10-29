@@ -309,6 +309,24 @@ describe('A1 — los tiles del resumen no dicen «0» cuando no saben', () => {
     expect(tiles()[0].dataset.estado).toBe('ok')
     expect(tiles()[0].textContent).toBe('3')
   })
+
+  it('29-10 (datos de Portofino): la franja lleva sólo los tipos con algo; los ceros no son cifras (§12.4)', async () => {
+    getAgendaMock.mockResolvedValue(CON_VISITA_PENDIENTE)
+    await montar()
+
+    expect(tiles()).toHaveLength(1)
+    expect(tiles()[0].textContent).toBe('3')
+    expect(container.querySelector('[data-testid="agenda-resumen-vacio"]')).toBeNull()
+  })
+
+  it('29-10: todo en cero es UNA línea, no una franja de ceros', async () => {
+    getAgendaMock.mockResolvedValue(AGENDA_VACIA)
+    await montar()
+
+    expect(tiles()).toHaveLength(0)
+    expect(container.querySelector('[data-testid="agenda-resumen"]')).toBeNull()
+    expect(container.querySelector('[data-testid="agenda-resumen-vacio"]')).not.toBeNull()
+  })
 })
 
 describe('A3 — sin `operaciones:edit` no se dibuja lo que el back rechaza con 403', () => {

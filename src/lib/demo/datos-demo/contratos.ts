@@ -25,8 +25,8 @@ const FILAS: ReadonlyArray<[string, number, string, string, string, string, numb
   ['demo-ct-3', 103, 'Comercializadora El Poblado SAS', '901234567', 'Inversiones Palmas SAS', 'Cra 37 # 8A-56, local 2', 6_400_000, '2024-09-01', '2027-08-31', 'ACTIVE'],
   ['demo-ct-4', 104, 'Valentina Ríos', '1017223344', 'Jorge Arango', 'Cl 79 Sur # 47E-80, apto 1504', 2_900_000, '2026-01-15', '2027-01-14', 'ACTIVE'],
   ['demo-ct-5', 105, 'Juan Pablo Cardona', '98765432', 'Luz Marina Henao', 'Cra 70 # 44-10, apto 301', 1_650_000, '2025-12-01', '2026-11-30', 'ACTIVE'],
-  ['demo-ct-6', 106, 'Mariana Ochoa', '1152334455', 'Carlos Mejía', 'Cl 5 Sur # 25-80, apto 902', 3_100_000, '2026-11-01', '2027-10-31', 'PENDING_SIGNATURE'],
-  ['demo-ct-7', 107, 'Felipe Zuluaga', '1020456789', 'Ana Lucía Vélez', 'Cra 80 # 33-15, apto 210', 1_400_000, '2023-04-01', '2025-03-31', 'TERMINATED'],
+  ['demo-ct-6', 106, 'Mariana Ochoa', '1152334455', 'Carlos Mejía', 'Cl 5 Sur # 25-80, apto 902', 3_100_000, '2026-11-01', '2027-10-31', 'PENDING_TENANT'],
+  ['demo-ct-7', 107, 'Felipe Zuluaga', '1020456789', 'Ana Lucía Vélez', 'Cra 80 # 33-15, apto 210', 1_400_000, '2023-04-01', '2025-03-31', 'EXPIRED'],
 ];
 
 function contratos(): BackendContract[] {
@@ -46,7 +46,7 @@ function contratos(): BackendContract[] {
     monthlyRent: canon,
     startDate: inicio,
     endDate: fin,
-    signedAt: status === 'PENDING_SIGNATURE' ? null : `${inicio}T12:00:00.000Z`,
+    signedAt: status === 'PENDING_TENANT' ? null : `${inicio}T12:00:00.000Z`,
     activatedAt: status === 'ACTIVE' ? `${inicio}T12:00:00.000Z` : null,
   })) as BackendContract[];
 }

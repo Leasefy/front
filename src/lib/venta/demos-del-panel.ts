@@ -84,7 +84,8 @@ const DE_LA_INMOBILIARIA: Record<string, DemoDelModulo> = {
     titulo: 'Administra tus contratos de arrendamiento',
     promesa: 'Plantillas legales, firma electrónica y renovaciones con el IPC.',
     puntos: ['Firma electrónica con código', 'Renovación con IPC', 'Todo el contrato en un lugar'],
-    capturas: [cap('erp-renovaciones', 'Renovaciones de contratos'), TABLERO],
+    capturas: [cap('demo-contratos', 'Contratos con datos de ejemplo'), cap('erp-renovaciones', 'Renovaciones de contratos')],
+    video: video('contratos', 'Recorrido por Contratos con datos de ejemplo: activos, por empezar, por firmar y terminados'),
   },
   // Nico 28-10-2026 («revisa que cada sección tenga su demo correcta, Nómina está mal»): las que caían en la general.
   nomina: {

@@ -15,7 +15,7 @@ import type { AprobacionDeLaInmobiliaria as Datos } from '@/lib/api/asegurabilid
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const api = vi.hoisted(() => ({ ver: vi.fn(), subirComprobante: vi.fn() }));
+const api = vi.hoisted(() => ({ ver: vi.fn(), subirComprobante: vi.fn(), pagarEnLinea: vi.fn() }));
 vi.mock('@/lib/api/asegurabilidad-manual.service', () => ({ aprobacionDeLaInmobiliariaApi: api }));
 vi.mock('@/components/ui/toast', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
@@ -105,6 +105,49 @@ describe('AprobacionDeLaInmobiliaria', () => {
     await montar();
     expect(document.querySelector('[data-testid="qr-para-pagar"] img')?.getAttribute('src')).toContain('firmada');
     expect(texto().toLowerCase()).not.toContain('estudio');
+  });
+
+  it('en línea (Nico 29-10-2026): «Pagar en línea» abre la pasarela; sin comprobante no muestra la cuenta', async () => {
+    api.ver.mockResolvedValue(datos({ formas: ['WOMPI'] }));
+    api.pagarEnLinea.mockResolvedValue({ url: 'https://checkout.wompi.co/l/enlace-1' });
+    const ir = vi.fn();
+    const antes = window.location;
+    Object.defineProperty(window, 'location', { configurable: true, value: { ...antes, search: '', assign: ir } });
+    try {
+      await montar();
+      expect(document.querySelector('[data-testid="cuenta-de-la-aprobacion"]')).toBeNull();
+      expect(document.querySelector('[data-testid="subir-comprobante"]')).toBeNull();
+      expect(texto()).toContain('Págala en línea con tarjeta, PSE o Nequi.');
+      await act(async () => document.querySelector<HTMLButtonElement>('[data-testid="pagar-en-linea"]')!.click());
+      for (let i = 0; i < 3; i++) await act(async () => {});
+      expect(api.pagarEnLinea).toHaveBeenCalledWith('app-1');
+      expect(ir).toHaveBeenCalledWith('https://checkout.wompi.co/l/enlace-1');
+    } finally {
+      Object.defineProperty(window, 'location', { configurable: true, value: antes });
+    }
+  });
+
+  it('al volver de la pasarela espera la confirmación y, aceptado, dice que pagó en línea', async () => {
+    vi.useFakeTimers();
+    const antes = window.location;
+    Object.defineProperty(window, 'location', { configurable: true, value: { ...antes, search: '?aprobacion=pagada' } });
+    try {
+      api.ver.mockResolvedValueOnce(datos({ formas: ['WOMPI', 'COMPROBANTE'] }));
+      await montar();
+      expect(document.querySelector('[data-testid="esperando-la-pasarela"]')?.textContent).toContain('confirmando tu pago');
+      api.ver.mockResolvedValue(
+        datos({ formas: ['WOMPI', 'COMPROBANTE'], comprobante: { estado: 'ACEPTADO', subidoAt: null, motivo: null, enLinea: true }, aprobacion: 'EN_REVISION' }),
+      );
+      await act(async () => {
+        vi.advanceTimersByTime(3100);
+      });
+      for (let i = 0; i < 3; i++) await act(async () => {});
+      expect(document.querySelector('[data-testid="aprobacion-en-revision"]')?.textContent).toContain('Pagaste en línea');
+      expect(document.querySelector('[data-testid="esperando-la-pasarela"]')).toBeNull();
+    } finally {
+      Object.defineProperty(window, 'location', { configurable: true, value: antes });
+      vi.useRealTimers();
+    }
   });
 
   it('sin nada que pedir ni resultado, no se pinta', async () => {

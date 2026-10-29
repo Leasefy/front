@@ -6,11 +6,15 @@
  * cuenta» y escoge con qué aseguradoras trabaja). Prendida, el candidato ve en su postulación cuánto pagar y a qué
  * cuenta y sube el comprobante; la inmobiliaria lo acepta y marca qué aseguradora lo aprobó en la ficha del candidato.
  * Las aseguradoras salen de Pagos → Recaudo → Aseguradoras (las mismas de los siniestros).
+ *
+ * Cómo le pagan (Nico 28-10: «las dos formas»; 29-10: «se la giramos con su liquidación»): con comprobante a su cuenta,
+ * en línea (Wompi, en la cuenta de Leasefy, que se lo gira con su liquidación) o las dos. «En línea» sólo aparece cuando
+ * el back lo ofrece (`formasDisponibles`).
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ShieldCheck } from '@phosphor-icons/react';
+import { CreditCard, ShieldCheck } from '@phosphor-icons/react';
 import { Presence } from '@leasefy/cadence';
 
 import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui';
@@ -24,6 +28,7 @@ import { usePermissions } from '@/lib/hooks/usePermissions';
 import {
   asegurabilidadManualApi,
   type ConfiguracionDeLaAsegurabilidadManual,
+  type FormaDePagoDelEstudio,
 } from '@/lib/api/asegurabilidad-manual.service';
 
 export function ConfigDeLaAsegurabilidadManual() {
@@ -34,6 +39,7 @@ export function ConfigDeLaAsegurabilidadManual() {
   const [precio, setPrecio] = useState('');
   const [cuentaId, setCuentaId] = useState('');
   const [aseguradoraIds, setAseguradoraIds] = useState<string[]>([]);
+  const [formas, setFormas] = useState<FormaDePagoDelEstudio[]>(['COMPROBANTE']);
   const [guardando, setGuardando] = useState(false);
 
   const poner = (d: ConfiguracionDeLaAsegurabilidadManual) => {
@@ -42,6 +48,7 @@ export function ConfigDeLaAsegurabilidadManual() {
     setPrecio(d.precioCop ? String(d.precioCop) : '');
     setCuentaId(d.cuentaId ?? '');
     setAseguradoraIds(d.aseguradoraIds);
+    setFormas(d.formas.length > 0 ? d.formas : ['COMPROBANTE']);
   };
   const cargar = useCallback(async () => {
     try {
@@ -58,19 +65,29 @@ export function ConfigDeLaAsegurabilidadManual() {
   if (!datos) return null;
 
   const mismaLista = (a: string[], b: string[]) => a.length === b.length && a.every((x) => b.includes(x));
+  const enLineaDisponible = datos.formasDisponibles.includes('WOMPI');
+  const conComprobante = formas.includes('COMPROBANTE');
+  const formasGuardadas: FormaDePagoDelEstudio[] = datos.formas.length > 0 ? datos.formas : ['COMPROBANTE'];
   const cambio =
     activa !== datos.activa ||
     (activa &&
-      (Number(precio) !== (datos.precioCop ?? 0) || cuentaId !== (datos.cuentaId ?? '') || !mismaLista(aseguradoraIds, datos.aseguradoraIds)));
+      (Number(precio) !== (datos.precioCop ?? 0) ||
+        cuentaId !== (datos.cuentaId ?? '') ||
+        !mismaLista(aseguradoraIds, datos.aseguradoraIds) ||
+        !mismaLista(formas, formasGuardadas)));
   const falta = !activa
     ? null
     : !(Number(precio) > 0)
       ? 'Escribe cuánto cobras por el estudio.'
-      : !cuentaId
-        ? 'Escoge la cuenta a donde te pagan.'
-        : aseguradoraIds.length === 0
-          ? 'Escoge al menos una aseguradora.'
-          : null;
+      : formas.length === 0
+        ? 'Escoge cómo te pagan.'
+        : conComprobante && !cuentaId
+          ? 'Escoge la cuenta a donde te pagan.'
+          : aseguradoraIds.length === 0
+            ? 'Escoge al menos una aseguradora.'
+            : null;
+  const cambiarForma = (forma: FormaDePagoDelEstudio, si: boolean) =>
+    setFormas((lista) => (si ? [...lista.filter((f) => f !== forma), forma] : lista.filter((f) => f !== forma)));
 
   const guardar = async () => {
     setGuardando(true);
@@ -78,7 +95,13 @@ export function ConfigDeLaAsegurabilidadManual() {
       poner(
         await asegurabilidadManualApi.guardarConfiguracion(
           activa
-            ? { activa: true, precioCop: Math.trunc(Number(precio)), cuentaId, formas: ['COMPROBANTE'], aseguradoraIds } // redondeo: el campo ya es en pesos
+            ? {
+                activa: true,
+                precioCop: Math.trunc(Number(precio)), // redondeo: el campo ya es en pesos
+                cuentaId: conComprobante ? cuentaId : null,
+                formas,
+                aseguradoraIds,
+              }
             : { activa: false },
         ),
       );
@@ -98,8 +121,9 @@ export function ConfigDeLaAsegurabilidadManual() {
           Asegurabilidad con tus aseguradoras
         </h3>
         <p className="text-sm text-fg-muted">
-          Cobras el estudio al candidato: paga a tu cuenta y sube el comprobante en su postulación. En la ficha del
-          candidato aceptas el pago (sale el recibo) y marcas qué aseguradora lo aprobó.
+          {enLineaDisponible
+            ? 'Cobras el estudio al candidato: paga a tu cuenta y sube el comprobante, o paga en línea en su postulación. En la ficha del candidato aceptas el comprobante (el pago en línea se acepta solo y sale el recibo) y marcas qué aseguradora lo aprobó.'
+            : 'Cobras el estudio al candidato: paga a tu cuenta y sube el comprobante en su postulación. En la ficha del candidato aceptas el pago (sale el recibo) y marcas qué aseguradora lo aprobó.'}
         </p>
       </div>
       {!datos.disponible ? (
@@ -133,24 +157,54 @@ export function ConfigDeLaAsegurabilidadManual() {
                   data-testid="precio-del-estudio"
                 />
               </FilaDeAjuste>
-              <FilaDeAjuste
-                icono={ShieldCheck}
-                titulo="A qué cuenta te pagan"
-                descripcion={datos.cuentas.length === 0 ? 'Primero agrega una cuenta arriba, en tus medios de pago.' : 'El candidato ve el número completo para poder transferir.'}
-              >
-                <Select value={cuentaId} onValueChange={setCuentaId} disabled={!puedeEditar || datos.cuentas.length === 0}>
-                  <SelectTrigger className="w-64" aria-label="A qué cuenta te pagan" data-testid="cuenta-del-estudio">
-                    <SelectValue placeholder="Escoge la cuenta" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {datos.cuentas.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {[c.nombre, c.banco, c.numeroEnmascarado].filter(Boolean).join(' · ')}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </FilaDeAjuste>
+              {enLineaDisponible ? (
+                <FilaDeAjuste
+                  icono={CreditCard}
+                  titulo="Cómo te pagan"
+                  descripcion="En línea con tarjeta, PSE o Nequi: entra a la cuenta de Leasefy y te lo giramos con tu liquidación."
+                >
+                  <div className="flex flex-col gap-2" role="group" aria-label="Cómo te pagan">
+                    <label className="flex items-center gap-2 text-body-sm text-fg">
+                      <Checkbox
+                        checked={conComprobante}
+                        disabled={!puedeEditar}
+                        onCheckedChange={(v) => cambiarForma('COMPROBANTE', v === true)}
+                        data-testid="forma-COMPROBANTE"
+                      />
+                      Con comprobante, a tu cuenta
+                    </label>
+                    <label className="flex items-center gap-2 text-body-sm text-fg">
+                      <Checkbox
+                        checked={formas.includes('WOMPI')}
+                        disabled={!puedeEditar}
+                        onCheckedChange={(v) => cambiarForma('WOMPI', v === true)}
+                        data-testid="forma-WOMPI"
+                      />
+                      En línea
+                    </label>
+                  </div>
+                </FilaDeAjuste>
+              ) : null}
+              {conComprobante ? (
+                <FilaDeAjuste
+                  icono={ShieldCheck}
+                  titulo="A qué cuenta te pagan"
+                  descripcion={datos.cuentas.length === 0 ? 'Primero agrega una cuenta arriba, en tus medios de pago.' : 'El candidato ve el número completo para poder transferir.'}
+                >
+                  <Select value={cuentaId} onValueChange={setCuentaId} disabled={!puedeEditar || datos.cuentas.length === 0}>
+                    <SelectTrigger className="w-64" aria-label="A qué cuenta te pagan" data-testid="cuenta-del-estudio">
+                      <SelectValue placeholder="Escoge la cuenta" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {datos.cuentas.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {[c.nombre, c.banco, c.numeroEnmascarado].filter(Boolean).join(' · ')}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FilaDeAjuste>
+              ) : null}
             </>
           ) : null}
         </TarjetaDeAjustes>

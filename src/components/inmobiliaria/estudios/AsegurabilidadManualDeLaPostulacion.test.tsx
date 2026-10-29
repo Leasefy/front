@@ -107,6 +107,17 @@ describe('AsegurabilidadManualDeLaPostulacion', () => {
     expect($(`#maximo-${SURA}`)).toBeTruthy();
   });
 
+  it('pagado en línea (Nico 29-10-2026): lo dice y que Leasefy se lo gira con la liquidación', async () => {
+    api.deLaPostulacion.mockResolvedValue(
+      vista({ comprobante: { ...vista().comprobante!, estado: 'ACEPTADO', url: null, subidoAt: null, revisadoAt: '2026-10-29T15:00:00.000Z', enLinea: true } }),
+    );
+    await montar();
+    const caja = $('[data-testid="comprobante-del-estudio"]')?.textContent ?? '';
+    expect(caja).toContain('Pagado en línea');
+    expect(caja).toContain('Leasefy te lo gira con tu liquidación.');
+    expect($('[data-testid="aceptar-comprobante"]')).toBeNull();
+  });
+
   it('sin la asegurabilidad manual prendida y sin nada guardado, no se pinta', async () => {
     api.deLaPostulacion.mockResolvedValue(vista({ activa: false, comprobante: null, aseguradoras: [{ id: SURA, nombre: 'Sura', resultado: null }] }));
     await montar();

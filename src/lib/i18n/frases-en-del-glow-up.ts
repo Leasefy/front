@@ -778,6 +778,18 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   'Subir otro comprobante': 'Upload another receipt',
   'Subir el comprobante': 'Upload the receipt',
   'PDF o foto, hasta 10 MB.': 'PDF or photo, up to 10 MB.',
+  // El pago en línea de la aprobación (29-10-2026)
+  'No pudimos abrir el pago en línea.': "We couldn't open the online payment.",
+  'pagar en línea': 'pay online',
+  'Pagaste en línea. {quien} está revisando tu aprobación con sus aseguradoras.': 'You paid online. {quien} is reviewing your approval with their insurers.',
+  'Págala en línea, o a su cuenta y sube aquí el comprobante.': 'Pay it online, or to their account and upload the receipt here.',
+  'Págala en línea con tarjeta, PSE o Nequi.': 'Pay it online with a card, PSE or Nequi.',
+  'Todavía no nos llega la confirmación de la pasarela. Si ya pagaste, en unos minutos se ve aquí.': "We haven't received the confirmation from the payment gateway yet. If you already paid, it will show here in a few minutes.",
+  'Estamos confirmando tu pago con la pasarela. Tarda unos segundos.': "We're confirming your payment with the payment gateway. It takes a few seconds.",
+  'Pagar en línea': 'Pay online',
+  'Tarjeta, PSE o Nequi. Se confirma solo.': 'Card, PSE or Nequi. It confirms itself.',
+  'Pagado en línea': 'Paid online',
+  'Leasefy te lo gira con tu liquidación.': 'Leasefy transfers it to you with your settlement.',
   // Ordenar las tablas (28-10-2026)
   'Más recientes': 'Newest',
   'Más antiguas': 'Oldest',

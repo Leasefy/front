@@ -92,7 +92,13 @@ export function AsegurabilidadManualDeLaPostulacion({ applicationId }: { applica
       {c ? (
         <div className="space-y-2" data-testid="comprobante-del-estudio">
           <div className="flex flex-wrap items-center gap-2">
-            <StatusBadge tone={TONO[c.estado]}>{tr(ESTADO[c.estado])}</StatusBadge>
+            <StatusBadge tone={TONO[c.estado]}>{c.enLinea ? tr('Pagado en línea') : tr(ESTADO[c.estado])}</StatusBadge>
+            {c.enLinea ? (
+              <span className="text-caption text-fg-muted">
+                {c.revisadoAt ? `${dia(c.revisadoAt)} · ` : ''}
+                {tr('Leasefy te lo gira con tu liquidación.')}
+              </span>
+            ) : null}
             {c.subidoAt ? <span className="text-caption text-fg-muted">{tr('Subido el')} {dia(c.subidoAt)}</span> : null}
             {c.url ? (
               <a

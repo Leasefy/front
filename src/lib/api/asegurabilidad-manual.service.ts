@@ -46,6 +46,8 @@ export interface AsegurabilidadDeLaPostulacion {
     url: string | null;
     motivo: string | null;
     revisadoAt: string | null;
+    /** Nico 29-10-2026: lo pagó en línea (Leasefy se lo gira a la inmobiliaria con su liquidación). Un back viejo no lo manda. */
+    enLinea?: boolean;
   } | null;
   aseguradoras: Array<{
     id: string;
@@ -78,7 +80,7 @@ export interface AprobacionDeLaInmobiliaria {
     qrUrl?: string | null;
   } | null;
   pagadaHasta: string | null;
-  comprobante: { estado: EstadoDelComprobante; subidoAt: string | null; motivo: string | null } | null;
+  comprobante: { estado: EstadoDelComprobante; subidoAt: string | null; motivo: string | null; enLinea?: boolean } | null;
   aprobacion: 'APROBADA' | 'NO_APROBADA' | 'EN_REVISION' | null;
   aprobadaPor: string[];
   topeAprobadoCop: number | null;
@@ -121,6 +123,12 @@ export const asegurabilidadManualApi = {
 export const aprobacionDeLaInmobiliariaApi = {
   ver: (applicationId: string) =>
     apiClient.get<AprobacionDeLaInmobiliaria>(`/applications/${encodeURIComponent(applicationId)}/aprobacion-de-la-inmobiliaria`),
+  /** Nico 29-10-2026 («se la giramos con su liquidación»): el enlace de Wompi para pagarla en línea. */
+  pagarEnLinea: (applicationId: string) =>
+    apiClient.post<{ url: string }>(
+      `/applications/${encodeURIComponent(applicationId)}/aprobacion-de-la-inmobiliaria/pago-en-linea`,
+      {},
+    ),
   async subirComprobante(applicationId: string, archivo: File): Promise<AprobacionDeLaInmobiliaria> {
     const formulario = new FormData();
     formulario.append('file', archivo);

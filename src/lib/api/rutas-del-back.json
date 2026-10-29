@@ -2,7 +2,7 @@
   "_comentario": "Generado por scripts/rutas-del-back.mjs. No editar a mano: regenerar.",
   "sacadaDe": "back-erp/src/**/*.controller.ts",
   "cuando": "2026-10-29",
-  "cuantas": 1671,
+  "cuantas": 1672,
   "rutas": [
     "DELETE /admin/coupons/:id",
     "DELETE /admin/notification-templates/:id",
@@ -980,6 +980,7 @@
     "POST /api/v1/admin/tenants/:tenantId/suspender",
     "POST /applications",
     "POST /applications/:applicationId/aprobacion-de-la-inmobiliaria/comprobante",
+    "POST /applications/:applicationId/aprobacion-de-la-inmobiliaria/pago-en-linea",
     "POST /applications/:applicationId/chat/messages",
     "POST /applications/:applicationId/documents",
     "POST /applications/:applicationId/documents/reuse",

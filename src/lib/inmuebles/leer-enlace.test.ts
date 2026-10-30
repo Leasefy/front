@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  esUnaBusqueda,
   leerInmuebleDeHtml,
   loQueFalta,
   dineroColombiano,
@@ -817,5 +818,53 @@ describe('el barrio sale de las migas de pan o del título, nunca de la nada', (
     expect(r.direccion?.valor).toBe('Verde Alto apartments, Carrera 27');
     expect(r.ciudad?.valor).toBe('Zipaquirá');
     expect(r.departamento?.valor).toBe('Cundinamarca');
+  });
+});
+
+/*
+ * Revisión 29-10-2026: una búsqueda de Fincaraíz (`CollectionPage` > `ItemList` de avisos) llenaba el asistente con
+ * el título de la búsqueda y el precio del primer aviso de la lista.
+ */
+describe('esUnaBusqueda', () => {
+  const ld = (o: unknown) => `<script type="application/ld+json">${JSON.stringify(o)}</script>`;
+  const aviso = (n: number) => ({
+    '@type': ['RealEstateListing', 'Product'],
+    position: n,
+    name: `Apartamento ${n}`,
+    url: `https://portal.example/aviso/${n}`,
+    offers: { '@type': 'Offer', price: 1_000_000 * n },
+  });
+
+  it('una búsqueda (CollectionPage con una lista de avisos) es una búsqueda', () => {
+    const html = ld({
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      name: 'Apartamentos en Arriendo en Medellín',
+      mainEntity: { '@type': 'ItemList', numberOfItems: 3, itemListElement: [aviso(1), aviso(2), aviso(3)] },
+    });
+    expect(esUnaBusqueda(html)).toBe(true);
+  });
+
+  it('la ficha de un aviso no lo es, aunque liste «similares» al final', () => {
+    const html =
+      ld({ '@type': ['RealEstateListing', 'Product'], name: 'Apartamento en Laureles', offers: { '@type': 'Offer', price: 4_200_000 } }) +
+      ld({ '@type': 'ItemList', itemListElement: [aviso(1), aviso(2)] });
+    expect(esUnaBusqueda(html)).toBe(false);
+  });
+
+  it('una página sin datos estructurados no es una búsqueda (se lee como siempre)', () => {
+    expect(esUnaBusqueda('<html><head><meta property="og:title" content="Casa"></head></html>')).toBe(false);
+  });
+
+  it('las migas de pan no cuentan como lista', () => {
+    const html = ld({
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Inicio' },
+        { '@type': 'ListItem', position: 2, name: 'Arriendo' },
+        { '@type': 'ListItem', position: 3, name: 'Medellín' },
+      ],
+    });
+    expect(esUnaBusqueda(html)).toBe(false);
   });
 });

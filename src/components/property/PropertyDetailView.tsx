@@ -4,6 +4,7 @@ import { CuantoCuestaVivirAqui } from '@/components/property/CuantoCuestaVivirAq
 import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
 import { fichaDelInmueble } from '@/lib/inmuebles/ficha-para-compartir';
 import { useState, useCallback, useEffect, useMemo } from 'react';
+import { calentarLaVistaPrevia } from '@/lib/inmuebles/calentar-la-vista-previa';
 import Link from 'next/link';
 import Image from 'next/image';
 import { MapPin, Bed, Bathtub, ArrowsOut, CaretRight, ArrowSquareOut, ArrowLeft, Play } from '@phosphor-icons/react';
@@ -42,6 +43,9 @@ import {
 } from '@/components/property/ficha/PiezasDeLaFicha';
 import { formatCurrency, formatArea } from '@/lib/format';
 import { cn } from '@/lib/utils';
+
+/** Nico 29-10-2026: el «¿Te podemos arrendar este inmueble?» (estimado + estudio con Fianly) apagado hasta que funcione. */
+const OFRECER_EL_ESTUDIO_DE_FIANLY = false;
 
 /**
  * Ronda 30 (diseño nuevo): el ancho de la página de muestra —hasta 1320 px de
@@ -166,6 +170,10 @@ export function PropertyDetailView({
 
   // Fetch property from API
   const { property, isLoading: propertyLoading, error: propertyError } = useProperty(propertyId);
+  // La imagen para compartir queda armada desde la primera visita (Nico, 27-10-2026: la ficha salía sin foto en WhatsApp).
+  useEffect(() => {
+    if (property?.id) calentarLaVistaPrevia(property);
+  }, [property?.id, property?.updatedAt]); // eslint-disable-line react-hooks/exhaustive-deps
   // La inmobiliaria que lo ofrece: su sello, «% la recomienda» y su página.
   const inmobiliarias = useTarjetasDeInmobiliarias(useMemo(() => [property?.agencyId], [property?.agencyId]));
   const inmobiliaria = property?.agencyId ? inmobiliarias.get(property.agencyId) : undefined;
@@ -298,16 +306,13 @@ export function PropertyDetailView({
                  un espacio acotado y con marca, no una imagen rota en un hero
                  de 65vh en blanco (Nico, 2026-09-02). */
               <div
-                className="relative flex h-[240px] md:h-[320px] flex-col items-center justify-start overflow-hidden rounded-lg pt-8 text-center md:pt-10"
+                className="relative flex h-[240px] md:h-[320px] flex-col items-center justify-center overflow-hidden rounded-lg text-center"
                 data-testid="hero-sin-fotos"
                 role="img"
-                aria-label={`Sin fotos de ${property.title}`}
+                aria-label={`Todavía no hay fotos de ${property.title}`}
               >
+                {/* Nico (27-10-2026): sólo el 3D; los textos se montaban encima de la ilustración. */}
                 <PortadaSinFotos tipo={property.type} semilla={property.id} sinLeyenda />
-                <p className="relative text-[15px] font-medium text-foreground">Todavía no hay fotos de este inmueble</p>
-                <p className="relative mt-1 text-[13px] text-muted-foreground">
-                  Pídelas por el chat o agenda una visita para conocerlo.
-                </p>
               </div>
             ) : (
               <MosaicoDeFotos
@@ -375,7 +380,8 @@ export function PropertyDetailView({
                   vigente: ése ya sabe su tope (lo cubre el aviso de arriba). Tampoco
                   en un inmueble arrendado: el listado ya no lo muestra, y a quien
                   llega por un enlace viejo no se le ofrece arrendar algo ocupado. */}
-              {property.listingType !== 'sale' && property.status !== 'rented' && (property.monthlyRent ?? 0) > 0 && !aprobacionVigente && (
+              {/* Nico 29-10-2026: «ese form de Fianly también» se quita por ahora (no funciona hoy): `OFRECER_EL_ESTUDIO_DE_FIANLY`. */}
+              {OFRECER_EL_ESTUDIO_DE_FIANLY && property.listingType !== 'sale' && property.status !== 'rented' && (property.monthlyRent ?? 0) > 0 && !aprobacionVigente && (
                 <TePodemosArrendar
                   propertyId={property.id}
                   titulo={property.title}

@@ -67,8 +67,8 @@ describe('/para/inmobiliarias · identidad nueva', () => {
     const todos = enlaces(contenedor);
     expect(todos).toContain('Empezar prueba gratis → /auth');
     expect(todos).toContain('Ver planes → /pricing');
-    expect(todos).toContain('Empezar gratis → /auth?mode=register&role=agency');
-    expect(todos).toContain('Ver precios → /pricing');
+    expect(todos).toContain('Empezar gratis → /publica?perfil=agency');
+    expect(todos).toContain('Ver precios → /#planes');
   });
 
   // Ronda 30 (a propósito): sólo cifras que se pueden sostener y sin testimonios (eran inventados).

@@ -4940,6 +4940,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/ai-hub/bolsa-de-preguntas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Chat del panel — las preguntas del mes: usadas, incluidas, recargas y si el chat frena */
+        get: operations["getAiHubBolsaDePreguntas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/ai-hub/chat/conversacion/borrar": {
         parameters: {
             query?: never;
@@ -5485,6 +5502,26 @@ export interface paths {
          */
         put: operations["putPilotoActivo"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/piloto/contratar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Piloto automático — contratarlo: $900 por inmueble al mes, sin vencimiento. Sólo un administrador.
+         * @description Exige el segundo factor verificado hace poco (403 `SEGUNDO_FACTOR_RECIENTE`). Con el cobro por inmueble del back apagado responde 409 `SE_CONTRATA_CON_LEASEFY`; apagado por Leasefy, 409 `APAGADO_POR_LEASEFY`.
+         */
+        post: operations["postPilotoContratar"];
         delete?: never;
         options?: never;
         head?: never;
@@ -9473,7 +9510,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Poll the status of an async ARCO job (D-26-10). Returns current status (pending | running | completed | failed) + result_uri for Acceso exports (presigned S3 URL, 24h TTL). Two-key counsel gate applies here too. */
+        /** Poll the status of an async ARCO job (D-26-10). Returns current status (pending | running | completed | failed) + result_uri for Acceso exports (presigned URL signed per request, at most 1 h, while the 24h export window is open). Two-key counsel gate applies here too. */
         get: operations["cotizadorArcoJobStatus"];
         put?: never;
         post?: never;
@@ -12730,7 +12767,7 @@ export interface components {
         AiHubChatPendingApproval: {
             id: string;
             /** @enum {string} */
-            agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | "director" | "retencion";
+            agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | "director" | "retencion" | "servicios";
             actionType: string;
             title: string;
             description: string;
@@ -12750,7 +12787,7 @@ export interface components {
         AiHubChatDispatch: {
             id?: string;
             /** @enum {string} */
-            agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | "director" | "retencion";
+            agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | "director" | "retencion" | "servicios";
             taskDescription: string;
             /** @enum {string} */
             status: "completed" | "failed";
@@ -12800,7 +12837,7 @@ export interface components {
             snapshot: components["schemas"]["AiHubChatSnapshot"];
             razonamiento?: {
                 /** @enum {string} */
-                agente?: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | "director" | "retencion";
+                agente?: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | "director" | "retencion" | "servicios";
                 texto: string;
             }[];
             generatedAt: string;
@@ -12838,7 +12875,7 @@ export interface components {
             kind: "routing" | "approval" | "feedback";
             pattern: {
                 /** @enum {string|null} */
-                agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | "director" | "retencion" | null;
+                agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | "director" | "retencion" | "servicios" | null;
                 tags: string[];
             };
             recommendation: string;
@@ -12935,6 +12972,19 @@ export interface components {
                 id: string;
             };
             propuestaId?: string;
+        };
+        AiHubBolsaDePreguntas: {
+            prendida: boolean;
+            usadas: number;
+            incluidas: number;
+            recargas: number;
+            disponibles: number;
+            porcentaje: number;
+            agotada: boolean;
+            aviso: 80 | 100 | null;
+        };
+        AiHubBolsaDePreguntasError: {
+            error: string;
         };
         AiHubChatBorrarConversacionResponse: {
             turnos: number;
@@ -13755,6 +13805,7 @@ export interface components {
             } | null;
             sinVencimiento: boolean;
             sePuedeActivar: boolean;
+            sePuedeContratar: boolean;
             guardable: boolean | null;
             frase: string;
             puedeCambiarlo: boolean;
@@ -17386,7 +17437,7 @@ export interface components {
             tenant_id: string;
             reason?: string;
         };
-        /** @description Job status for GET /api/cotizador/arco/jobs/{job_id}. result_uri is a presigned S3 URL (24h TTL) for Acceso exports; null for other actions. error_message is non-null only on failed status. */
+        /** @description Job status for GET /api/cotizador/arco/jobs/{job_id}. result_uri is a short-lived presigned URL (at most 1 h, signed per request while the 24h export window is open) for Acceso exports; null for other actions. error_message is non-null only on failed status. */
         ArcoJobStatus: {
             /** @enum {string} */
             status: "pending" | "running" | "completed" | "failed";
@@ -26084,6 +26135,46 @@ export interface operations {
             };
         };
     };
+    getAiHubBolsaDePreguntas: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La bolsa del mes */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubBolsaDePreguntas"];
+                };
+            };
+            /** @description Falta el bearer JWT o es inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubBolsaDePreguntasError"];
+                };
+            };
+            /** @description agencyId distinto al del token / no es miembro */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubBolsaDePreguntasError"];
+                };
+            };
+        };
+    };
     postAiHubChatBorrarConversacion: {
         parameters: {
             query?: never;
@@ -28537,6 +28628,113 @@ export interface operations {
                 };
             };
             /** @description Falta la migración de la tabla (FALTA_UNA_MIGRACION) o sin base */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+        };
+    };
+    postPilotoContratar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Contratado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoActivoResponse"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+            /** @description Sólo un administrador / falta el segundo factor de ahora */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+            /** @description Se contrata con Leasefy (cobro por inmueble apagado) o Leasefy lo tiene apagado */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+            /** @description No se pudo guardar */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+            /** @description Falta la migración de la tabla o sin base */
             503: {
                 headers: {
                     [name: string]: unknown;

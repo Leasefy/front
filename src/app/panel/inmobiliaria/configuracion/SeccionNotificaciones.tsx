@@ -21,6 +21,7 @@ import {
   FileText,
   LockSimple,
   Tag,
+  Gift,
 } from '@phosphor-icons/react';
 
 import { Switch } from '@/components/ui';
@@ -38,7 +39,8 @@ type ClaveDelBack =
   | 'emailContracts'
   | 'emailVisits'
   | 'emailMessages'
-  | 'emailMarketing';
+  | 'emailMarketing'
+  | 'emailPlanDeLeasefy';
 
 export function SeccionNotificaciones() {
   const { locale } = useI18n();
@@ -114,6 +116,12 @@ export function SeccionNotificaciones() {
       icono: ChatCircle,
       titulo: es ? 'Mensajes' : 'Messages',
       desc: es ? 'Cuando un inquilino, propietario o candidato te escribe' : 'When someone writes to you',
+    },
+    {
+      clave: 'emailPlanDeLeasefy',
+      icono: Gift,
+      titulo: es ? 'Tu plan de Leasefy' : 'Your Leasefy plan',
+      desc: es ? 'Cuando tu mes gratis se está acabando y las invitaciones a tener Leasefy completo' : 'When your free month is ending and invitations to the full plan',
     },
     {
       clave: 'emailMarketing',

@@ -96,10 +96,10 @@ export function TerminosDelMandatoSection({ consignacion, onEditar }: TerminosDe
   const VALOR = 'mt-1.5 whitespace-nowrap text-[15px] font-medium tabular-nums text-fg';
 
   return (
-    <SectionCard title={tr('Términos del mandato')} icon={<FileText className="w-4 h-4" />}>
+    <SectionCard title={tr('Términos del contrato')} icon={<FileText className="w-4 h-4" />}>
       <dl className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4" data-testid="terminos-del-mandato">
         <div className="min-w-0">
-          <dt className={ROTULO}>{tr('Mandato desde')}</dt>
+          <dt className={ROTULO}>{tr('Contrato desde')}</dt>
           <dd className={VALOR}>{fechaCorta(consignacion.contractDate)}</dd>
         </div>
         <div className="min-w-0">

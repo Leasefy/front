@@ -26,6 +26,24 @@ vi.mock('@/lib/i18n', () => ({
   }),
 }));
 
+const recordatorio = vi.fn();
+vi.mock('@/lib/api/migracion-estado.service', () => ({
+  migracionEstadoApi: { recordatorio: (d: boolean) => recordatorio(d) },
+}));
+
+const push = vi.fn();
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
+
+const toastSuccess = vi.fn();
+const toastWarning = vi.fn();
+vi.mock('@/components/ui/toast', () => ({
+  toast: {
+    success: (...a: unknown[]) => toastSuccess(...a),
+    warning: (...a: unknown[]) => toastWarning(...a),
+  },
+}));
+
+import { AuthContext } from '@/lib/auth/auth-context';
 import { MigracionContext, type ContextoDeMigracion } from './migracion-context';
 import { RecordatorioDeMigracion } from './RecordatorioDeMigracion';
 import { guardarDecisionDeMigracion, marcarQueEligioMigrar } from '@/lib/migracion/decision-de-migracion';
@@ -63,20 +81,23 @@ let root: Root | null = null;
 
 function pintar(
   estado: EstadoDeMigracion | null,
-  { conContexto = true }: { conContexto?: boolean } = {},
+  { conContexto = true, modoComercial = false }: { conContexto?: boolean; modoComercial?: boolean } = {},
 ) {
   container = document.createElement('div');
   document.body.appendChild(container);
   const abrir = vi.fn();
   const recargar = vi.fn(async () => {});
   const contexto: ContextoDeMigracion = { estado, abrir, recargar };
+  const sesion = { agency: { id: null, modoComercial } } as unknown as React.ContextType<typeof AuthContext>;
   act(() => {
     root = createRoot(container);
     root.render(
       conContexto ? (
-        <MigracionContext.Provider value={contexto}>
-          <RecordatorioDeMigracion />
-        </MigracionContext.Provider>
+        <AuthContext.Provider value={sesion}>
+          <MigracionContext.Provider value={contexto}>
+            <RecordatorioDeMigracion />
+          </MigracionContext.Provider>
+        </AuthContext.Provider>
       ) : (
         <RecordatorioDeMigracion />
       ),
@@ -89,6 +110,10 @@ const q = (testid: string) => container.querySelector(`[data-testid="${testid}"]
 
 beforeEach(() => {
   localStorage.clear();
+  recordatorio.mockReset();
+  push.mockReset();
+  toastSuccess.mockReset();
+  toastWarning.mockReset();
 });
 
 afterEach(() => {
@@ -119,6 +144,7 @@ describe('qué dice', () => {
   });
 
   it('a medias: «Termina tu migración», en qué paso va, qué sigue, la barra y «Continuar migración»', () => {
+    marcarQueEligioMigrar(null);
     pintar({ bloquea: false, resuelta: 'omitida', pasos: A_MEDIAS });
 
     expect(q('sidebar-migracion')?.textContent).toContain('migracion.recordatorio.tituloEnCurso');
@@ -136,6 +162,7 @@ describe('qué dice', () => {
   });
 
   it('QA-MIGRACION-95 (MU-07): si el que falta es uno de los primeros, dice ESE paso, no «hechos + 1»', () => {
+    marcarQueEligioMigrar(null);
     // Visto: 5 de 6 listos y Propietarios pendiente → decía «Paso 6 de 6 · Sigue
     // con Propietarios». Propietarios es el paso 1.
     pintar({
@@ -159,6 +186,7 @@ describe('qué dice', () => {
   });
 
   it('un paso `no_disponible` no cuenta ni como hecho ni en el total', () => {
+    marcarQueEligioMigrar(null);
     const pasos = [...A_MEDIAS];
     pasos[5] = paso('contables', 'no_disponible');
     pintar({ bloquea: false, resuelta: 'omitida', pasos });
@@ -187,8 +215,32 @@ describe('cuándo sale', () => {
   });
 
   it('con un paso listo sale aunque este navegador no tenga la marca (otro navegador, un importador suelto)', () => {
-    pintar({ bloquea: false, resuelta: 'omitida', pasos: A_MEDIAS });
+    pintar({ bloquea: false, resuelta: null, pasos: A_MEDIAS });
     expect(q('sidebar-migracion')).not.toBeNull();
+  });
+
+  it('🔴 con un paso listo pero la migración omitida NO sale (Nico, 27-10: la cuenta del marketplace que publicó con su propietario)', () => {
+    // Publicar con propietario deja «Propietarios» en verde: eso es usar
+    // Leasefy, no migrar. Decía «Paso 2 de 6 · Sigue con Inquilinos».
+    pintar({
+      bloquea: false,
+      resuelta: 'omitida',
+      pasos: [
+        paso('propietarios', 'listo', 1),
+        paso('inquilinos', 'pendiente'),
+        paso('propiedades', 'listo', 1),
+        paso('contratos', 'pendiente'),
+        paso('puc', 'pendiente'),
+        paso('contables', 'pendiente'),
+      ],
+    });
+    expect(q('sidebar-migracion')).toBeNull();
+  });
+
+  it('🔴 en el modo comercial (cuenta del marketplace sin activar) no sale nunca', () => {
+    marcarQueEligioMigrar(null);
+    pintar({ bloquea: false, resuelta: null, pasos: A_MEDIAS }, { modoComercial: true });
+    expect(q('sidebar-migracion')).toBeNull();
   });
 
   it('aparece en cuanto le da «Migrar», sin recargar', () => {
@@ -216,16 +268,41 @@ describe('cuándo sale', () => {
   });
 });
 
-describe('🔴 es fija mientras la migración esté en curso', () => {
-  it('no tiene ✕', () => {
+describe('🔴 se puede cerrar (Nico, 27-10: «dar la oportunidad de un cerrar, la migración también está en Configuración»)', () => {
+  it('tiene «Cerrar»: se va al instante, lo guarda en la cuenta y dice dónde quedó la migración', async () => {
+    marcarQueEligioMigrar(null);
+    recordatorio.mockResolvedValue({});
     pintar({ bloquea: false, resuelta: 'omitida', pasos: A_MEDIAS });
-    expect(q('sidebar-migracion-cerrar')).toBeNull();
-    expect(container.querySelector('button[aria-label]')).toBeNull();
+
+    const cerrar = q('sidebar-migracion-cerrar') as HTMLElement;
+    expect(cerrar?.textContent).toBe('migracion.recordatorio.cerrarBoton');
+    await act(async () => cerrar.click());
+
+    expect(q('sidebar-migracion')).toBeNull();
+    expect(recordatorio).toHaveBeenCalledWith(true);
+    expect(toastSuccess).toHaveBeenCalledTimes(1);
+    const [titulo, opciones] = toastSuccess.mock.calls[0] as [string, { description: string; action: { onClick: () => void } }];
+    expect(titulo).toBe('migracion.recordatorio.cerradaTitulo');
+    expect(opciones.description).toBe('migracion.recordatorio.cerradaDetalle');
+    opciones.action.onClick();
+    expect(push).toHaveBeenCalledWith('/panel/inmobiliaria/configuracion/migracion');
   });
 
-  it('no la apagan un «nunca» viejo ni el descarte guardado en la cuenta', () => {
-    guardarDecisionDeMigracion(null, 'nunca');
-    pintar({ bloquea: false, resuelta: 'omitida', pasos: A_MEDIAS, recordatorioDescartado: true });
+  it('si no se pudo guardar, vuelve a salir y lo dice', async () => {
+    marcarQueEligioMigrar(null);
+    recordatorio.mockRejectedValue(new Error('caído'));
+    pintar({ bloquea: false, resuelta: 'omitida', pasos: A_MEDIAS });
+
+    await act(async () => (q('sidebar-migracion-cerrar') as HTMLElement).click());
+
     expect(q('sidebar-migracion')).not.toBeNull();
+    expect(toastWarning).toHaveBeenCalledTimes(1);
+    expect(toastSuccess).not.toHaveBeenCalled();
+  });
+
+  it('quien ya la cerró (en la cuenta: su «Cerrar», la ✕ del chat o «no requiero») no la vuelve a ver', () => {
+    marcarQueEligioMigrar(null);
+    pintar({ bloquea: false, resuelta: 'omitida', pasos: A_MEDIAS, recordatorioDescartado: true });
+    expect(q('sidebar-migracion')).toBeNull();
   });
 });

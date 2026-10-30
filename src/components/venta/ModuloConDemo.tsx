@@ -27,6 +27,8 @@ export function ModuloConDemo({
   empresa,
   queVio,
   yaEsCliente,
+  pagar,
+  verConDatosDemo,
 }: {
   demo: DemoDelModulo;
   quien: QuienCompra;
@@ -38,6 +40,13 @@ export function ModuloConDemo({
   queVio?: string | null;
   /** «¿Ya eres cliente?»: a dónde va quien ya habló con Leasefy. */
   yaEsCliente?: { href: string; texto: string };
+  /**
+   * 27-10-2026 (Nico: «pagar desde el panel»): el llamado principal pasa a ser pagar y abrir todo; WhatsApp queda
+   * al lado. `detalle` es el precio con SUS inmuebles («$99.000 al mes más IVA»).
+   */
+  pagar?: { href: string; texto: string; detalle?: string | null };
+  /** Nico 29-10-2026: «Ver con datos demo» — la sección de verdad con datos de ejemplo (sólo donde ya los hay). */
+  verConDatosDemo?: () => void;
 }) {
   const [verDemo, setVerDemo] = useState(false);
   const whatsapp = enlaceDeWhatsApp({ quien, nombre, empresa, queVio });
@@ -72,10 +81,20 @@ export function ModuloConDemo({
             ))}
           </ul>
           <div className="mt-8 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap">
-            <Button asChild className="h-auto min-h-12 w-full whitespace-normal rounded-full px-6 py-3 text-center text-[15px] sm:w-auto" data-testid="quiero-leasefy">
+            {pagar && (
+              <Button asChild className="h-auto min-h-12 w-full whitespace-normal rounded-full px-6 py-3 text-center text-[15px] sm:w-auto" data-testid="pagar-y-abrir">
+                <Link href={pagar.href}>{pagar.texto}</Link>
+              </Button>
+            )}
+            <Button
+              asChild
+              variant={pagar ? 'secondary' : undefined}
+              className="h-auto min-h-12 w-full whitespace-normal rounded-full px-6 py-3 text-center text-[15px] sm:w-auto"
+              data-testid="quiero-leasefy"
+            >
               <a href={whatsapp} target="_blank" rel="noreferrer noopener">
                 <WhatsappLogo size={18} weight="fill" className="mr-2" aria-hidden="true" />
-                {llamado}
+                {pagar ? 'Hablar con Leasefy' : llamado}
               </a>
             </Button>
             {/* Ronda 30 (revisora r27): a 1440 la vista previa de al lado ya es «Ver cómo se vería…»; un solo llamado al demo por ancho. */}
@@ -83,9 +102,22 @@ export function ModuloConDemo({
               <PlayCircle size={18} className="mr-2" aria-hidden="true" />
               Ver demo
             </Button>
+            {verConDatosDemo && (
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-auto min-h-12 w-full whitespace-normal rounded-full px-6 py-3 text-[15px] sm:w-auto"
+                onClick={verConDatosDemo}
+                data-testid="ver-con-datos-demo"
+              >
+                Ver con datos demo
+              </Button>
+            )}
           </div>
           <p className="mt-4 text-[13px] text-fg-subtle">
-            Te respondemos por WhatsApp y te contamos cuánto cuesta para ti.
+            {pagar
+              ? `${pagar.detalle ? `${pagar.detalle}. ` : ''}Se paga con tarjeta, PSE o Nequi y se abre al instante.`
+              : 'Te respondemos por WhatsApp y te contamos cuánto cuesta para ti.'}
             {yaEsCliente && (
               <>
                 {' '}
@@ -149,10 +181,27 @@ function DemoEnGrande({
           <DialogTitle>Demo: {demo.titulo}</DialogTitle>
           <DialogDescription>
             {empresa ?? 'Tu cuenta'} · datos de ejemplo
-            <span className="font-mono tabular-nums"> · {Math.min(i, total - 1) + 1} / {total}</span>
+            {!demo.video && <span className="font-mono tabular-nums"> · {Math.min(i, total - 1) + 1} / {total}</span>}
           </DialogDescription>
         </DialogHeader>
         <div className="relative aspect-[16/10] w-full overflow-hidden rounded-lg bg-surface-muted">
+          {demo.video ? (
+            // Nico 28-10-2026: la demo es un video (sin voz). Con movimiento reducido no arranca solo: lo da play la persona.
+            <video
+              className="absolute inset-0 h-full w-full object-contain"
+              poster={demo.video.poster}
+              aria-label={demo.video.alt}
+              muted
+              loop
+              playsInline
+              controls
+              autoPlay={!movimientoReducido()}
+              data-testid="video-de-la-demo"
+            >
+              <source src={demo.video.webm} type="video/webm" />
+              <source src={demo.video.mp4} type="video/mp4" />
+            </video>
+          ) : (
           <AnimatePresence mode="wait" initial={false}>
             {pantalla && (
             <motion.div
@@ -167,7 +216,8 @@ function DemoEnGrande({
             </motion.div>
             )}
           </AnimatePresence>
-          {total > 1 && (
+          )}
+          {!demo.video && total > 1 && (
             <>
               <BotonDeLado lado="izquierda" onClick={() => setI((x) => (x - 1 + total) % total)} />
               <BotonDeLado lado="derecha" onClick={() => setI((x) => (x + 1) % total)} />
@@ -202,4 +252,8 @@ function BotonDeLado({ lado, onClick }: { lado: 'izquierda' | 'derecha'; onClick
       {lado === 'izquierda' ? <ArrowLeft size={18} aria-hidden="true" /> : <ArrowRight size={18} aria-hidden="true" />}
     </button>
   );
+}
+
+function movimientoReducido(): boolean {
+  return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
 }

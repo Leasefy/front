@@ -186,6 +186,7 @@ const NOMBRE_DE_CAMPO: Record<CampoDeContrato, string> = {
   estadoContrato: "Estado del contrato",
   fechaTerminacion: "Fecha en que se terminó",
   observaciones: "Observaciones",
+  serviciosPublicos: "Servicios públicos (EPM)",
   fechaCreacionOrigen: "Fecha de creación (sistema anterior)",
   creadoPor: "Creado por",
   // T-0153: las columnas de «contratos por detalles».

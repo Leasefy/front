@@ -10,6 +10,8 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
 import { DownloadSimple, PaperPlaneTilt } from '@phosphor-icons/react'
 import { IconButton } from '@leasefy/cadence'
 
@@ -69,6 +71,12 @@ export function EgresosAPropietarios() {
     [giros],
   )
   const total = useMemo(() => ordenados.reduce((s, g) => s + g.netToPropietario, 0), [ordenados])
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Sin elegir: por propietario.
+  const { ordenadas, orden, ordenarPor } = useOrdenDeLaTabla(
+    ordenados,
+    { propietario: (g) => g.propietarioName, mes: (g) => g.month, girado: (g) => g.processedAt ?? null, neto: (g) => g.netToPropietario },
+    { primero: { mes: 'desc', girado: 'desc', neto: 'desc' } },
+  )
 
   async function bajar(g: Dispersion) {
     setBajando(g.id)
@@ -122,15 +130,15 @@ export function EgresosAPropietarios() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Propietario</TableHead>
-                <TableHead>Mes</TableHead>
-                <TableHead>Girado el</TableHead>
-                <TableHead className="text-right">Neto girado</TableHead>
+                <EncabezadoOrdenable campo="propietario" orden={orden} onOrdenar={ordenarPor}>Propietario</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="mes" orden={orden} onOrdenar={ordenarPor}>Mes</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="girado" orden={orden} onOrdenar={ordenarPor}>Girado el</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="neto" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Neto girado</EncabezadoOrdenable>
                 <TableHead className="w-16" />
               </TableRow>
             </TableHeader>
             <TableBodyAnimado>
-              {ordenados.map((g) => (
+              {ordenadas.map((g) => (
                 <TableRowAnimada key={g.id} data-testid={`egreso-${g.id}`}>
                   <TableCell>
                     <span className="text-fg">{g.propietarioName}</span>

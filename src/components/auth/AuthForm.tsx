@@ -1,5 +1,6 @@
 'use client';
 
+import { CLAVE_DEL_PERFIL_QUE_PUBLICA, perfilQuePublicaDelDestino, recordarPerfilQuePublica } from '@/lib/publica/perfil-que-publica';
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -11,7 +12,7 @@ import { AuthInput } from './AuthInput';
 import { useAuth } from '@/lib/auth/use-auth';
 import { urlDeRegresoDelRegistro } from '@/lib/auth/regreso-del-correo';
 import { AUTH_BOOTSTRAP_ERROR_KEY } from '@/lib/auth/auth-context';
-import { esDestinoQueRegistraSolo, rutaDeOnboarding, rutaDeOnboardingConRegreso } from '@/lib/auth/perfil-de-onboarding';
+import { DESTINO_DEL_AGENTE, esDestinoQueRegistraSolo, esPerfilDeOnboarding, rutaDeOnboarding, rutaDeOnboardingConRegreso } from '@/lib/auth/perfil-de-onboarding';
 import { tomarAvisoDeCierre, PARAM_MOTIVO, type MotivoDeCierre } from '@/lib/auth/session-terminal';
 import { getRoleHomeRoute, inicioDeLaPersona } from '@/lib/auth/role-routes';
 import { cn, sanitizeReturnUrl } from '@/lib/utils';
@@ -27,6 +28,7 @@ import { useHidratado } from '@/lib/hooks/use-hidratado';
 import { correoTieneCuentaApi } from '@/lib/api/correo-tiene-cuenta.service';
 import { codigoDeSupabase, leerErrorDeSupabase, mensajeDeSupabase } from '@/lib/auth/errores-de-supabase';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { CodigoDelColega } from '@/components/refiere-y-gana/CodigoDelColega';
 import {
   SpinnerGap,
   ArrowLeft,
@@ -79,6 +81,8 @@ interface AuthFormProps {
    * (`back/supabase/templates/confirmar-registro.html`), que trae el código.
    */
   confirmarConCodigo?: boolean;
+  /** «¿Te invitó un colega?» en el registro (Refiere y gana, 28-10-2026): la ventana de publicar lo muestra. */
+  conCodigoDeColega?: boolean;
   /**
    * «Crear cuenta» desde el inicio de sesión lo resuelve quien abrió la ventana
    * (p. ej. publicar vuelve a «¿Quién publica?»), con el correo ya escrito.
@@ -94,6 +98,19 @@ export interface TextosDeLaCuenta {
   loginTitulo?: string;
   loginDetalle?: string;
   loginBoton?: string;
+}
+
+/**
+ * El saludo de la entrada según la hora de Colombia (Nico 28-10-2026: «déjamelo wow»): «Buenas tardes.» y, debajo,
+ * en gris, «Qué bueno verte.». Se calcula con la zona de Bogotá en el servidor y en el navegador: sale igual en los dos.
+ */
+export function saludoDeLaHora(fecha: Date = new Date()): string {
+  const hora = Number(
+    new Intl.DateTimeFormat('es-CO', { hour: 'numeric', hourCycle: 'h23', timeZone: 'America/Bogota' }).format(fecha),
+  );
+  if (hora >= 5 && hora < 12) return 'Buenos días.';
+  if (hora >= 12 && hora < 19) return 'Buenas tardes.';
+  return 'Buenas noches.';
 }
 
 /** Cuántos dígitos trae el código del correo (el `OTP length` de Supabase, 6 por defecto). */
@@ -445,6 +462,7 @@ export function AuthForm({
   textos,
   encimaDelRegistro,
   confirmarConCodigo: conCodigo = false,
+  conCodigoDeColega = false,
   alCrearCuenta,
 }: AuthFormProps) {
   /** En la ventana se pide UNA contraseña: el ojo deja verla y el medidor dice si sirve. */
@@ -474,6 +492,8 @@ export function AuthForm({
   }, []);
 
   const [mode, setMode] = React.useState<AuthMode>('login');
+  /** La pantalla de entrar (no la ventana de /publica) saluda según la hora, en dos tonos. */
+  const saludoGrande = variante === 'pagina' && mode === 'login' && !textos?.loginTitulo;
   const [registerStep, setRegisterStep] = React.useState<RegisterStep>('credentials');
   const [isLoading, setIsLoading] = React.useState(false);
   // Qué botón carga: el de Google sólo dice «Conectando…» si se tocó él; mientras
@@ -532,7 +552,17 @@ export function AuthForm({
     return () => clearTimeout(id);
   }, []);
 
-  const returnUrl = sanitizeReturnUrl(returnUrlProp || searchParams.get('returnUrl'), '/');
+  /*
+   * El agente inmobiliario (Nico, 27-10-2026): `/para/agentes` manda `?role=agent`, que antes no era ningún perfil
+   * y al terminar el registro llevaba a una dirección que no existe. Ahora sigue como el de «Publicar gratis»: su
+   * cuenta (la de la plataforma de la inmobiliaria) y después su registro corto de agente.
+   */
+  const rolDelEnlace = searchParams.get('role');
+  const esAgenteDelEnlace = !defaultRole && (rolDelEnlace === 'agent' || rolDelEnlace === 'agente');
+  const returnUrl = sanitizeReturnUrl(
+    returnUrlProp || searchParams.get('returnUrl') || (esAgenteDelEnlace ? DESTINO_DEL_AGENTE : null),
+    '/',
+  );
 
   /*
    * Por qué está acá sin haberlo pedido. `terminarSesion` (session-terminal.ts)
@@ -688,7 +718,8 @@ export function AuthForm({
   // post-signup destination skips the picker and goes straight to that role's
   // onboarding. Without it, signup lands on /onboarding/seleccionar-rol (the
   // single profile picker).
-  const explicitRole = (defaultRole || searchParams.get('role')) as 'tenant' | 'landlord' | 'agency' | null;
+  const explicitRole: 'tenant' | 'landlord' | 'agency' | null =
+    defaultRole ?? (esAgenteDelEnlace ? 'agency' : esPerfilDeOnboarding(rolDelEnlace) ? rolDelEnlace : null);
   const initialMode = defaultMode || searchParams.get('mode') as AuthMode | null;
   /** Para el botón «Abrir Gmail» de las pantallas de «Revisa tu correo»; null si el dominio no es conocido. */
   const webmail = webmailDelCorreo(resetEmail);
@@ -936,7 +967,16 @@ export function AuthForm({
       const correo = normalizarCorreo(data.email);
       redirectDeConfirmacion.current = emailRedirectTo;
       setCorreoYaRegistrado(null);
-      const { requiresConfirmation } = await signUpWithEmail(correo, data.password, emailRedirectTo, explicitRole ?? undefined);
+      // El perfil con que vino a publicar (el agente es de rol inmobiliaria): viaja en la cuenta (QA 27-10-2026).
+      const perfilQuePublica = perfilQuePublicaDelDestino(returnUrl);
+      if (perfilQuePublica) recordarPerfilQuePublica(perfilQuePublica);
+      const { requiresConfirmation } = await signUpWithEmail(
+        correo,
+        data.password,
+        emailRedirectTo,
+        explicitRole ?? undefined,
+        perfilQuePublica ? { [CLAVE_DEL_PERFIL_QUE_PUBLICA]: perfilQuePublica } : undefined,
+      );
       if (requiresConfirmation) {
         // El flujo termina en pantalla («Revisa tu correo»), no en un redirect:
         // acá sí se suelta el spinner.
@@ -1206,17 +1246,26 @@ export function AuthForm({
           className={cn(
             // Títulos livianos, como los de la landing (glow up del acceso, Nico 24-10): peso 420, nunca negrilla.
             'font-heading font-[420] leading-[1.1] tracking-[-0.03em] text-fg',
-            variante === 'ventana' ? 'text-[26px] sm:text-[28px]' : 'text-[30px]',
+            variante === 'ventana' ? 'text-[26px] sm:text-[28px]' : saludoGrande ? 'text-[36px] font-[400] leading-[1.06] tracking-[-0.035em]' : 'text-[30px]',
           )}
+          data-testid="auth-titulo"
         >
-          {mode === 'login' && (textos?.loginTitulo ?? 'Bienvenido de vuelta')}
+          {saludoGrande ? (
+            <>
+              <span className="block" suppressHydrationWarning>
+                {saludoDeLaHora()}
+              </span>
+              <span className="block text-fg-subtle">Qué bueno verte.</span>
+            </>
+          ) : null}
+          {mode === 'login' && !saludoGrande && (textos?.loginTitulo ?? 'Bienvenido de vuelta')}
           {mode === 'register' && registerStep === 'credentials' && (textos?.registroTitulo ?? 'Crea tu cuenta')}
           {mode === 'register' && registerStep === 'confirm-email' && 'Revisa tu correo'}
           {mode === 'forgot-password' && 'Recupera tu contraseña'}
           {mode === 'reset-sent' && 'Revisa tu correo'}
         </h1>
-        <p className="mt-2 text-[14px] leading-relaxed text-fg-subtle">
-          {mode === 'login' && (textos?.loginDetalle ?? 'Ingresa a tu cuenta para continuar.')}
+        <p className={cn('mt-2 text-[14px] leading-relaxed text-fg-subtle', saludoGrande && 'hidden')}>
+          {mode === 'login' && !saludoGrande && (textos?.loginDetalle ?? 'Ingresa a tu cuenta para continuar.')}
           {mode === 'register' && registerStep === 'credentials' && (textos?.registroDetalle ?? 'Ingresa tus datos para continuar.')}
           {mode === 'register' && registerStep === 'confirm-email' && (
             // Sin punto al final: pegado al correo se leía como parte de él (Nico, 01-10).
@@ -1323,17 +1372,27 @@ export function AuthForm({
 
             <p className="mt-6 border-t border-border/70 pt-5 text-[13px] text-fg-subtle">
               ¿Todavía no tienes cuenta?{' '}
-              <button
-                type="button"
-                onClick={() =>
-                  alCrearCuenta
-                    ? alCrearCuenta(loginForm.getValues('email')?.trim() ?? '')
-                    : handleModeSwitch('register')
-                }
-                className="font-medium text-[#1A40FF] hover:underline underline-offset-2"
-              >
-                Crear cuenta
-              </button>
+              {/* 🔴 Nico y Juan, 27-10-2026: «en vez de crear cuenta vamos a colocar publicar gratis… el login no va
+                  a tener el crear cuenta, va a tener el publicar gratis». Sin contexto (nadie viene a postularse ni
+                  trae un rol), el enlace lleva al publicador del marketplace; quien viene de una postulación o de un
+                  enlace con rol sigue creando su cuenta aquí mismo. */}
+              {!alCrearCuenta && !returnUrl && !rolDelEnlace ? (
+                <Link href="/publica" className="font-medium text-[#1A40FF] hover:underline underline-offset-2" data-testid="ingreso-publicar-gratis">
+                  Publicar gratis
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() =>
+                    alCrearCuenta
+                      ? alCrearCuenta(loginForm.getValues('email')?.trim() ?? '')
+                      : handleModeSwitch('register')
+                  }
+                  className="font-medium text-[#1A40FF] hover:underline underline-offset-2"
+                >
+                  Crear cuenta
+                </button>
+              )}
             </p>
           </div>
         )}
@@ -1402,6 +1461,7 @@ export function AuthForm({
                     error={registerForm.formState.errors.confirmPassword?.message}
                   />
                 )}
+                {conCodigoDeColega ? <CodigoDelColega /> : null}
                 <AvisoBanner mensaje={avisoDeSesion && !error ? avisoDeSesion : null} confirmacion={avisoDeConfirmacion} />
                 <ErrorBanner mensaje={error} />
                 {error && correoYaRegistrado && (

@@ -1358,6 +1358,11 @@ export interface PilotoActivoResponse {
   topes: { topeMontoCop: number; topeDestinatarios: number; graciaSegundos: number }
   /** `null` = no se pudo comprobar. */
   requisitos: RequisitoDeLaOperacion[] | null
+  /**
+   * Se puede contratar desde el panel ($900 más por inmueble al mes, Nico 27-10-2026): el cobro por inmueble del back
+   * está vigente, el maestro prendido y todavía no está contratado. Un micro anterior no lo manda (= no se ofrece).
+   */
+  sePuedeContratar?: boolean
 }
 
 export function fetchPilotoActivo(
@@ -1372,6 +1377,29 @@ export function fetchPilotoActivo(
  * pide el segundo factor de hace poco (`SEGUNDO_FACTOR_RECIENTE`: el diálogo
  * pide las seis cifras ahí mismo). `fallo` es el error entero para el traductor.
  */
+/**
+ * Contrata el Piloto automático desde el panel: deja de vencer y desde el mes que viene suma $900 por inmueble al cobro
+ * de Leasefy. Sólo un administrador, con el segundo factor de hace poco (`SEGUNDO_FACTOR_RECIENTE`). Con el cobro por
+ * inmueble apagado, 409 `SE_CONTRATA_CON_LEASEFY`.
+ */
+export async function postContratarPiloto(
+  agencyId: string,
+): Promise<{ ok: boolean; data?: PilotoActivoResponse; error?: string; fallo?: unknown }> {
+  const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
+  if (!agentUrl) return { ok: false, error: 'not_configured' }
+  try {
+    const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/piloto/contratar`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({}),
+    })
+    if (!res.ok) return await escrituraQueNoSalio(res)
+    return { ok: true, data: (await res.json()) as PilotoActivoResponse }
+  } catch (err) {
+    return escrituraSinRespuesta(err, 'post_failed')
+  }
+}
+
 export async function putPilotoActivo(
   agencyId: string,
   activo: boolean,

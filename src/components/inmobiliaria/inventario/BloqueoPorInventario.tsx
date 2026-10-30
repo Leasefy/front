@@ -19,8 +19,17 @@ const B = 'inmobiliaria.inventarioDelInmueble';
 export function BloqueoPorInventario({
   bloqueo,
   volverA,
+  onAbrir,
+  className,
 }: {
   bloqueo: Bloqueo;
+  /**
+   * Abre el inventario en un cajón ahí mismo (Nico, 29-10-2026: salir del
+   * formulario del contrato borraba lo que se llevaba). Con esto el botón no
+   * navega.
+   */
+  onAbrir?: () => void;
+  className?: string;
   /**
    * Dónde está la persona (el formulario del contrato, con el inmueble ya
    * elegido): la ficha le ofrece volver acá cuando el inventario quede listo.
@@ -37,9 +46,12 @@ export function BloqueoPorInventario({
       icon={<ClipboardText className="h-5 w-5" aria-hidden />}
       accion={
         bloqueo.consignacionId
-          ? { label: t(accionDelBloqueo(bloqueo)), href: enlaceAlInventario(bloqueo.consignacionId, volverA) }
+          ? onAbrir
+            ? { label: t(accionDelBloqueo(bloqueo)), onClick: onAbrir }
+            : { label: t(accionDelBloqueo(bloqueo)), href: enlaceAlInventario(bloqueo.consignacionId, volverA) }
           : undefined
       }
+      className={className}
       data-testid="bloqueo-por-inventario"
     >
       <p>{t(texto.clave, texto.params)}</p>

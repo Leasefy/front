@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -35,11 +35,12 @@ import {
   Check,
   ListBullets,
   CalendarBlank,
-  UserCircle,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { useTr } from '@/lib/i18n/use-tr';
 import { SinDatos } from '@/components/estado/SinDatos';
+import { MarcaDeLaGestion } from '@/components/inmobiliaria/mantenimiento/QuienGestiona';
 import type {
   SolicitudMantenimiento,
   MantenimientoType,
@@ -93,8 +94,9 @@ interface MantenimientoKanbanProps {
 // ============================================================================
 
 const PRIORITY_COLORS: Record<MantenimientoPriority, string> = {
-  emergency: 'border-l-[#C0392B]',
-  high: 'border-l-[#B7791F]',
+  // 29-10: por token (antes con hex escritos a mano, que en oscuro no cambiaban).
+  emergency: 'border-l-danger',
+  high: 'border-l-warning',
   // Revisora r25 (T3): «Media» iba con el voltaje escrito a mano. El azul es
   // de la acción; la prioridad media, en grafito.
   medium: 'border-l-fg-muted',
@@ -185,6 +187,39 @@ function getDaysSinceCreated(createdAt: string): number {
   return diasDeCalendarioDesde(createdAt);
 }
 
+/*
+ * ¿Caben todas las columnas en UNA fila? (revisión en pantalla con los datos de Portofino, 29-10-2026). A 1024 px,
+ * con tres columnas abiertas y tres plegadas, la última plegada bajaba SOLA a una segunda fila y quedaba huérfana.
+ * Cuando no caben, las plegadas suben a una línea de fichas encima del tablero (siguen siendo zonas donde soltar) y
+ * las abiertas se reparten el ancho; cuando caben, todo va en una fila con las vacías cerradas en vertical (Nico,
+ * Portofino 29-10). Los anchos son los de las clases: abierta `sm:min-w-[15rem]`, plegada `sm:w-12`, `gap-3`.
+ */
+const ANCHO_DE_LA_ABIERTA = 240;
+const ANCHO_DE_LA_PLEGADA = 48;
+const ESPACIO_ENTRE_COLUMNAS = 12;
+
+export function cabenEnUnaFila(ancho: number, abiertas: number, plegadas: number): boolean {
+  const columnas = abiertas + plegadas;
+  const necesario =
+    abiertas * ANCHO_DE_LA_ABIERTA + plegadas * ANCHO_DE_LA_PLEGADA + Math.max(0, columnas - 1) * ESPACIO_ENTRE_COLUMNAS;
+  return ancho >= necesario;
+}
+
+/** El ancho del tablero, o `null` mientras no se pudo medir (en el servidor, o sin `ResizeObserver`). */
+function useAnchoDelTablero(nodo: HTMLElement | null): number | null {
+  const [ancho, setAncho] = useState<number | null>(null);
+  useEffect(() => {
+    if (!nodo || typeof ResizeObserver === 'undefined') return;
+    const observador = new ResizeObserver((entradas) => {
+      const medido = entradas[0]?.contentRect.width ?? 0;
+      setAncho(medido > 0 ? medido : null);
+    });
+    observador.observe(nodo);
+    return () => observador.disconnect();
+  }, [nodo]);
+  return ancho;
+}
+
 // ============================================================================
 // Kanban Card Component
 // ============================================================================
@@ -269,24 +304,15 @@ function KanbanCard({ solicitud, onClick, arrastrable, arrastrando, t }: KanbanC
 
       {/* Portofino 22-10: con quién se trabaja. */}
       {solicitud.proveedor && (
-        <div className="text-xs text-fg-muted dark:text-fg-subtle mb-2 line-clamp-1" data-testid="tarjeta-proveedor">
+        <div className="text-caption text-fg-muted dark:text-fg-subtle mb-2 line-clamp-1" data-testid="tarjeta-proveedor">
           <Truck className="w-3 h-3 inline mr-1" aria-hidden="true" />
           {solicitud.proveedor.nombre}
         </div>
       )}
 
-      {/* Portofino 22-10: la arregla el propietario por su cuenta. */}
-      {solicitud.laHaceElPropietario && !solicitud.laHaceElPropietario.terminadaAt && (
-        <div className="mb-2">
-          <span
-            className="inline-flex items-center gap-1 rounded bg-warning-soft px-1.5 py-0.5 text-xs font-medium text-warning"
-            data-testid="tarjeta-la-hace-el-propietario"
-          >
-            <UserCircle className="w-3 h-3" aria-hidden="true" />
-            La hace el propietario
-          </span>
-        </div>
-      )}
+      {/* Portofino 29-10: quién la gestiona, si no es la inmobiliaria («Gestiona: el propietario»).
+          Reemplaza la marca de «La hace el propietario» (22-10), que es el mismo caso. */}
+      <MarcaDeLaGestion solicitud={solicitud} className="mb-2 flex max-w-full" />
 
       {/* Footer */}
       {/* SO-15: con cinco columnas la tarjeta es angosta: el pie se parte en
@@ -393,6 +419,8 @@ interface KanbanColumnProps {
   t: (key: string, params?: Record<string, string | number>) => string;
   /** Sin solicitudes: angosta y baja (revisora r25: tres columnas vacías ocupaban el tablero). */
   plegada?: boolean;
+  /** La plegada como ficha en la línea de arriba (cuando las columnas no caben en una fila). */
+  comoFicha?: boolean;
 }
 
 function KanbanColumnComponent({
@@ -402,13 +430,70 @@ function KanbanColumnComponent({
   arrastrable,
   encima,
   plegada = false,
+  comoFicha = false,
   t,
 }: KanbanColumnProps) {
   const Icon = column.icon;
   const { setNodeRef } = useDroppable({ id: column.id, data: { estado: column.id } });
 
+  /*
+   * Nico (Portofino, 29-10-2026): «abiertas las columnas que tienen al menos una
+   * solicitud y cerradas en vertical las que no tienen ninguna». La vacía es una
+   * franja angosta con el título de lado (en el celular, una barra baja con su
+   * cero) y sigue siendo una zona donde soltar: toda la franja es el destino.
+   */
+  if (plegada && comoFicha) {
+    const titulo = t(column.titleKey);
+    return (
+      <div
+        ref={setNodeRef}
+        data-testid={`columna-${column.id}`}
+        data-plegada="si"
+        data-forma="ficha"
+        title={`${titulo}: sin solicitudes`}
+        className={cn(
+          'inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-fg-muted transition-[background-color,box-shadow] duration-base',
+          encima ? 'bg-primary-soft/50 ring-2 ring-primary/25' : 'bg-surface-muted/70'
+        )}
+      >
+        <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+        <span className="whitespace-nowrap">{titulo}</span>
+      </div>
+    );
+  }
+
+  if (plegada) {
+    const titulo = t(column.titleKey);
+    return (
+      <div
+        ref={setNodeRef}
+        data-testid={`columna-${column.id}`}
+        data-plegada="si"
+        title={`${titulo}: sin solicitudes`}
+        className={cn(
+          'flex shrink-0 grow-0 basis-full items-center gap-2 rounded-[18px] px-3.5 py-2.5 transition-[background-color,box-shadow] duration-base',
+          'sm:min-h-[12rem] sm:w-12 sm:basis-auto sm:flex-col sm:px-0 sm:py-3.5',
+          encima ? 'bg-primary-soft/50 ring-2 ring-primary/25' : 'bg-surface-muted/70'
+        )}
+      >
+        <span className="order-last ml-auto font-mono text-[12px] tabular-nums text-fg-subtle sm:order-first sm:ml-0">
+          0
+        </span>
+        <Icon className="h-4 w-4 shrink-0 text-fg-muted" aria-hidden="true" />
+        <span className="whitespace-nowrap text-sm font-medium text-fg-muted sm:[writing-mode:vertical-rl]">
+          {titulo}
+        </span>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col min-w-0" data-testid={`columna-${column.id}`} data-plegada={plegada ? 'si' : undefined}>
+    <div
+      // 29-10: con tope de ancho (21rem) desde `sm`: la que baja sola a la fila de abajo ya no se estira a todo el
+      // tablero (a 1440, «Cerradas» quedaba con una tarjeta de 1.000 px); en la fila llena se reparten el ancho igual.
+      className="flex min-w-0 shrink grow basis-60 flex-col sm:min-w-[15rem] sm:max-w-[21rem]"
+      data-testid={`columna-${column.id}`}
+    >
       {/* Column Header */}
       {/* Cadence 2 (glow up 21-10): la columna es un carril de arena, sin color por etapa (el
           color es de los estados que piden algo, no de las columnas); la cuenta en mono. */}
@@ -424,9 +509,11 @@ function KanbanColumnComponent({
       <div
         ref={setNodeRef}
         className={cn(
-          'relative flex-1 p-2 space-y-2 rounded-b-[18px] overflow-y-auto transition-[background-color,box-shadow] duration-base',
-          // Revisora r25: la columna vacía va plegada (angosta y baja); sigue recibiendo tarjetas.
-          plegada ? 'min-h-[56px]' : 'min-h-[200px] max-h-[calc(100vh-400px)]',
+          // Sin barras de scroll dentro (29-10): ni de lado (la tarjeta se lee completa y el pie se parte en renglones)
+          // ni hacia abajo — la columna crece con sus tarjetas y baja la página (antes, con un tope de alto y su
+          // propia barra, desde la cuarta tarjeta había que desplazar dentro de la columna).
+          'relative flex-1 p-2 space-y-2 rounded-b-[18px] transition-[background-color,box-shadow] duration-base',
+          'min-h-[200px]',
           encima ? 'bg-primary-soft/50 ring-2 ring-primary/25' : 'bg-surface-muted/70'
         )}
       >
@@ -530,8 +617,11 @@ export function MantenimientoKanban({
   onLimpiarFiltros,
 }: MantenimientoKanbanProps) {
   const { t } = useI18n();
+  const tr = useTr();
   const [arrastrandoId, setArrastrandoId] = useState<string | null>(null);
   const [columnaEncima, setColumnaEncima] = useState<string | null>(null);
+  const [nodoDelTablero, setNodoDelTablero] = useState<HTMLDivElement | null>(null);
+  const anchoDelTablero = useAnchoDelTablero(nodoDelTablero);
 
   const arrastrable = Boolean(onStatusChange);
 
@@ -634,35 +724,52 @@ export function MantenimientoKanban({
     );
   }
 
+  const plegadas = KANBAN_COLUMNS.filter((c) => groupedData[c.id].length === 0);
+  const abiertas = KANBAN_COLUMNS.filter((c) => groupedData[c.id].length > 0);
+  const enUnaFila =
+    anchoDelTablero === null ||
+    plegadas.length === 0 ||
+    cabenEnUnaFila(anchoDelTablero, abiertas.length, plegadas.length);
+
+  const columna = (column: KanbanColumn, comoFicha = false) => (
+    <KanbanColumnComponent
+      key={column.id}
+      column={column}
+      items={groupedData[column.id]}
+      onViewDetails={onViewDetails}
+      arrastrable={arrastrable}
+      encima={columnaEncima === column.id}
+      plegada={groupedData[column.id].length === 0}
+      comoFicha={comoFicha}
+      t={t}
+    />
+  );
+
   const tablero = (
     <>
       {/* SO-15 (QA 04-10): las cinco columnas a la vista (a 1440 la de
           «Completada» quedaba fuera, a la derecha). En pantallas chicas se
           apilan; nunca hay que desplazar de lado para encontrar una tarjeta. */}
-      {/* Revisora r25: a 1440 las columnas vacías van angostas (11rem) y las que tienen trabajo se
-          reparten el resto; abajo de xl se apilan como siempre, las vacías bajas. */}
-      <div
-        className="grid grid-cols-1 gap-3 pb-4 sm:grid-cols-2 lg:grid-cols-3 xl:[grid-template-columns:var(--columnas-del-tablero)]"
-        style={{
-          ['--columnas-del-tablero' as string]: KANBAN_COLUMNS.map((c) =>
-            groupedData[c.id].length > 0 ? 'minmax(0,1fr)' : 'minmax(0,11rem)',
-          ).join(' '),
-        }}
-        data-testid="tablero-de-mantenimientos"
-      >
-        {KANBAN_COLUMNS.map((column) => (
-          <KanbanColumnComponent
-            key={column.id}
-            column={column}
-            items={groupedData[column.id]}
-            onViewDetails={onViewDetails}
-            arrastrable={arrastrable}
-            encima={columnaEncima === column.id}
-            plegada={groupedData[column.id].length === 0}
-            t={t}
-          />
-        ))}
-      </div>
+      {/* Nico (Portofino, 29-10-2026): las columnas con solicitudes van ABIERTAS y anchas (nunca
+          menos de 15rem: la tarjeta se lee entera) y se reparten el ancho; las vacías, CERRADAS en
+          vertical. Si no caben en una fila, las vacías suben a una línea de fichas y las abiertas
+          bajan de fila: nunca se desplaza de lado (SO-15) ni queda una plegada sola abajo. */}
+      {enUnaFila ? (
+        <div
+          className="flex flex-wrap items-stretch gap-3 pb-4"
+          data-testid="tablero-de-mantenimientos"
+        >
+          {KANBAN_COLUMNS.map((column) => columna(column))}
+        </div>
+      ) : (
+        <div className="space-y-3 pb-4" data-testid="tablero-de-mantenimientos" data-forma="apilado">
+          <div className="flex flex-wrap items-center gap-2" data-testid="columnas-sin-solicitudes">
+            <span className="mr-1 font-mono text-label uppercase text-fg-subtle">{tr('Sin solicitudes')}</span>
+            {plegadas.map((column) => columna(column, true))}
+          </div>
+          <div className="flex flex-wrap items-stretch gap-3">{abiertas.map((column) => columna(column))}</div>
+        </div>
+      )}
 
       {/* Cancelled items notice */}
       {groupedData.cancelled.length > 0 && (
@@ -679,7 +786,11 @@ export function MantenimientoKanban({
   );
 
   if (!arrastrable) {
-    return <div className="w-full">{tablero}</div>;
+    return (
+      <div className="w-full" ref={setNodoDelTablero}>
+        {tablero}
+      </div>
+    );
   }
 
   return (
@@ -692,7 +803,9 @@ export function MantenimientoKanban({
       onDragOver={alPasarPorEncima}
       onDragEnd={alSoltar}
     >
-      <div className="w-full">{tablero}</div>
+      <div className="w-full" ref={setNodoDelTablero}>
+        {tablero}
+      </div>
 
       {/* La tarjeta que viaja con el puntero */}
       <DragOverlay dropAnimation={null}>

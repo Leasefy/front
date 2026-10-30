@@ -17,7 +17,7 @@ import { Check } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth/use-auth'
 import { useEnabledProfiles } from '@/lib/hooks/use-enabled-profiles'
-import { rutaDeOnboarding } from '@/lib/auth/perfil-de-onboarding'
+import { DESTINO_DEL_AGENTE, rutaDeOnboarding } from '@/lib/auth/perfil-de-onboarding'
 import { Spinner } from '@/components/ui/spinner'
 import { LeasefyLogotype } from '@/components/brand'
 import { SalirDelRegistro, type VolverDelRegistro } from '@/components/onboarding/SalirDelRegistro'
@@ -35,6 +35,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { PERFILES, type OpcionDePerfil, type ValorDePerfil } from './perfiles'
+import { SoloPublicarEnElMarketplace } from './SoloPublicarEnElMarketplace'
 import type { RegistroAMedias } from './PanelAntesDeComenzar'
 
 /**
@@ -60,6 +61,12 @@ export interface EleccionDePerfilProps {
    * próxima entrada, que retoma en el perfil elegido).
    */
   abiertaAlInicio?: boolean
+  /**
+   * 🔴 Nico, 27-10-2026: «Inmobiliaria» lleva al registro CORTO del publicador. El formulario largo al lado («Antes de
+   * comenzar»: razón social, NIT…) sólo lo abre la página del asistente (`/onboarding/inmobiliaria`), para quien ya lo
+   * empezó y lo retoma.
+   */
+  formularioDeLaInmobiliariaAlLado?: boolean
   /**
    * Lo que va a la derecha cuando se elige «Inmobiliaria». Recibe cómo
    * cerrarse, cómo avisar que está «Abriendo tu registro…» (ahí las
@@ -100,6 +107,7 @@ export interface EleccionDePerfilProps {
  */
 export function EleccionDePerfil({
   abiertaAlInicio = false,
+  formularioDeLaInmobiliariaAlLado = false,
   panelDeInmobiliaria,
   volverAlAsistente,
 }: EleccionDePerfilProps) {
@@ -145,14 +153,21 @@ export function EleccionDePerfil({
   const [dejandoDeLado, setDejandoDeLado] = useState(false)
   const [errorAlDejar, setErrorAlDejar] = useState<string | null>(null)
 
+  // El agente inmobiliario sigue a su registro corto (en el publicador), no al de la inmobiliaria.
+  const rutaDelPerfil = (opcion: OpcionDePerfil) =>
+    opcion.valor === 'agente' ? DESTINO_DEL_AGENTE : rutaDeOnboarding(opcion.bandera)
+
   const irAlPerfil = (opcion: OpcionDePerfil) => {
     void elegirPerfil(opcion.bandera).catch(() => undefined)
-    if (opcion.valor === 'inmobiliaria') {
+    // 🔴 Nico, 27-10-2026: la inmobiliaria nueva va al registro CORTO del publicador (nombre y WhatsApp), como el
+    // propietario y el agente; los datos de la empresa se piden al pagar. «Antes de comenzar» (razón social, NIT…)
+    // queda sólo para quien ya empezó el asistente largo y lo retoma.
+    if (opcion.valor === 'inmobiliaria' && (formularioDeLaInmobiliariaAlLado || registroAMedias)) {
       setAbierta(true)
       return
     }
     setYendoA(opcion.valor)
-    router.push(rutaDeOnboarding(opcion.bandera))
+    router.push(rutaDelPerfil(opcion))
   }
 
   const elegir = (opcion: OpcionDePerfil) => {
@@ -184,7 +199,7 @@ export function EleccionDePerfil({
       ])
       setRegistroAMedias(null)
       setYendoA(opcion.valor)
-      window.location.assign(rutaDeOnboarding(opcion.bandera))
+      window.location.assign(rutaDelPerfil(opcion))
     } catch (error) {
       // Nada se borró (el back se niega entero): se dice por qué y se queda aquí,
       // con la regla de oro del traductor (02-10-2026): un 409 dice lo que mandó
@@ -283,9 +298,11 @@ export function EleccionDePerfil({
                       ? 'hidden'
                       : abierta
                         ? 'hidden lg:grid lg:grid-cols-1 lg:gap-4'
-                        : visibles.length >= 3
-                          ? 'sm:grid-cols-2 lg:grid-cols-3'
-                          : 'sm:grid-cols-2',
+                        : visibles.length >= 4
+                          ? 'sm:grid-cols-2 xl:grid-cols-4'
+                          : visibles.length === 3
+                            ? 'sm:grid-cols-2 lg:grid-cols-3'
+                            : 'sm:grid-cols-2',
                   )}
                   data-testid="tarjetas-de-perfil"
                 >
@@ -340,6 +357,17 @@ export function EleccionDePerfil({
                 ) : null}
               </AnimatePresence>
             </div>
+
+            {/* Quien sólo quiere publicar no pasa por el registro largo (Nico, 27-10). */}
+            {!abierta && perfilesListos && yendoA === null ? (
+              <motion.div
+                initial={{ opacity: 0, y: motionDistance.sm }}
+                animate={{ opacity: 1, y: 0, transition: { ...motionTransition.enter, delay: motionStagger.step * 4 } }}
+                className="mx-auto mt-6 w-full max-w-2xl sm:mt-8"
+              >
+                <SoloPublicarEnElMarketplace />
+              </motion.div>
+            ) : null}
           </LayoutGroup>
         </main>
       </div>

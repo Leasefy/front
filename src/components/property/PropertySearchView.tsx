@@ -329,7 +329,7 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
       {/* Main Layout - Split View */}
       <div className={cn(
         'flex',
-        embedded ? 'flex-1 min-h-0' : 'pt-16 lg:pt-[76px]'
+        embedded ? 'flex-1 min-h-0' : 'pt-[68px]'
       )}>
         {/* Left Panel - Scrollable Content */}
         <div
@@ -431,7 +431,7 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
           <div
             className={cn(
               'sticky z-20 border-b border-border bg-background/95 backdrop-blur-[2px]',
-              embedded ? 'top-0' : 'top-16 lg:top-[76px]',
+              embedded ? 'top-0' : 'top-[68px]',
             )}
           >
             <div className="px-4 md:px-6 py-3 flex flex-wrap items-center gap-2">
@@ -566,8 +566,8 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
                 )
               : cn(
                   'w-full lg:w-1/2 2xl:w-2/5 lg:fixed lg:right-0',
-                  // El header de la landing mide 64px y 76px desde lg.
-                  'lg:top-[76px] h-[calc(100vh-64px)] lg:h-[calc(100vh-76px)]',
+                  // La barra de la landing mide 68 px (la misma de la home).
+                  'lg:top-[68px] h-[calc(100vh-68px)]',
                   !showMap && 'hidden lg:block'
                 )
           )}

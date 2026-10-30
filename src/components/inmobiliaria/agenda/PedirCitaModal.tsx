@@ -21,7 +21,9 @@ import {
   ResponsiveDialogTitle,
   ResponsiveDialogFooter,
 } from '@/components/ui/responsive-dialog';
-import { DatePicker, Presence } from '@leasefy/cadence';
+import { Presence } from '@leasefy/cadence';
+// Nico, 29-10-2026: el calendario con el mes y el año a la mano (el de Cadence sólo tenía flechas).
+import { SelectorDeFecha as DatePicker } from '@/components/ui/SelectorDeFecha';
 import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { etiquetaDeInmueble } from '@/components/contratos/VincularInmueble';

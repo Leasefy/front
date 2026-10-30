@@ -124,25 +124,25 @@ describe('/aplicar — el estudio es opcional (Nico, 04-10-2026)', () => {
     expect(elegibilidadMock).toHaveBeenCalledWith('/pre-scoring/elegibilidad')
     expect(hayAsistente()).toBe(true)
     expect(texto()).not.toContain('Antes de postularte')
-    expect(oferta()?.getAttribute('data-oferta')).toBe('sin_estudio')
-    expect(texto()).toContain('Con tu estudio la inmobiliaria responde más rápido')
-    expect(texto()).toContain('No es obligatorio para postularte')
-    expect(container.querySelector('a[href="/aprobacion"]')).toBeTruthy()
+    expect(oferta()).toBeNull() // Nico 29-10-2026: el aviso del estudio está apagado por ahora (OFRECER_EL_ESTUDIO)
+    expect(texto()).not.toContain('Con tu estudio la inmobiliaria responde más rápido')
+    expect(texto()).not.toContain('No es obligatorio para postularte')
+    expect(container.querySelector('a[href="/aprobacion"]')).toBeNull() // el enlace a «Hacer mi estudio» salía en el aviso apagado
   })
 
   it('con el estudio vencido: asistente + «renovar» como ayuda', async () => {
     elegibilidadMock.mockResolvedValue({ apto: false, motivo: 'ESTUDIO_VENCIDO', topeAprobadoCop: 2_200_000, elegibleHasta: null })
     await abrir()
     expect(hayAsistente()).toBe(true)
-    expect(oferta()?.getAttribute('data-oferta')).toBe('vencido')
-    expect(texto()).toContain('Puedes postularte igual')
+    expect(oferta()).toBeNull() // Nico 29-10-2026: el aviso del estudio está apagado por ahora (OFRECER_EL_ESTUDIO)
+    expect(texto()).not.toContain('Puedes postularte igual')
   })
 
   it('con el estudio en curso: asistente + «puedes postularte ya»', async () => {
     elegibilidadMock.mockResolvedValue({ apto: false, motivo: 'ESTUDIO_EN_CURSO', topeAprobadoCop: null, elegibleHasta: null })
     await abrir()
     expect(hayAsistente()).toBe(true)
-    expect(oferta()?.getAttribute('data-oferta')).toBe('en_curso')
+    expect(oferta()).toBeNull() // Nico 29-10-2026: el aviso del estudio está apagado por ahora (OFRECER_EL_ESTUDIO)
   })
 
   it('con el estudio vigente abre el asistente sin ofrecer nada', async () => {
@@ -164,9 +164,9 @@ describe('/aplicar — el estudio es opcional (Nico, 04-10-2026)', () => {
     aprobacionLocal.aprobacion = { estado: 'sin_estudio', topeAprobadoCop: null, vigenteHasta: null }
     await abrir()
     expect(hayAsistente()).toBe(true)
-    expect(oferta()?.getAttribute('data-oferta')).toBe('sin_sesion')
-    expect(texto()).toContain('Puedes postularte sin cuenta y sin estudio')
-    expect(container.querySelector('a[href^="/auth?returnUrl="]')).toBeTruthy()
+    expect(oferta()).toBeNull() // Nico 29-10-2026: el aviso del estudio está apagado por ahora (OFRECER_EL_ESTUDIO)
+    expect(texto()).not.toContain('Puedes postularte sin cuenta y sin estudio')
+    expect(container.querySelector('a[href^="/auth?returnUrl="]')).toBeNull() // «entrar o conocer su respaldo» salía en el aviso apagado
     expect(elegibilidadMock).not.toHaveBeenCalled()
   })
 })

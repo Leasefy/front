@@ -164,6 +164,7 @@ export function SelectorDePropietarios({
           </div>
           <PropietarioForm
             mode="create"
+            documentoOpcional
             initialFormData={pendiente?.data}
             onSubmit={guardarNuevo}
             onCancel={() => setFormAbierto(false)}

@@ -11,6 +11,8 @@ import { Button, Textarea, EmptyState, Badge, Table, TableHeader, TableRow, Tabl
 import { TableBodyAnimado, TableRowAnimada } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -228,6 +230,17 @@ function CandidatosContent() {
    * filtros en esta pantalla (la selección para comparar no filtra) ⇒ sin
    * `resetKey`.
    */
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas».
+  const { ordenadas, orden, ordenarPor } = useOrdenDeLaTabla(
+    candidates,
+    {
+      candidato: (c) => c.tenantName ?? null,
+      puntaje: (c) => c.riskScore?.totalScore ?? null,
+      estado: (c) => c.status,
+      fecha: (c) => c.submittedAt ?? null,
+    },
+    { primero: { puntaje: 'desc', fecha: 'desc' } },
+  );
   const {
     pageItems: candidatosPagina,
     total: totalCandidatos,
@@ -236,7 +249,7 @@ function CandidatosContent() {
     setPage: setPaginaCandidatos,
     setPageSize: setPorPaginaCandidatos,
     shouldPaginate: paginarCandidatos,
-  } = useTablePagination(candidates);
+  } = useTablePagination(ordenadas, { resetKey: `${orden?.campo ?? ''}|${orden?.sentido ?? ''}` });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
   // Paso 9 del recorrido: comparar. Se limita a 4 porque más no entra sin
@@ -460,10 +473,10 @@ function CandidatosContent() {
                   <TableHead className="w-10 pl-4">
                     <span className="sr-only">Comparar</span>
                   </TableHead>
-                  <TableHead>Candidato</TableHead>
-                  <TableHead>Puntaje</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Fecha</TableHead>
+                  <EncabezadoOrdenable campo="candidato" orden={orden} onOrdenar={ordenarPor}>Candidato</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="puntaje" orden={orden} onOrdenar={ordenarPor}>Puntaje</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="estado" orden={orden} onOrdenar={ordenarPor}>Estado</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="fecha" orden={orden} onOrdenar={ordenarPor}>Fecha</EncabezadoOrdenable>
                   <TableHead className="p-4" />
                 </TableRow>
               </TableHeader>

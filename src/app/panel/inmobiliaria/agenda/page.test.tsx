@@ -98,11 +98,27 @@ afterEach(() => {
   vi.clearAllMocks()
 })
 
-async function montar() {
+/**
+ * La agenda abre en el CALENDARIO (Nico, 28-10-2026). Casi todas estas pruebas son de la LISTA: `montar()` la abre con
+ * «Lista», como lo haría la persona; `montarEnElCalendario()` deja lo que se ve al entrar.
+ */
+async function montarEnElCalendario() {
   await act(async () => {
     root.render(React.createElement(AgendaPage))
   })
   // deja resolver la promesa del fetch
+  await act(async () => {
+    await Promise.resolve()
+  })
+}
+
+async function montar() {
+  await montarEnElCalendario()
+  const lista = container.querySelector<HTMLElement>('[data-testid="agenda-vista-lista"]')
+  const boton = (lista?.closest('button') ?? lista) as HTMLElement | null
+  await act(async () => {
+    boton?.click()
+  })
   await act(async () => {
     await Promise.resolve()
   })
@@ -292,6 +308,24 @@ describe('A1 — los tiles del resumen no dicen «0» cuando no saben', () => {
 
     expect(tiles()[0].dataset.estado).toBe('ok')
     expect(tiles()[0].textContent).toBe('3')
+  })
+
+  it('29-10 (datos de Portofino): la franja lleva sólo los tipos con algo; los ceros no son cifras (§12.4)', async () => {
+    getAgendaMock.mockResolvedValue(CON_VISITA_PENDIENTE)
+    await montar()
+
+    expect(tiles()).toHaveLength(1)
+    expect(tiles()[0].textContent).toBe('3')
+    expect(container.querySelector('[data-testid="agenda-resumen-vacio"]')).toBeNull()
+  })
+
+  it('29-10: todo en cero es UNA línea, no una franja de ceros', async () => {
+    getAgendaMock.mockResolvedValue(AGENDA_VACIA)
+    await montar()
+
+    expect(tiles()).toHaveLength(0)
+    expect(container.querySelector('[data-testid="agenda-resumen"]')).toBeNull()
+    expect(container.querySelector('[data-testid="agenda-resumen-vacio"]')).not.toBeNull()
   })
 })
 
@@ -624,5 +658,57 @@ describe('agenda — la paginación la resuelve el servidor', () => {
     })
     await montar()
     expect(container.textContent).not.toContain('emptyTitle')
+  })
+})
+
+describe('agenda — abre en el calendario (Nico, 28-10-2026)', () => {
+  it('entra en el calendario de la semana; con atrasadas lo avisa y «Verlas» abre la lista en Atrasadas', async () => {
+    getAgendaMock.mockResolvedValue({
+      ...CON_VISITA_PENDIENTE,
+      porVista: { proximas: 1, vencidas: 3, hechas: 0 },
+    })
+    await montarEnElCalendario()
+    await act(async () => {
+      await Promise.resolve()
+    })
+    expect(container.querySelector('[data-testid="agenda-semana"]')).not.toBeNull()
+    expect(getAgendaMock).toHaveBeenCalledWith(expect.objectContaining({ desde: expect.any(String), hasta: expect.any(String) }))
+    expect(container.querySelector('[data-testid="agenda-aviso-atrasadas"]')?.textContent).toContain('Tienes 3 atrasadas')
+    await act(async () => {
+      ;(container.querySelector('[data-testid="agenda-ver-atrasadas"]') as HTMLButtonElement).click()
+    })
+    expect(getAgendaMock).toHaveBeenLastCalledWith(expect.objectContaining({ vista: 'vencidas' }))
+  })
+})
+
+
+describe('La agenda por área (29-10-2026)', () => {
+  const CON_AREAS = {
+    ...CON_VISITA_PENDIENTE,
+    porArea: { comercial: 1, contratos: 0, inspecciones: 0, cobranza: 2, mantenimientos: 0, servicios_publicos: 0, general: 0 },
+    areaSeGuarda: true,
+  }
+
+  it('las áreas con algo salen con su conteo; las vacías no; tocar una pide sólo esa', async () => {
+    getAgendaMock.mockResolvedValue(CON_AREAS)
+    await montar()
+    const fila = container.querySelector('[data-testid="agenda-areas"]')
+    expect(fila).not.toBeNull()
+    expect(container.querySelector('[data-testid="agenda-area-cobranza"]')?.textContent).toContain('2')
+    expect(container.querySelector('[data-testid="agenda-area-contratos"]')).toBeNull()
+    getAgendaMock.mockClear()
+    await act(async () => {
+      container.querySelector<HTMLElement>('[data-testid="agenda-area-cobranza"]')?.click()
+    })
+    await act(async () => {
+      await Promise.resolve()
+    })
+    expect(getAgendaMock).toHaveBeenCalledWith(expect.objectContaining({ areas: ['cobranza'] }))
+  })
+
+  it('un back sin `porArea` no pinta la fila de áreas', async () => {
+    getAgendaMock.mockResolvedValue(CON_VISITA_PENDIENTE)
+    await montar()
+    expect(container.querySelector('[data-testid="agenda-areas"]')).toBeNull()
   })
 })

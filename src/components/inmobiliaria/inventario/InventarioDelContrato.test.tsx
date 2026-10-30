@@ -67,7 +67,7 @@ describe('InventarioDelContrato', () => {
     await montar();
     expect(q('acta')?.getAttribute('data-items')).toBe('2');
     expect(q('acta')?.getAttribute('data-editable')).toBe('false');
-    expect(q('acta')?.getAttribute('data-enlace')).toBe('/panel/inmobiliaria/inmuebles/cons-1#inventario');
+    expect(q('acta')?.getAttribute('data-enlace')).toBe('/panel/inmobiliaria/inmuebles/cons-1?pestana=arrendarlo#inventario');
     expect(q('copia-version')?.textContent).toContain('Versión 3');
     expect(q('legado')).toBeNull();
     // La firma del inquilino queda pendiente y visible, sin bloquear nada.
@@ -112,7 +112,7 @@ describe('InventarioDelContrato', () => {
     const tarea = q('tarea-inventario-por-actualizar');
     expect(tarea?.textContent).toContain('Inventario por actualizar tras el contrato #5');
     expect(tarea?.textContent).toContain('Este contrato terminó el 10 de septiembre de 2026');
-    expect(tarea?.getAttribute('data-href')).toBe('/panel/inmobiliaria/inmuebles/cons-1#inventario');
+    expect(tarea?.getAttribute('data-href')).toBe('/panel/inmobiliaria/inmuebles/cons-1?pestana=arrendarlo#inventario');
   });
 
   it('sin la migración (o sin respuesta) monta lo de siempre', async () => {

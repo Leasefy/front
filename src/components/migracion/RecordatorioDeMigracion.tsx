@@ -3,8 +3,9 @@
 /**
  * La tarjeta de migración del menú (Nico, 2026-09-07; rediseñada el 01-10).
  *
- * Dice dónde va la migración e invita a terminarla. La ✕ de antes se fue: la
- * tarjeta es fija mientras la migración esté en curso (ver abajo).
+ * Dice dónde va la migración e invita a terminarla, y se puede CERRAR (Nico,
+ * 27-10-2026: «no solo debería ser continuar sino dar la oportunidad de un
+ * cerrar, porque para eso la migración también está en Configuración»).
  *
  * ── De dónde sale lo que dice ─────────────────────────────────────────────
  *
@@ -18,13 +19,27 @@
  *
  *  - SÓLO a quien le dio «Migrar» (`eligioMigrar`) o ya tiene un paso listo;
  *    quien eligió «en otro momento» o «no requiero migración» no la ve;
- *  - FIJA: sin ✕, mientras la migración esté sin terminar;
  *  - se va sola cuando termina («terminé» o todos los pasos listos);
  *  - nunca con el muro puesto (ya está la migración en la cara) ni cuando no
  *    se sabe el estado (nunca un recordatorio inventado).
+ *
+ * ── Cuándo NO sale aunque haya un paso listo (Nico, 27-10-2026) ───────────
+ *
+ * «Para las cuentas creadas por el marketplace aparece lo de migración y no
+ * le quita eso cuando le da clic en omitir.» Publicar un inmueble con su
+ * propietario deja el paso «Propietarios» en verde, y eso NO es migrar: es
+ * usar Leasefy. Por eso un paso listo sólo cuenta como «está migrando» si la
+ * migración no se omitió. Tampoco sale:
+ *  - en el modo comercial (la cuenta del marketplace sin activar: ahí no hay
+ *    migración, `SinMuro` en el layout);
+ *  - a quien la cerró: su «Cerrar», la ✕ de la franja del chat o «No requiero
+ *    migración» guardan `recordatorioDescartado` EN LA CUENTA (por miembro,
+ *    vale en cualquier navegador). Volver a abrir la migración desde
+ *    Configuración la vuelve a prender (`MuroDeMigracion`, `abrir`).
  */
 
 import { useContext, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowRight } from "@phosphor-icons/react";
 
 import { LeasefySymbol } from "@/components/brand";
@@ -32,7 +47,11 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AuthContext } from "@/lib/auth/auth-context";
 import { useI18n } from "@/lib/i18n";
+import { migracionEstadoApi } from "@/lib/api/migracion-estado.service";
+import { mensajeParaLaPersona } from "@/lib/errores/traductor-de-errores";
 import { EVENTO_DECISION_DE_MIGRACION, eligioMigrar } from "@/lib/migracion/decision-de-migracion";
+import { enModoComercial } from "@/lib/nav/modo-comercial";
+import { toast } from "@/components/ui/toast";
 import { useMigracion } from "./migracion-context";
 import { migracionSinTerminar, progresoDeMigracion } from "./muro-reglas";
 
@@ -93,10 +112,15 @@ function IlustracionDeMigracion() {
 
 export function RecordatorioDeMigracion() {
   const { t } = useI18n();
+  const router = useRouter();
   const migracion = useMigracion();
   // Contexto crudo y no `useAuth()`: ese lanza sin AuthProvider, y una
   // tarjeta del sidebar no puede ser lo que tumba el panel.
-  const agencyId = useContext(AuthContext)?.agency?.id ?? null;
+  const agencia = useContext(AuthContext)?.agency ?? null;
+  const agencyId = agencia?.id ?? null;
+  const modoComercial = enModoComercial(agencia);
+  // Se va al instante al tocar «Cerrar»; si el back no lo guarda, vuelve.
+  const [cerrada, setCerrada] = useState(false);
   // Arranca en «no» hasta leer el navegador: mejor que aparezca un instante
   // después que mostrársela a quien no le dio «Migrar».
   const [leDioMigrar, setLeDioMigrar] = useState(false);
@@ -113,13 +137,38 @@ export function RecordatorioDeMigracion() {
 
   const estado = migracion?.estado ?? null;
   if (!migracion || !estado || estado.bloquea) return null;
+  if (modoComercial || cerrada || estado.recordatorioDescartado === true) return null;
   if (!migracionSinTerminar(estado)) return null;
 
   const { hechos, total, siguiente } = progresoDeMigracion(estado.pasos);
   const empezada = hechos > 0;
   // Un paso listo también es haberle dado «Migrar» (otro navegador, o un
-  // importador abierto suelto desde Configuración).
-  if (!leDioMigrar && !empezada) return null;
+  // importador abierto suelto desde Configuración)… salvo que la migración se
+  // haya omitido: entonces ese paso salió de usar Leasefy, no de migrar.
+  if (!leDioMigrar && (!empezada || estado.resuelta === "omitida")) return null;
+
+  const cerrar = async () => {
+    setCerrada(true);
+    try {
+      await migracionEstadoApi.recordatorio(true);
+      toast.success(t("migracion.recordatorio.cerradaTitulo"), {
+        description: t("migracion.recordatorio.cerradaDetalle"),
+        action: {
+          label: t("migracion.recordatorio.irAMigracion"),
+          onClick: () => router.push("/panel/inmobiliaria/configuracion/migracion"),
+        },
+      });
+      void migracion.recargar();
+    } catch (e) {
+      setCerrada(false);
+      toast.warning(t("migracion.recordatorio.noSeCerro"), {
+        description: mensajeParaLaPersona(e, {
+          porDefecto: "Prueba de nuevo en un momento.",
+          accion: "quitar la migración del menú",
+        }),
+      });
+    }
+  };
 
   // QA-MIGRACION-95 (MU-07): el número es la POSICIÓN del paso que sigue, no
   // «hechos + 1»: si vuelve a faltar Propietarios con todo lo demás listo, es
@@ -192,7 +241,9 @@ export function RecordatorioDeMigracion() {
         </p>
       </div>
 
-      <div className="border-t border-border-faint p-2.5">
+      {/* Continuar o cerrar (Nico, 27-10-2026): la migración sigue en
+          Configuración → Migración, así que cerrar no pierde nada. */}
+      <div className="flex flex-col gap-1 border-t border-border-faint p-2.5">
         <Button
           type="button"
           variant="outline"
@@ -203,6 +254,18 @@ export function RecordatorioDeMigracion() {
           data-testid="sidebar-migracion-migrar"
         >
           {empezada ? t("migracion.recordatorio.continuar") : t("migracion.recordatorio.migrar")}
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          hideArrow
+          className="w-full text-fg-muted"
+          onClick={() => void cerrar()}
+          aria-label={t("migracion.recordatorio.cerrar")}
+          data-testid="sidebar-migracion-cerrar"
+        >
+          {t("migracion.recordatorio.cerrarBoton")}
         </Button>
       </div>
     </div>

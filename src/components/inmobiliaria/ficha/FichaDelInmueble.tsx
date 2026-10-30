@@ -12,8 +12,10 @@
  * el mapa, el renglón de la ubicación con su acción (`ubicacion`).
  */
 
-import type { ReactNode } from 'react';
-import { Ruler } from '@phosphor-icons/react';
+import type { ComponentType, ReactNode } from 'react';
+import { Bathtub, Bed, Buildings, CalendarBlank, Car, ChartBar, CheckCircle, Ruler } from '@phosphor-icons/react';
+import { Stagger, StaggerItem } from '@leasefy/cadence';
+import { CARACTERISTICAS, NOMBRE_DEL_GRUPO, type GrupoDeCaracteristicas } from '@/lib/inmuebles/caracteristicas';
 
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -56,6 +58,30 @@ export function caracteristicasDelInmueble(p: Property, tr: (es: string) => stri
   return lista.filter((c): c is Caracteristica => c !== null);
 }
 
+const ICONO_DE_LA_CARACTERISTICA: Record<string, ComponentType<{ size?: number; weight?: 'duotone'; 'aria-hidden'?: boolean | 'true' }>> = {
+  area: Ruler,
+  habitaciones: Bed,
+  banos: Bathtub,
+  parqueaderos: Car,
+  estrato: ChartBar,
+  piso: Buildings,
+  anio: CalendarBlank,
+};
+
+const ORDEN_DE_LOS_GRUPOS: GrupoDeCaracteristicas[] = ['inmueble', 'conjunto', 'sector'];
+
+/** Las amenidades del inmueble agrupadas como en el formulario (del inmueble, del conjunto, del sector). */
+export function amenidadesPorGrupo(p: Property): Array<{ grupo: GrupoDeCaracteristicas; nombres: string[] }> {
+  const ids = new Set((p.amenities ?? []).map((a) => a.id));
+  const sueltas = (p.amenities ?? []).filter((a) => !CARACTERISTICAS.some((c) => c.id === a.id)).map((a) => a.name).filter(Boolean);
+  const grupos = ORDEN_DE_LOS_GRUPOS.map((grupo) => ({
+    grupo,
+    nombres: CARACTERISTICAS.filter((c) => c.grupo === grupo && ids.has(c.id)).map((c) => c.nombre),
+  }));
+  if (sueltas.length > 0) grupos[0] = { grupo: 'inmueble', nombres: [...grupos[0].nombres, ...sueltas] };
+  return grupos.filter((g) => g.nombres.length > 0);
+}
+
 export function FichaDelInmueble({ property, cargando = false, ubicacion, onEditar, loQueFaltaEnLaLista = false, className }: FichaDelInmuebleProps) {
   const tr = useTr();
   const caracteristicas = property ? caracteristicasDelInmueble(property, tr) : [];
@@ -73,14 +99,46 @@ export function FichaDelInmueble({ property, cargando = false, ubicacion, onEdit
           ))}
         </div>
       ) : caracteristicas.length > 0 ? (
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4" data-testid="caracteristicas-del-inmueble">
-          {caracteristicas.map((c) => (
-            <div key={c.clave} className="min-w-0">
-              <dt className="font-mono text-caption uppercase tracking-[0.1em] text-fg-subtle">{c.rotulo}</dt>
-              <dd className="mt-1.5 whitespace-nowrap font-mono text-[17px] tabular-nums text-fg">{c.valor}</dd>
+        // Mosaicos con su ícono (reunión con Juan, 27-10-2026: «características mejor presentadas»): el valor grande y
+        // el rótulo debajo, como se lee una ficha de un portal; el orden es el de lo que más se busca.
+        <Stagger as="ul" className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4" data-testid="caracteristicas-del-inmueble">
+          {caracteristicas.map((c) => {
+            const Icono = ICONO_DE_LA_CARACTERISTICA[c.clave] ?? Ruler;
+            return (
+              <StaggerItem
+                as="li"
+                key={c.clave}
+                className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 rounded-xl border border-border-faint bg-surface-muted/40 px-3.5 py-3 dark:border-border-strong"
+              >
+                {/* La grilla pone el valor arriba y el rótulo debajo; el lector de pantalla lee «Área, 80 m²». */}
+                <span className="contents">
+                  <span className="row-span-2 inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary">
+                    <Icono size={18} weight="duotone" aria-hidden="true" />
+                  </span>
+                  <span className="col-start-2 row-start-2 truncate text-caption text-fg-muted">{c.rotulo}</span>
+                </span>
+                <span className="col-start-2 row-start-1 whitespace-nowrap text-[17px] font-medium leading-tight tabular-nums text-fg">{c.valor}</span>
+              </StaggerItem>
+            );
+          })}
+        </Stagger>
+      ) : null}
+      {property && amenidadesPorGrupo(property).length > 0 ? (
+        <div className="mt-5 space-y-4 border-t border-border-faint pt-5 dark:border-border-strong" data-testid="amenidades-del-inmueble">
+          {amenidadesPorGrupo(property).map(({ grupo, nombres }) => (
+            <div key={grupo}>
+              <p className="text-caption font-medium text-fg-muted">{tr(NOMBRE_DEL_GRUPO[grupo])}</p>
+              <ul className="mt-2 flex flex-wrap gap-2">
+                {nombres.map((nombre) => (
+                  <li key={nombre} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-sm text-fg">
+                    <CheckCircle size={14} weight="fill" className="text-success" aria-hidden="true" />
+                    {tr(nombre)}
+                  </li>
+                ))}
+              </ul>
             </div>
           ))}
-        </dl>
+        </div>
       ) : null}
       {/* Faltan lo que más busca quien arrienda (área, habitaciones, baños): se dice con su
           salida aunque haya otros datos (revisión 21-10: con sólo «Estrato 3» no se ofrecía). */}

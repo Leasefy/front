@@ -25,9 +25,12 @@ import { useRouter } from 'next/navigation'
 import { Clock, ShieldCheck } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
-import { Table, TableHeader, TableBodyAnimado, TableRow, TableHead, TableCell, TableRowAnimada } from '@/components/ui/table'
+import { Table, TableHeader, TableBodyAnimado, TableRow, TableCell, TableRowAnimada } from '@/components/ui/table'
 import { TablePagination } from '@/components/ui/pagination'
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden'
 import { Chip, CrossFade, Presence, SearchInput, Stagger, StaggerItem } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 import { useEstudiosList } from '@/lib/hooks/estudio/use-estudios-list'
@@ -117,6 +120,19 @@ export default function EstudiosListClient() {
    * `pageItems` alimenta las dos vistas (tabla en ≥md, tarjetas en móvil) para
    * que ambas muestren exactamente la misma página.
    */
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Sin elegir, el de siempre
+  // (gravedad y después lo más nuevo).
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(
+    filtered,
+    {
+      estudio: (it) => it.titulo,
+      severidad: (it) => SEVERIDAD_RANK[it.severidad],
+      estado: (it) => it.estado,
+      accion: (it) => it.accionSugerida.label,
+      tiempo: (it) => it.createdAt,
+    },
+    { primero: { severidad: 'desc', tiempo: 'desc' } },
+  )
   const {
     pageItems,
     total,
@@ -125,8 +141,8 @@ export default function EstudiosListClient() {
     setPage,
     setPageSize,
     shouldPaginate,
-  } = useTablePagination(filtered, {
-    resetKey: `${severidades.join()}|${estados.join()}|${flags.join()}|${searchInput.trim()}`,
+  } = useTablePagination(ordenadas, {
+    resetKey: `${severidades.join()}|${estados.join()}|${flags.join()}|${searchInput.trim()}|${orden?.campo ?? ''}|${orden?.sentido ?? ''}`,
   })
 
   const hasActiveFilters =
@@ -286,6 +302,19 @@ export default function EstudiosListClient() {
                 className="w-full"
               />
             </div>
+            {filtered.length > 1 ? (
+              <SelectorDeOrden
+                orden={orden}
+                onCambiar={setOrden}
+                className="w-44 shrink-0 sm:w-56"
+                formas={[
+                  { campo: 'severidad', sentido: 'desc', etiqueta: 'Más graves primero' },
+                  { campo: 'tiempo', sentido: 'desc', etiqueta: 'Más recientes' },
+                  { campo: 'tiempo', sentido: 'asc', etiqueta: 'Los que más esperan' },
+                  { campo: 'estudio', sentido: 'asc', etiqueta: 'Estudio (A–Z)' },
+                ]}
+              />
+            ) : null}
             <span className="hidden md:inline text-xs font-medium text-fg-muted whitespace-nowrap tabular-nums">
               {t('inmobiliaria.ai.estudio.list.count', { n: filtered.length })}
             </span>
@@ -306,21 +335,21 @@ export default function EstudiosListClient() {
             <Table className="min-w-full divide-y divide-border text-sm [&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:bg-surface-muted">
               <TableHeader className="bg-surface-muted">
                 <TableRow>
-                  <TableHead>
+                  <EncabezadoOrdenable campo="estudio" orden={orden} onOrdenar={ordenarPor}>
                     {t('inmobiliaria.ai.estudio.list.columns.estudio')}
-                  </TableHead>
-                  <TableHead>
+                  </EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="severidad" orden={orden} onOrdenar={ordenarPor}>
                     {t('inmobiliaria.ai.estudio.list.columns.severidad')}
-                  </TableHead>
-                  <TableHead>
+                  </EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="estado" orden={orden} onOrdenar={ordenarPor}>
                     {t('inmobiliaria.ai.estudio.list.columns.estado')}
-                  </TableHead>
-                  <TableHead>
+                  </EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="accion" orden={orden} onOrdenar={ordenarPor}>
                     {t('inmobiliaria.ai.estudio.list.columns.accionSugerida')}
-                  </TableHead>
-                  <TableHead>
+                  </EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="tiempo" orden={orden} onOrdenar={ordenarPor}>
                     {t('inmobiliaria.ai.estudio.list.columns.tiempo')}
-                  </TableHead>
+                  </EncabezadoOrdenable>
                 </TableRow>
               </TableHeader>
               {/* Filtrar, buscar o paginar: las filas entran escalonadas (techo 320 ms) y las que sobran salen. */}
@@ -455,10 +484,10 @@ export default function EstudiosListClient() {
                             )
                           })}
                         </div>
-                        <p className="text-xs text-fg-muted mt-1.5 line-clamp-2">
+                        <p className="text-caption text-fg-muted mt-1.5 line-clamp-2">
                           {it.accionSugerida.label}
                         </p>
-                        <span className="inline-flex items-center gap-1 text-xs text-fg-muted tabular-nums mt-1.5">
+                        <span className="inline-flex items-center gap-1 text-caption text-fg-muted tabular-nums mt-1.5">
                           <Clock className="w-3 h-3" aria-hidden="true" />
                           {relativeTime(it.createdAt, t)}
                         </span>

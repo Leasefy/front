@@ -217,8 +217,8 @@ export function CaptacionDelLead({ pipelineItemId, puedeEditar }: { pipelineItem
             </dl>
             <p className="text-caption text-muted-foreground" data-testid="captacion-nota">
               {c.estado === 'CONVERTIDA'
-                ? 'Ya es una ficha de Propietarios. El inmueble, el mandato, la firma, el canon y la comisión los haces tú; nada de eso sale solo.'
-                : 'Es un borrador: no cuenta en Propietarios, Inmuebles ni en los indicadores hasta que lo conviertas. Nunca se hacen solos el mandato, la firma, el canon, la comisión, la publicación ni las listas restrictivas.'}
+                ? 'Ya es una ficha de Propietarios. El inmueble, el contrato de consignación, la firma, el canon y la comisión los haces tú; nada de eso sale solo.'
+                : 'Es un borrador: no cuenta en Propietarios, Inmuebles ni en los indicadores hasta que lo conviertas. Nunca se hacen solos el contrato de consignación, la firma, el canon, la comisión, la publicación ni las listas restrictivas.'}
             </p>
 
             {c.estado === 'CONVERTIDA' && c.propietarioId ? (

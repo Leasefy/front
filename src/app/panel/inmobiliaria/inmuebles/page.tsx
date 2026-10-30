@@ -27,6 +27,7 @@ import { Button, EmptyState } from '@/components/ui';
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { InmueblesDePropietarios } from '@/components/inmobiliaria/InmueblesDePropietarios';
 import { TablePagination } from '@/components/ui/pagination';
 import {
   useTablePagination,
@@ -560,6 +561,9 @@ function PortafolioContent() {
         }
       />
 
+      {/* Los inmuebles que propietarios independientes le asignaron a este agente (Nico, 27-10-2026). */}
+      <InmueblesDePropietarios />
+
       {/* Qué inmuebles puede abrir esta persona, en este teléfono, sin red.
           No aparece hasta que hay al menos uno preparado. */}
       <DisponiblesSinSenal aviso={avisoSinSenal} />
@@ -729,7 +733,7 @@ function PortafolioContent() {
                         ) : (
                           <InmuebleSinMandatoCard
                             inmueble={row}
-                            onClick={() => setMandatoFor(row)}
+                            onClick={() => router.push(`/panel/inmobiliaria/inmuebles/sin-propietario/${row.propertyId}`)}
                             onCompletarMandato={setMandatoFor}
                           />
                         )}
@@ -743,7 +747,7 @@ function PortafolioContent() {
                     icono={Buildings}
                     titulo={t('inmobiliaria.portafolio.noProperties')}
                     descripcion={t('inmobiliaria.portafolio.noPropertiesDesc')}
-                    crear={{ label: 'Nuevo mandato', href: '/panel/inmobiliaria/inmuebles/nuevo' }}
+                    crear={{ label: 'Nueva consignación', href: '/panel/inmobiliaria/inmuebles/nuevo' }}
                     onLimpiarFiltros={limpiarFiltros}
                   />
                 )}
@@ -765,6 +769,7 @@ function PortafolioContent() {
                     onPrepararSinSenal={(c) => void handlePrepararSinSenal(c)}
                     onEliminar={abrirEliminar}
                     onCompletarMandato={setMandatoFor}
+                    onAbrirSinPropietario={(row) => router.push(`/panel/inmobiliaria/inmuebles/sin-propietario/${row.propertyId}`)}
                     comercialPorConsignacion={comercialPorConsignacion}
                     publicadoPorInmueble={publicadoPorInmueble}
                     onCambiarPublicacion={(ids, publicar) => void cambiarPublicacion(ids, publicar)}
@@ -790,7 +795,7 @@ function PortafolioContent() {
                     icono={Buildings}
                     titulo={t('inmobiliaria.portafolio.noProperties')}
                     descripcion={t('inmobiliaria.portafolio.noPropertiesDesc')}
-                    crear={{ label: 'Nuevo mandato', href: '/panel/inmobiliaria/inmuebles/nuevo' }}
+                    crear={{ label: 'Nueva consignación', href: '/panel/inmobiliaria/inmuebles/nuevo' }}
                     onLimpiarFiltros={limpiarFiltros}
                   />
                 )}

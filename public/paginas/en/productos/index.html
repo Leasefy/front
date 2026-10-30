@@ -91,6 +91,8 @@ ul,ol{list-style:none}
 .hdr .wrap{display:flex;align-items:center;height:100%;gap:26px}
 .logo{display:flex;align-items:center;height:40px}
 .logo svg{height:26px;width:auto;fill:var(--tinta)}
+/* Nico 27-10: el logo un poco más grande y el menú más separado de él */
+.hdr .logo svg{height:30px}.hdr .nav{margin-left:22px}
 .nav{display:flex;align-items:center;gap:24px;font-size:15px;color:var(--grafito)}
 .nav>a,.nav-btn{display:inline-flex;align-items:center;gap:8px;transition:color .2s;height:40px}
 .nav>a:hover,.nav-btn:hover,.nav-btn[aria-expanded="true"]{color:var(--tinta)}
@@ -116,7 +118,7 @@ ul,ol{list-style:none}
 .reloj .pista{display:flex;gap:2px}
 .reloj .pista i{width:4px;height:10px;border-radius:1px;background:var(--piedra);transition:background-color .3s}
 .reloj .pista i.on{background:var(--voltaje-dot)}
-.hdr-cta{display:flex;align-items:center;gap:10px}
+.hdr-cta{display:flex;align-items:center;gap:10px;margin-left:auto}
 .mbtn{display:none;height:38px;padding:0 14px;border-radius:12px;background:var(--btn-s);font-size:14px;font-weight:500;corner-shape:superellipse(1.5)}
 .menu{position:fixed;inset:calc(var(--hdr) + env(safe-area-inset-top,0px)) 0 0 0;z-index:59;background:var(--bg);padding:16px max(var(--gutter),env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(var(--gutter),env(safe-area-inset-left,0px));display:none;flex-direction:column;overflow:auto}
 .menu-abierto .menu{display:flex}
@@ -128,7 +130,7 @@ ul,ol{list-style:none}
 .menu .acc{display:flex;flex-direction:column;gap:10px;margin-top:24px}
 @media (max-width:1180px){.nav{display:none}.hdr-cta .pub{display:none}}
 @media (max-width:720px){
-  .hdr-cta{display:none}.mbtn{display:inline-flex;align-items:center}
+  .hdr-cta{display:none}.mbtn{margin-left:auto}.mbtn{display:inline-flex;align-items:center}
   .reloj{padding:0 10px}.reloj .dia,.reloj .pista{display:none}
   .hdr .wrap{gap:12px}
 }
@@ -391,6 +393,19 @@ section{position:relative;overflow-x:clip}
   .nota-chip{display:none}
   .nota-pie{display:block}
 }
+
+/* ── Entre secciones de la landing (Nico 27-10: «NO QUIERO INTERACCIONES TOSCAS ENTRE SECCIONES»): la barra
+   queda quieta (la misma en todas las páginas) y el contenido sale hacia arriba y entra subiendo. Las páginas
+   React (landing-v2.css) tienen exactamente lo mismo. Sin soporte del navegador, cambia como siempre. ── */
+@view-transition{navigation:auto}
+.hdr{view-transition-name:lf-barra}
+::view-transition-group(lf-barra){z-index:3;animation-duration:.42s;animation-timing-function:cubic-bezier(.2,.8,.2,1)}
+::view-transition-old(lf-barra),::view-transition-new(lf-barra){animation-duration:.2s}
+::view-transition-old(root){animation:lf-pag-sale .26s cubic-bezier(.4,0,1,1) both}
+::view-transition-new(root){animation:lf-pag-entra .62s cubic-bezier(.16,1,.3,1) .05s both}
+@keyframes lf-pag-sale{to{opacity:0;transform:translateY(-12px) scale(.99);filter:blur(4px)}}
+@keyframes lf-pag-entra{from{opacity:0;transform:translateY(26px) scale(.995);filter:blur(6px)}}
+@media (prefers-reduced-motion:reduce){::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important}}
 </style>
 <style id="barra-de-la-home">
 /* ES / EN (Nico 23-10: «toda la landing en español e inglés») */
@@ -416,7 +431,7 @@ section{position:relative;overflow-x:clip}
 .reloj .pista{display:flex;gap:2px}
 .reloj .pista i{width:4px;height:10px;border-radius:1px;background:var(--piedra);transition:background-color .3s}
 .reloj .pista i.on{background:var(--voltaje-dot)}
-.hdr-cta{display:flex;align-items:center;gap:10px}
+.hdr-cta{display:flex;align-items:center;gap:10px;margin-left:auto}
 .mbtn{display:none;height:38px;padding:0 14px;border-radius:12px;background:var(--arena);font-size:14px;font-weight:500;corner-shape:superellipse(1.5)}
 .menu{position:fixed;inset:var(--hdr) 0 0 0;z-index:59;background:var(--bg);padding:24px var(--gutter);display:none;flex-direction:column;gap:6px;overflow:auto}
 .menu-abierto .menu{display:flex}
@@ -430,7 +445,7 @@ section{position:relative;overflow-x:clip}
 @media (max-width:1100px){.nav{display:none}
 .hdr-cta .pub{display:none}
 .mbtn{display:inline-flex;align-items:center}}
-@media (max-width:720px){.hdr-cta{display:none}
+@media (max-width:720px){.hdr-cta{display:none}.mbtn{margin-left:auto}
 .mbtn{display:inline-flex;align-items:center}
 .reloj{padding:0 10px}
 .reloj .dia,.reloj .pista{display:none}
@@ -512,15 +527,11 @@ section{position:relative;overflow-x:clip}
       <a href="/en/avaluo">Appraisals</a>
       <a href="/en/contacto">Contact</a>
     </nav>
-    <div class="reloj" aria-label="An agency's day, as you scroll">
-      <span class="dia">THU 22 OCT</span><span class="ap">AUTOPILOT</span><b id="hora">07:02</b>
-      <span class="pista" id="pista" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
-    </div>
     <div class="hdr-cta">
       <div class="idioma" role="group" aria-label="Language"><button type="button" data-idioma="es" lang="es" aria-label="Español">ES</button><button type="button" data-idioma="en" lang="en" aria-label="English">EN</button></div>
-      <a class="btn btn-s btn-sm pub" href="/publica">List for free</a>
+      <a class="btn btn-s btn-sm pub" href="/publica" data-con-sesion="">List for free</a>
       <a class="btn btn-s btn-sm" href="/auth" data-sin-sesion="">Log in</a>
-      <a class="btn btn-p btn-sm" href="/auth?mode=register" data-sin-sesion="">Sign up</a>
+      <a class="btn btn-p btn-sm" href="/publica" data-sin-sesion="">List for free</a>
       <a class="btn btn-p btn-sm" href="/ir-al-panel" data-con-sesion="">Go to dashboard</a>
     </div>
     <button class="mbtn" id="mbtn" aria-expanded="false" aria-controls="menu">Menu</button>
@@ -542,7 +553,7 @@ section{position:relative;overflow-x:clip}
   <a class="it" href="/en/avaluo"><span>04</span>Appraisals</a>
   <a class="it" href="/en/contacto"><span>05</span>Contact</a>
   <div class="idioma" role="group" aria-label="Language"><button type="button" data-idioma="es" lang="es" aria-label="Español">ES</button><button type="button" data-idioma="en" lang="en" aria-label="English">EN</button></div>
-  <div class="acc"><a class="btn btn-p" href="/auth?mode=register" data-sin-sesion="">Sign up</a><a class="btn btn-s" href="/auth" data-sin-sesion="">Log in</a><a class="btn btn-p" href="/ir-al-panel" data-con-sesion="">Go to dashboard</a><a class="btn btn-s" href="/publica">List for free</a></div>
+  <div class="acc"><a class="btn btn-p" href="/publica" data-sin-sesion="">List for free</a><a class="btn btn-s" href="/auth" data-sin-sesion="">Log in</a><a class="btn btn-p" href="/ir-al-panel" data-con-sesion="">Go to dashboard</a><a class="btn btn-s" href="/publica">List for free</a></div>
 </div>
 
 <main id="vista" tabindex="-1" data-armada="productos"><section class="hero hero-ind" id="arriba"><canvas class="corriente hero-pix" data-corriente="" data-marco="" data-claro=".44" data-radio="1.3" data-semilla="11" data-celda="3" data-fuerza="1" aria-hidden="true"></canvas><div class="wrap"><div class="hero-txt"><p class="boleto"><i aria-hidden="true"></i><span>Product</span><b>CRM · ERP · AI agents</b></p><h1 class="t-xl" data-palabras="">The <span class="acento">intelligent</span> operating system for real estate agencies</h1><p class="lead" data-r="">CRM, ERP and AI agents to run rentals end to end.</p><div class="hero-cta" data-r=""><a class="btn btn-p" href="/en/contacto">Book a demo</a><a class="btn btn-s" href="/en#planes">See plans</a></div></div></div></section><section class="sec ind" id="el-sistema"><div class="wrap"><p class="ceja"><i aria-hidden="true"></i>The system</p><h2 class="t-l" data-palabras="">CRM and ERP</h2><div class="ind-g dos"><a class="pz" href="/en/productos/crm"><span class="recorte"><span class="capa"><img class="on" src="/internas/productos/img/p/crm-pipeline.webp" alt="" loading="lazy" decoding="async"></span></span><span class="pz-tx"><span class="pz-k">System · Module 01</span><h3>Real estate CRM</h3><p>Your sales, end to end</p><span class="ver">See product →</span></span></a><a class="pz" href="/en/productos/erp"><span class="recorte"><span class="capa"><img class="on" src="/internas/productos/img/p/erp-tablero.webp" alt="" loading="lazy" decoding="async"></span></span><span class="pz-tx"><span class="pz-k">System · Module 02</span><h3>Rental ERP</h3><p>Your money in order, on its own</p><span class="ver">See product →</span></span></a></div></div></section><section class="sec arena ind" id="agentes-ai"><div class="wrap"><p class="ceja"><i aria-hidden="true"></i>AI agents</p><h2 class="t-l" data-palabras="">Six agents</h2><div class="ind-g tres"><a class="pz" href="/en/productos/cobranza"><span class="recorte"><span class="capa"><img class="on" src="/internas/productos/img/p/cob-resumen.webp" alt="" loading="lazy" decoding="async"></span></span><span class="pz-tx"><span class="pz-k">AI agents · 01</span><h3>Collections</h3><p>Late rent chases itself</p><span class="ver">See product →</span></span></a><a class="pz" href="/en/productos/inquilino"><span class="recorte"><span class="capa"><img class="on" src="/internas/productos/img/p/inq-detalle.webp" alt="" loading="lazy" decoding="async"></span></span><span class="pz-tx"><span class="pz-k">AI agents · 02</span><h3>Tenant screening</h3><p>Verified in minutes</p><span class="ver">See product →</span></span></a><a class="pz" href="/en/productos/avaluos"><span class="recorte"><span class="capa"><img class="on" src="/internas/productos/img/p/ava-lista.webp" alt="" loading="lazy" decoding="async"></span></span><span class="pz-tx"><span class="pz-k">AI agents · 03</span><h3>Appraisals</h3><p>The right price</p><span class="ver">See product →</span></span></a><a class="pz" href="/en/productos/conciliacion"><span class="recorte"><span class="capa"><img class="on" src="/internas/productos/img/p/conc-resumen.webp" alt="" loading="lazy" decoding="async"></span></span><span class="pz-tx"><span class="pz-k">AI agents · 04</span><h3>Reconciliation</h3><p>Matched against the bank</p><span class="ver">See product →</span></span></a><a class="pz" href="/en/productos/matching"><span class="recorte"><span class="capa"><img class="on" src="/internas/productos/img/p/match-ofrecer.webp" alt="" loading="lazy" decoding="async"></span></span><span class="pz-tx"><span class="pz-k">AI agents · 05</span><h3>Matching</h3><p>Options the same day</p><span class="ver">See product →</span></span></a><a class="pz" href="/en/productos/asegurabilidad"><span class="recorte"><span class="capa"><img class="on" src="/internas/productos/img/p/aseg-resumen.webp" alt="" loading="lazy" decoding="async"></span></span><span class="pz-tx"><span class="pz-k">AI agents · 06</span><h3>Insurability</h3><p>Protected leases</p><span class="ver">See product →</span></span></a></div><div class="ind-pie"><a class="lnk" href="/en#producto">Overview on the home page ↓</a></div></div></section><section class="contacto" id="demo"><canvas class="corriente fin-pix" data-corriente="" data-forma="horizonte" data-semilla="41" data-celda="4" data-velocidad="1.6" data-fuerza=".72" aria-hidden="true"></canvas><div class="wrap"><p class="ceja"><i aria-hidden="true"></i>Demo</p><h2 class="t-xl" data-palabras="">Put your operation on <span class="acento">autopilot</span> and focus on bringing in clients.</h2><div class="fin-cta" data-r=""><a class="btn btn-p btn-xl" href="/en/contacto">Book a demo</a><a class="btn btn-s btn-xl" href="/en#planes">See plans</a></div></div></section></main>
@@ -573,6 +584,7 @@ section{position:relative;overflow-x:clip}
 <script src="/internas/productos/js/04-vistas.js"></script>
 <script src="/internas/productos/js/05-marca-del-pie.js"></script>
 <script src="/internas/productos/js/99-mega-menu.js"></script>
+<script src="/landing/js/preparar-paginas.js"></script>
 
 
 </body></html>

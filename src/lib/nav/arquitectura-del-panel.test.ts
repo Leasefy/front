@@ -209,7 +209,7 @@ describe('arquitectura del panel — sidebar', () => {
     }
   });
 
-  it('el sidebar tiene 29 módulos en 5 grupos con nombre (+ Inicio y Chat = 31 filas)', () => {
+  it('el sidebar tiene 30 módulos en 5 grupos con nombre (+ Inicio y Chat = 32 filas)', () => {
     // Eran 18 hasta que Configuración salió del sidebar (Nico, 2026-09-03): se
     // entra por el menú del perfil. Eran 17 hasta que «Cobros» y «Pagos» se
     // volvieron un solo módulo de plata (Nico + CEO, 2026-09-15). Eran 16 en 4
@@ -246,22 +246,23 @@ describe('arquitectura del panel — sidebar', () => {
     // poder probarlos»).
     // 14-10-2026 (ROLES): 28 con «Jurídico», que sólo ve el abogado externo.
     // 22-10-2026 (Portofino): 29 con «Servicios públicos» en Operación.
-    expect(modulos).toHaveLength(29);
+    // 28-10-2026 (Nico): 30 con «Firmas» en Captación (cualquier documento firmado con nuestro código).
+    expect(modulos).toHaveLength(30);
   });
 
-  it('Agenda vive en «Captación y arriendo», detrás de Pipeline', () => {
-    // Nico, 2026-09-12: «Agenda interna: la sección de agenda la debemos llevar
-    // para la sección de captación y arriendo». Estaba en Operación. Va detrás
-    // de Pipeline porque lo que llena la agenda son las visitas del prospecto.
+  it('Agenda vive en «Operación», detrás de Contratos', () => {
+    // Nico, 2026-10-28: «pasa la sección agenda dentro de operación y el calendario quede como predeterminado y no
+    // lista». Del 12-09 al 28-10 estuvo en Captación y arriendo, detrás de Pipeline.
     const captacion = ARQUITECTURA_DEL_PANEL.find((g) => g.key === 'captacion');
     const operacion = ARQUITECTURA_DEL_PANEL.find((g) => g.key === 'operacion');
-    const claves = captacion!.modulos.map((m) => m.key);
+    const claves = operacion!.modulos.map((m) => m.key);
     expect(claves).toContain('agenda');
-    expect(claves.indexOf('agenda')).toBe(claves.indexOf('pipeline') + 1);
-    expect(operacion!.modulos.map((m) => m.key)).not.toContain('agenda');
-    // Cambiar de grupo no cambia quién la ve: mismo gate, mismo encuadre.
-    const agenda = captacion!.modulos.find((m) => m.key === 'agenda');
+    expect(claves.indexOf('agenda')).toBe(claves.indexOf('contratos') + 1);
+    expect(captacion!.modulos.map((m) => m.key)).not.toContain('agenda');
+    // Cambiar de grupo no cambia quién la ve: mismo gate, mismo encuadre (también el asesor, por `pipeline`).
+    const agenda = operacion!.modulos.find((m) => m.key === 'agenda');
     expect(agenda!.module).toBe('operaciones');
+    expect(agenda!.modulos).toEqual(['operaciones', 'pipeline']);
     expect(agenda!.scope).toBe('administracion');
   });
 
@@ -314,6 +315,7 @@ describe('arquitectura del panel — sidebar', () => {
       '/pagos/calendario': 'dias-habiles', // la tarjeta dice lo que se corrige, no «calendario» (revisora r27, C12)
       '/pipeline': 'prospeccion', // vocabulario: manual de voz (22-10), sin anglicismos en el menú
       '/postulaciones/matching': 'afinidad', // decisión 26 de Nico (22-10): «Matching» → «Afinidad»; la ruta se conserva
+      '/pipeline/comisiones-compartidas': 'comision-compartida', // la fila nombra UNA; la pantalla lista todas (28-10)
     };
     /*
      * 🔴 R4 mide el nombre con el que se NAVEGA a la ruta, que para la raíz de

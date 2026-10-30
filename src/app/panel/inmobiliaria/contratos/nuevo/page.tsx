@@ -11,7 +11,6 @@ import {
   X,
   WarningCircle,
   CheckCircle,
-  Info,
   Scales,
   Sparkle,
 } from '@phosphor-icons/react';
@@ -31,7 +30,20 @@ import {
   hace,
   todayISO,
 } from './fechas-y-topes';
-import { ResumenDelContratoNuevo } from '@/components/contratos/ResumenDelContratoNuevo';
+import { ResumenDelContratoNuevo, type ResumenDelContratoNuevoProps } from '@/components/contratos/ResumenDelContratoNuevo';
+import {
+  CodeudoresAlCrear,
+  DocumentosAlCrear,
+  codeudorCompleto,
+  codeudorVacio,
+  type DocumentoAlCrear,
+} from '@/components/contratos/AlCrearElContrato';
+import type { CodeudorDto } from '@/lib/api/pagare.types';
+import { codeudoresApi } from '@/lib/api/pagare.service';
+import { documentosDelContratoApi } from '@/lib/api/documentos-del-contrato.service';
+import { contratoAlCrearApi } from '@/lib/api/contrato-al-crear.service';
+import { cicloDeVidaApi } from '@/lib/api/ciclo-de-vida.service';
+import { useBorradorDelContratoNuevo } from '@/lib/contratos/useBorradorDelContratoNuevo';
 import { primerCanon } from '@/lib/contratos/primer-canon';
 import { avanceDelContrato } from '@/lib/contratos/avance-del-contrato';
 import { ritmoDePago } from '@/lib/contratos/ritmo-de-pago';
@@ -120,6 +132,7 @@ import type {
   UsoDelInmueble,
 } from '@/lib/api/contratos-plantilla.service';
 import { BloqueoPorInventario } from '@/components/inmobiliaria/inventario/BloqueoPorInventario';
+import { CajonDelInventario } from '@/components/inmobiliaria/inventario/CajonDelInventario';
 import { inventarioDelInmuebleApi } from '@/lib/api/inventario-del-inmueble.service';
 import { AvisoInmuebleSinCanon } from '@/components/inmobiliaria/CanonPorConfirmar';
 import { esErrorInmuebleSinCanon } from '@/lib/inmuebles/canon-por-confirmar';
@@ -179,6 +192,7 @@ const FALTA = {
 } as const;
 /** Los del bloque «partes»: sus errores salen cuando se toca el bloque (como siempre). */
 const DE_LAS_PARTES: ReadonlySet<string> = new Set(['propertyId', 'tenantId', 'nombre', 'documento', 'correo']);
+const DEL_INQUILINO: ReadonlySet<string> = new Set(['tenantId', 'nombre', 'documento', 'correo']);
 
 /** «a», «a y b», «a, b y c». */
 function enLista(cosas: readonly string[]): string {
@@ -264,6 +278,14 @@ function NuevoContratoContent() {
   // que abre en rojo antes de que la persona haga nada regaña por adelantado.
   const [partesTocadas, setPartesTocadas] = useState(false);
   /*
+   * Revisión con datos de Portofino (29-10): al elegir el INMUEBLE el
+   * inquilino ya salía en rojo («Elige al inquilino.») sin haberlo tocado.
+   * Los del inquilino esperan a que se toque el inquilino; mientras tanto el
+   * resumen dice que falta.
+   */
+  const [inquilinoTocado, setInquilinoTocado] = useState(false);
+  const errorDeLaParteVisible = (clave: string) => partesTocadas && (!DEL_INQUILINO.has(clave) || inquilinoTocado);
+  /*
    * T-0145 — lo que la agencia corrigió de la identificación del arrendatario
    * en la sección de la plantilla. Sólo guarda lo EDITADO: lo que no se tocó
    * sigue saliendo de la postulación, y si ésta cambia el nombre cambia con ella.
@@ -334,6 +356,10 @@ function NuevoContratoContent() {
    * 409 del back al crear, que es quien decide.
    */
   const [bloqueoDeInventario, setBloqueoDeInventario] = useState<BloqueoPorInventarioDatos | null>(null);
+  // 🔴 Nico, 29-10-2026: el inventario se hace en un cajón encima del formulario
+  // (salir a la ficha borraba lo que se llevaba). Al cerrarlo se vuelve a preguntar.
+  const [inventarioAbierto, setInventarioAbierto] = useState(false);
+  const [vueltasDelInventario, setVueltasDelInventario] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   /*
    * QA-CONT-95 C-09 (ronda 3): el archivo rechazado (.docx, PDF de más de
@@ -821,7 +847,65 @@ function NuevoContratoContent() {
   );
   const respaldoValido = Object.keys(erroresRespaldo).length === 0;
 
-  const isValid = Object.keys(validation).length === 0 && respaldoValido;
+  /*
+   * Nico, 29-10-2026: codeudores (opcionales) y documentos adicionales al
+   * crear. Un codeudor empezado a medias frena el botón: o se completa o se quita.
+   */
+  const [codeudores, setCodeudores] = useState<CodeudorDto[]>([]);
+  /**
+   * Portofino (29-10-2026): «hay contratos de 12 meses que después del año se
+   * renuevan cada 6 meses; otros cada 12; otros son a 6». Vacío = por el mismo
+   * término (Ley 820). Se guarda en `prorrogaMeses` al terminar de crear.
+   */
+  const [renuevaCada, setRenuevaCada] = useState<'' | '6' | '12'>('');
+  const [documentosAdicionales, setDocumentosAdicionales] = useState<DocumentoAlCrear[]>([]);
+  const codeudoresListos = codeudores.every((c) => codeudorVacio(c) || codeudorCompleto(c));
+
+  /*
+   * Nico, 29-10-2026: lo que se lleva llenado no se pierde (borrador
+   * automático). Sólo en el contrato a mano y sin nada pedido por la URL:
+   * lo que viene de una postulación o de otra pantalla manda.
+   */
+  const conBorrador = esManual && Array.from(searchParams.keys()).every((k) => k === 'modo');
+  const { pdfFile: _pdfSinGuardar, ...formSinArchivo } = form;
+  const datosDelBorrador = useMemo<Record<string, unknown>>(
+    () => ({
+      form: formSinArchivo,
+      partes,
+      inmuebleElegido,
+      nombreDelInquilino,
+      tipoDelInmuebleElegido,
+      consignacionElegida,
+      uso,
+      comisionDesconocida,
+      comisionManual,
+      respaldo,
+      codeudores,
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [JSON.stringify(formSinArchivo), partes, inmuebleElegido, nombreDelInquilino, tipoDelInmuebleElegido, consignacionElegida, uso, comisionDesconocida, comisionManual, respaldo, codeudores],
+  );
+  const borradorTieneAlgo = Boolean(partes.propertyId) || partes.inquilino !== PARTES_VACIAS.inquilino || codeudores.length > 0;
+  const borradorDelContrato = useBorradorDelContratoNuevo({
+    habilitado: conBorrador,
+    datos: datosDelBorrador,
+    tieneAlgo: borradorTieneAlgo,
+    alRetomar: (d) => {
+      if (d.form && typeof d.form === 'object') setForm((f) => ({ ...f, ...(d.form as Partial<FormState>), pdfFile: null }));
+      if (d.partes) setPartes(d.partes as PartesManuales);
+      if (typeof d.inmuebleElegido === 'string') setInmuebleElegido(d.inmuebleElegido);
+      if (typeof d.nombreDelInquilino === 'string') setNombreDelInquilino(d.nombreDelInquilino);
+      if (typeof d.tipoDelInmuebleElegido === 'string') setTipoDelInmuebleElegido(d.tipoDelInmuebleElegido);
+      if (typeof d.consignacionElegida === 'string') setConsignacionElegida(d.consignacionElegida);
+      if (typeof d.uso === 'string') setUso(d.uso as UsoDelInmueble | '');
+      if (typeof d.comisionDesconocida === 'boolean') setComisionDesconocida(d.comisionDesconocida);
+      if (typeof d.comisionManual === 'string') setComisionManual(d.comisionManual);
+      if (d.respaldo && typeof d.respaldo === 'object') setRespaldo(d.respaldo as Partial<Respaldo>);
+      if (Array.isArray(d.codeudores)) setCodeudores(d.codeudores as CodeudorDto[]);
+    },
+  });
+
+  const isValid = Object.keys(validation).length === 0 && respaldoValido && codeudoresListos;
 
   const inmuebleParaIniciar = (esManual ? partes.propertyId : property?.id) || null;
   useEffect(() => {
@@ -841,9 +925,80 @@ function NuevoContratoContent() {
     return () => {
       vivo = false;
     };
-  }, [inmuebleParaIniciar]);
+  }, [inmuebleParaIniciar, vueltasDelInventario]);
 
   // Submit
+  /*
+   * 🔴 Nico, 29-10-2026: el contrato que se crea aquí YA está firmado (las
+   * firmas van por el módulo de Firmas): nace ACTIVO, con sus cuotas, cobros
+   * e inmueble arrendado (el back activa por el camino de siempre). Después,
+   * los codeudores y los documentos adicionales. Lo que falle se dice, y el
+   * contrato igual queda creado.
+   */
+  const terminarDeCrear = async (
+    contractId: string,
+    inquilino?: { userId: string | null; invitado: boolean },
+  ) => {
+    const pendientes: string[] = [];
+    let porEmpezar = false;
+    let activo = true;
+    try {
+      porEmpezar = (await contratoAlCrearApi.activarYaFirmado(contractId)).porEmpezar;
+    } catch (err) {
+      activo = false;
+      pendientes.push(`no se pudo activar (${mensajeParaLaPersona(err)}); cámbiale el estado desde el contrato`);
+    }
+    if (renuevaCada && usoDelContrato !== 'COMERCIAL') {
+      try {
+        await cicloDeVidaApi.fijarMesesDeProrroga(contractId, Number(renuevaCada));
+      } catch {
+        pendientes.push('no se guardó cada cuánto se renueva; ponlo en el contrato');
+      }
+    }
+    const aGuardar = codeudores.filter((c) => !codeudorVacio(c));
+    const codeudoresFallidos = (
+      await Promise.allSettled(aGuardar.map((c) => codeudoresApi.create(contractId, { ...c, nombre: c.nombre.trim(), documento: c.documento.trim(), email: c.email.trim() })))
+    ).filter((r) => r.status === 'rejected').length;
+    if (codeudoresFallidos > 0) pendientes.push(`${codeudoresFallidos === 1 ? 'un codeudor no se guardó' : `${codeudoresFallidos} codeudores no se guardaron`}`);
+    const documentosFallidos = (
+      await Promise.allSettled(documentosAdicionales.map((d) => documentosDelContratoApi.subir(contractId, { tipo: d.tipo, archivo: d.archivo })))
+    ).filter((r) => r.status === 'rejected').length;
+    if (documentosFallidos > 0) pendientes.push(`${documentosFallidos === 1 ? 'un documento no se subió' : `${documentosFallidos} documentos no se subieron`}`);
+    borradorDelContrato.descartar();
+    const titulo = !activo ? 'Contrato creado.' : porEmpezar ? 'Contrato creado. Se activa solo el día que empieza.' : 'Contrato creado y activo.';
+    /*
+     * Revisión con datos de Portofino (29-10, tarde): el aviso dice lo que
+     * pasó DE VERDAD (antes nombraba codeudores y documentos aunque no hubiera
+     * ninguno) y vuelve a decir qué pasó con la cuenta del inquilino, que se
+     * había perdido al pasar a «creado y activo».
+     */
+    const codeudoresGuardados = aGuardar.length - codeudoresFallidos;
+    const documentosGuardados = documentosAdicionales.length - documentosFallidos;
+    const guardados = [
+      codeudoresGuardados > 0 ? (codeudoresGuardados === 1 ? 'el codeudor' : `${codeudoresGuardados} codeudores`) : null,
+      documentosGuardados > 0 ? (documentosGuardados === 1 ? 'un documento' : `${documentosGuardados} documentos`) : null,
+    ].filter((x): x is string => x !== null);
+    const quedaron = codeudoresGuardados + documentosGuardados === 1 ? 'Quedó' : 'Quedaron';
+    const delInquilino = inquilino?.invitado
+      ? 'Le mandamos al inquilino la invitación al portal.'
+      : inquilino && inquilino.userId === null
+        ? 'El inquilino todavía no tiene cuenta: invítalo al portal desde el contrato.'
+        : null;
+    const detalle = [
+      activo ? 'Ya quedan sus cuotas y cobros.' : null,
+      guardados.length > 0 ? `${quedaron} ${guardados.join(' y ')} en el contrato.` : null,
+      delInquilino,
+    ]
+      .filter(Boolean)
+      .join(' ');
+    if (pendientes.length > 0) {
+      toast.warning(titulo, { description: `Ojo: ${pendientes.join('; ')}. Lo puedes completar desde el contrato.${delInquilino ? ` ${delInquilino}` : ''}` });
+    } else {
+      toast.success(titulo, detalle ? { description: detalle } : undefined);
+    }
+    router.push(`/panel/inmobiliaria/contratos/${contractId}`);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isValid || (!applicationId && !esManual)) return;
@@ -938,23 +1093,12 @@ function NuevoContratoContent() {
                 },
               }),
         });
-        if (creado.inquilino.invitado) {
-          toast.success('Contrato creado. Le mandamos al inquilino la invitación para crear su cuenta.');
-        } else if (creado.inquilino.userId === null) {
-          // QA-CONT CR-14 (back 2a681c93): el borrador nace SIN la cuenta del
-          // inquilino; para enviarlo a firmar hay que invitarlo desde el contrato.
-          toast.success('Contrato creado como borrador.', {
-            description: 'El inquilino todavía no tiene cuenta en el portal: invítalo desde el contrato («Invitar al portal») antes de enviarlo a firmar.',
-          });
-        } else {
-          toast.success('Contrato creado.');
-        }
-        router.push(`/panel/inmobiliaria/contratos/${creado.contract.id}`);
+        await terminarDeCrear(creado.contract.id, creado.inquilino);
         return;
       }
 
       const contract = await actions.create({ applicationId: applicationId!, ...terminos });
-      router.push(`/panel/inmobiliaria/contratos/${contract.id}`);
+      await terminarDeCrear(contract.id);
     } catch (err) {
       /*
        * 🔴 Antes acá llegaba sólo lo que `run()` no tragaba (nada): el 409
@@ -1047,7 +1191,7 @@ function NuevoContratoContent() {
   const loQueFalta = (Object.keys(FALTA) as Array<keyof typeof FALTA>).filter((clave) => {
     if (!validation[clave]) return false;
     if (clave === 'contratoArmado') return true;
-    if (DE_LAS_PARTES.has(clave)) return !partesTocadas;
+    if (DE_LAS_PARTES.has(clave)) return !errorDeLaParteVisible(clave);
     return vacio(clave as CampoDelContrato) && !camposDejados.has(idDelCampoDelContrato(clave as CampoDelContrato));
   });
 
@@ -1096,12 +1240,42 @@ function NuevoContratoContent() {
           ? 'Generado con IA · listo'
           : 'Plantilla de ley · lista'
         : null;
-  const bloqueosDelResumen: string[] = [
+  const bloqueosDelResumen: ResumenDelContratoNuevoProps['bloqueos'] = [
     // El motivo completo, con su enlace, está en el aviso debajo del inmueble.
-    ...(bloqueoDeInventario ? ['El inventario del inmueble no está completo y al día.'] : []),
+    ...(bloqueoDeInventario
+      ? [
+          {
+            texto: 'Sin el inventario del inmueble completo y al día no puedes crear el contrato.',
+            accion: bloqueoDeInventario.consignacionId
+              ? {
+                  label:
+                    bloqueoDeInventario.motivo === 'SOLO_BORRADOR'
+                      ? 'Completar el inventario'
+                      : bloqueoDeInventario.motivo === 'ANTERIOR_AL_FIN_DEL_CONTRATO'
+                        ? 'Actualizar el inventario'
+                        : 'Hacer el inventario',
+                  onClick: () => setInventarioAbierto(true),
+                }
+              : undefined,
+          },
+        ]
+      : []),
     ...(errorDeInmueble ? [errorDeInmueble.mensaje] : []),
     ...(errorSinCanon !== null || inmuebleManualSinCanon || (!esManual && property?.canonPorConfirmar)
       ? ['El inmueble tiene el canon por confirmar.']
+      : []),
+    // Revisión 29-10: con un codeudor a medias el botón se apagaba sin decir por qué aquí.
+    ...(!codeudoresListos
+      ? [
+          {
+            texto: 'Hay un codeudor a medias: complétalo o quítalo.',
+            accion: {
+              label: 'Ir al codeudor',
+              onClick: () =>
+                document.querySelector('[data-testid="nuevo-contrato-codeudores"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+            },
+          },
+        ]
       : []),
   ];
 
@@ -1190,6 +1364,23 @@ function NuevoContratoContent() {
         {/* ── Izquierda: los pasos, en orden ── */}
         {/* Ronda 12 → revisora r22: los pasos van en UNA columna, en el mismo orden en todos los anchos. */}
         <div className="min-w-0 space-y-6" data-testid="nuevo-contrato-elegir">
+        {/* Nico 29-10: se retomó lo que la persona dejó a medio llenar. */}
+        <Presence show={Boolean(borradorDelContrato.retomadoDe)} initial={false}>
+          <div className="flex flex-col gap-2 rounded-lg border border-border bg-surface-muted p-3 sm:flex-row sm:items-center sm:justify-between" data-testid="contrato-borrador-retomado">
+            <p className="text-body-sm text-fg-muted">Retomamos el contrato que dejaste a medio llenar. Si traía PDF o documentos, súbelos otra vez.</p>
+            <Button
+              type="button"
+              variant="ghost"
+              hideArrow
+              onClick={() => {
+                borradorDelContrato.descartar();
+                window.location.reload();
+              }}
+            >
+              Empezar de cero
+            </Button>
+          </div>
+        </Presence>
         {/* COTIZ-17: de dónde viene lo que ya está puesto. */}
         <Presence show={Boolean(desdeLaCotizacion)}>
           <p className="rounded-lg border border-border bg-surface-muted p-3 text-body-sm text-fg-muted" data-testid="contrato-desde-la-cotizacion">
@@ -1202,10 +1393,25 @@ function NuevoContratoContent() {
             inmueblePedido={inmueblePedido}
             valor={partes}
             onCambio={(v, opciones) => {
-              if (!opciones?.automatico) setPartesTocadas(true);
+              if (!opciones?.automatico) {
+                setPartesTocadas(true);
+                // Cambiar entre «Ya es inquilino» y «Nuevo» no cuenta: los campos llegan vacíos.
+                if (v.inquilino !== partes.inquilino && v.inquilino.modo === partes.inquilino.modo) setInquilinoTocado(true);
+              }
               if (v.propertyId !== partes.propertyId) {
                 setErrorDeInmueble(null);
                 setErrorSinCanon(null);
+              }
+              /*
+               * Revisión 29-10: volver a tocar el inmueble elegido lo QUITA
+               * (Combobox de Cadence); el encabezado y el resumen seguían
+               * diciendo el inmueble anterior.
+               */
+              if (!v.propertyId && partes.propertyId) {
+                setInmuebleElegido(null);
+                setTipoDelInmuebleElegido(null);
+                setConsignacionElegida(null);
+                setInmuebleManualSinCanon(null);
               }
               // Otro inquilino: lo corregido a mano era de la persona anterior.
               const antes = partes.inquilino.modo === 'existente' ? partes.inquilino.tenantId : '';
@@ -1214,7 +1420,7 @@ function NuevoContratoContent() {
               setPartes(v);
             }}
             errores={{
-              ...(partesTocadas ? validation : {}),
+              ...Object.fromEntries(Object.entries(validation).filter(([clave]) => errorDeLaParteVisible(clave))),
               ...erroresDelServidor,
               ...(errorDeInmueble ? { propertyId: errorDeInmueble.mensaje } : {}),
             }}
@@ -1249,10 +1455,15 @@ function NuevoContratoContent() {
           inmueble (`para-iniciar`); el 409 del back al crear cae aquí mismo.
           Entran y salen (no saltan).
         */}
-        <Presence show={bloqueoDeInventario !== null} initial={false} distance="xs">
+        {/* 🔴 Nico, 29-10-2026: el aviso PERSIGUE a la persona mientras baja
+            (se les olvidaba que sin inventario no se crea), y su botón abre el
+            inventario en un cajón, sin salir del formulario. */}
+        <Presence show={bloqueoDeInventario !== null} initial={false} distance="xs" className="sticky top-20 z-20">
           {bloqueoDeInventario && (
             <BloqueoPorInventario
               bloqueo={bloqueoDeInventario}
+              onAbrir={() => setInventarioAbierto(true)}
+              className="shadow-flotante"
               // Para volver acá con lo elegido cuando el inventario quede listo.
               volverA={
                 esManual
@@ -1413,6 +1624,24 @@ function NuevoContratoContent() {
                   </Select>
                 </Field>
               )
+            )}
+            {usoDelContrato !== 'COMERCIAL' && (
+              <Field
+                id="contrato-renueva-cada"
+                label="Se renueva cada"
+                hint="El incremento sólo sube cuando se cumple cada año de contrato. Se puede cambiar en el contrato."
+              >
+                <Select value={renuevaCada || 'TERMINO'} onValueChange={(v) => setRenuevaCada(v === 'TERMINO' ? '' : (v as '6' | '12'))}>
+                  <SelectTrigger id="contrato-renueva-cada" data-testid="contrato-renueva-cada">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="z-[400]">
+                    <SelectItem value="TERMINO">Por el mismo término del contrato</SelectItem>
+                    <SelectItem value="6">6 meses</SelectItem>
+                    <SelectItem value="12">12 meses</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
             )}
             {pideDeposito && (
               <Field id={idDelCampoDelContrato('deposit')} label="Depósito (COP)" error={errorDe('deposit')} hint="Sólo en comercial: en vivienda la ley no lo permite.">
@@ -1658,13 +1887,6 @@ function NuevoContratoContent() {
                 className="mt-0"
               />
 
-              <div className="flex items-start gap-2 text-caption text-muted-foreground bg-muted rounded-md p-3">
-                <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                <p>
-                  El propietario va a firmar digitalmente el contrato en Leasefy, independientemente
-                  de si el PDF ya trae firma manuscrita. Esto garantiza la trazabilidad legal.
-                </p>
-              </div>
             </section>
           )}
         </CrossFade>
@@ -1701,6 +1923,9 @@ function NuevoContratoContent() {
           </Field>
           </div>
         </section>
+
+        <CodeudoresAlCrear codeudores={codeudores} onCambio={setCodeudores} />
+        <DocumentosAlCrear documentos={documentosAdicionales} onCambio={setDocumentosAdicionales} />
         </div>
 
         {/* ── Derecha: el resumen fijo (con el botón de crear) ── */}
@@ -1771,9 +1996,31 @@ function NuevoContratoContent() {
               Crear contrato
             </Button>
           </div>
+          {/* Nico 29-10: «si sale, se guarda como borrador». Que se sepa antes de salir. */}
+          <Presence
+            show={conBorrador && borradorTieneAlgo}
+            initial={false}
+            distance="xs"
+            as="p"
+            className="text-caption text-fg-muted sm:text-right"
+            data-testid="contrato-se-guarda-solo"
+          >
+            Lo que llenas se guarda solo: si sales, lo retomas al volver.
+          </Presence>
         </ResumenDelContratoNuevo>
         </div>
       </form>
+      {/* Montado sólo cuando hay un inventario que hacer (el bloqueo trae su consignación). */}
+      {bloqueoDeInventario?.consignacionId ? (
+        <CajonDelInventario
+          abierto={inventarioAbierto}
+          consignacionId={bloqueoDeInventario.consignacionId}
+          onCerrar={() => {
+            setInventarioAbierto(false);
+            setVueltasDelInventario((n) => n + 1);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

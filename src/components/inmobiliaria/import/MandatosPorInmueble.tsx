@@ -29,6 +29,10 @@
  * - **«Copiar el de arriba»** copia el propietario de la fila anterior EN
  *   EL ORDEN QUE SE VE (filtro aplicado): lo que el usuario tiene arriba de
  *   los ojos, no una fila escondida por el buscador.
+ * - **Se ordena por el inmueble o su canon** (Nico 28-10: «que todas las
+ *   tablas tengan lo de ordenamiento general y por columnas»), nunca por lo
+ *   que se está llenando (propietario, comisión): la fila se iría de debajo
+ *   del dedo al elegir. «Copiar el de arriba» sigue el orden que se ve.
  */
 
 import { useMemo, useState } from 'react';
@@ -41,6 +45,10 @@ import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination } from '@/lib/hooks/use-table-pagination';
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden';
+import { useTr } from '@/lib/i18n/use-tr';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import type { InmuebleSinConsignacion, Propietario, PropietarioFormData } from '@/lib/types/inmobiliaria';
 import { PropietarioForm } from '@/components/inmobiliaria/PropietarioForm';
@@ -98,6 +106,7 @@ export function MandatosPorInmueble({
   disabled,
 }: MandatosPorInmuebleProps) {
   const { t } = useI18n();
+  const tr = useTr();
   const [filtro, setFiltro] = useState('');
   const [filaConFormulario, setFilaConFormulario] = useState<string | null>(null);
 
@@ -110,9 +119,15 @@ export function MandatosPorInmueble({
     );
   }, [inmuebles, filtro]);
 
-  const { pageItems, total, page, pageSize, setPage, setPageSize } = useTablePagination(filtradas, {
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(
+    filtradas,
+    { inmueble: (i) => i.propertyTitle, canon: (i) => i.monthlyRent ?? null },
+    { primero: { canon: 'desc' } },
+  );
+
+  const { pageItems, total, page, pageSize, setPage, setPageSize } = useTablePagination(ordenadas, {
     initialPageSize: FILAS_POR_PAGINA,
-    resetKey: filtro,
+    resetKey: `${filtro}|${orden?.campo ?? ''}|${orden?.sentido ?? ''}`,
   });
 
   const opciones = useMemo<ComboboxOption[]>(
@@ -154,6 +169,18 @@ export function MandatosPorInmueble({
             data-testid="filtro-inmuebles"
           />
         </div>
+        {inmuebles.length > 1 ? (
+          <SelectorDeOrden
+            orden={orden}
+            onCambiar={setOrden}
+            className="w-full sm:w-52"
+            formas={[
+              { campo: 'inmueble', sentido: 'asc', etiqueta: tr('Inmueble (A–Z)') },
+              { campo: 'canon', sentido: 'desc', etiqueta: tr('Canon más alto') },
+              { campo: 'canon', sentido: 'asc', etiqueta: tr('Canon más bajo') },
+            ]}
+          />
+        ) : null}
         <p
           className="shrink-0 text-sm text-fg-muted tabular-nums"
           data-testid="resumen-asignaciones"
@@ -175,9 +202,9 @@ export function MandatosPorInmueble({
         <Table className="table-fixed">
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[40%]">
+              <EncabezadoOrdenable campo="inmueble" orden={orden} onOrdenar={ordenarPor} className="w-[40%]">
                 {t('inmobiliaria.import.confirm.mandateBatch.porInmueble.colInmueble')}
-              </TableHead>
+              </EncabezadoOrdenable>
               <TableHead>{t('inmobiliaria.import.confirm.mandateBatch.porInmueble.colPropietario')}</TableHead>
               <TableHead className="w-28">
                 {t('inmobiliaria.import.confirm.mandateBatch.porInmueble.colComision')}
@@ -200,10 +227,10 @@ export function MandatosPorInmueble({
             {pageItems.map((inmueble, idx) => {
               const asignacion = asignaciones[inmueble.propertyId];
               const tienePropietario = Boolean(asignacion?.propietarioId);
-              // Índice en la lista filtrada completa, no en la página: la
-              // fila «de arriba» de la primera de la página 2 está en la 1.
+              // Índice en la lista filtrada y ordenada completa, no en la página:
+              // la fila «de arriba» de la primera de la página 2 está en la 1.
               const indiceGlobal = (page - 1) * pageSize + idx;
-              const anterior = indiceGlobal > 0 ? filtradas[indiceGlobal - 1] : undefined;
+              const anterior = indiceGlobal > 0 ? ordenadas[indiceGlobal - 1] : undefined;
               const propietarioAnterior = anterior
                 ? asignaciones[anterior.propertyId]?.propietarioId ?? null
                 : null;

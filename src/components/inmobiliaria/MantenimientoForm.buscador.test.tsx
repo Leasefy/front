@@ -43,6 +43,13 @@ vi.mock('framer-motion', async (importOriginal) => {
   };
 });
 
+/** Los contratos del buscador (Portofino 29-10): sin red en la prueba. */
+const contratos = vi.hoisted(() => ({ lista: [] as unknown[] }));
+vi.mock('@/lib/mantenimiento/buscar-el-inmueble', async (importOriginal) => {
+  const original = await importOriginal<Record<string, unknown>>();
+  return { ...original, contratosParaBuscar: vi.fn(async () => contratos.lista) };
+});
+
 import { MantenimientoForm } from './MantenimientoForm';
 
 function consignacion(overrides: Partial<Consignacion> = {}): Consignacion {
@@ -66,6 +73,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  contratos.lista = [];
   act(() => {
     root.unmount();
   });
@@ -85,11 +93,9 @@ async function pintarFormulario(consignaciones: Consignacion[]) {
   });
 }
 
-/** El input del buscador: el único `type="text"` con placeholder de búsqueda. */
+/** El input del buscador del inmueble. */
 function buscador(): HTMLInputElement {
-  const input = container.querySelector<HTMLInputElement>(
-    'input[placeholder="inmobiliaria.mantenimiento.searchProperty"]',
-  );
+  const input = container.querySelector<HTMLInputElement>('[data-testid="mantenimiento-buscar-inmueble"]');
   if (!input) throw new Error('no se encontró el buscador de inmuebles');
   return input;
 }
@@ -163,5 +169,90 @@ describe('MantenimientoForm — el buscador de inmuebles', () => {
       clic(document.body);
     });
     expect(listaAbierta()).toBe(false);
+  });
+});
+
+/** Escribe en el buscador como lo haría la persona. */
+async function escribir(texto: string) {
+  await act(async () => {
+    buscador().focus();
+  });
+  await act(async () => {
+    const input = buscador();
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+    setter?.call(input, texto);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+}
+
+function filas(): string[] {
+  return [...container.querySelectorAll('button')]
+    .map((b) => b.textContent ?? '')
+    .filter((t) => t.includes('Apto') || t.includes('Casa'));
+}
+
+const DOS = () => [
+  consignacion({
+    id: 'cons-1',
+    propertyId: 'prop-1',
+    propertyCode: 24,
+    copropietarios: [
+      { propietarioId: 'p1', participacionBps: 10000, propietario: { id: 'p1', name: 'Ana Gómez', documentNumber: '43123456' } },
+    ],
+  }),
+  consignacion({
+    id: 'cons-2',
+    propertyId: 'prop-2',
+    propertyTitle: 'Casa 12 — Envigado',
+    propertyAddress: 'Cl 40 Sur #25-10',
+    propertyZone: 'Envigado',
+    propertyCode: 31,
+    copropietarios: [
+      { propietarioId: 'p2', participacionBps: 10000, propietario: { id: 'p2', name: 'Jorge Peña', documentNumber: '70111222' } },
+    ],
+  }),
+];
+
+describe('MantenimientoForm — buscar el inmueble de varias formas (Portofino 29-10)', () => {
+  it('por el código del inmueble («#31»)', async () => {
+    await pintarFormulario(DOS());
+    await escribir('#31');
+    expect(filas()).toHaveLength(1);
+    expect(filas()[0]).toContain('Casa 12 — Envigado');
+  });
+
+  it('por el nombre del propietario, sin tildes («jorge pena»)', async () => {
+    await pintarFormulario(DOS());
+    await escribir('jorge pena');
+    expect(filas()).toHaveLength(1);
+    expect(filas()[0]).toContain('Propietario: Jorge Peña');
+  });
+
+  it('por el número del contrato del sistema de la inmobiliaria, y lo dice en la fila', async () => {
+    contratos.lista = [{ id: 'k-9', propertyId: 'prop-1', code: 1839, externalId: '1686' }];
+    await pintarFormulario(DOS());
+    await escribir('1686');
+    // Los contratos se leen al abrir el buscador.
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(filas()).toHaveLength(1);
+    expect(filas()[0]).toContain('Apto 402 — Laureles');
+    expect(container.querySelector('[data-testid="mantenimiento-inmueble-contrato"]')?.textContent).toBe('Contrato 1686');
+  });
+
+  it('🔴 sin coincidencias lo dice y ofrece crear el inmueble: nunca toma lo escrito como inmueble', async () => {
+    await pintarFormulario(DOS());
+    await escribir('Calle que no existe 99');
+    expect(filas()).toHaveLength(0);
+    const vacio = container.querySelector('[data-testid="mantenimiento-inmueble-no-encontrado"]');
+    expect(vacio?.textContent).toContain('No encontramos ese inmueble.');
+    const crear = container.querySelector<HTMLAnchorElement>('[data-testid="mantenimiento-crear-inmueble"]');
+    expect(crear?.getAttribute('href')).toBe(
+      '/panel/inmobiliaria/inmuebles/nuevo?volver=%2Fpanel%2Finmobiliaria%2Fmantenimientos',
+    );
+    // El botón de crear la solicitud sigue esperando un inmueble elegido.
+    const enviar = container.querySelector<HTMLButtonElement>('[data-testid="mantenimiento-crear"]');
+    expect(enviar?.disabled).toBe(true);
   });
 });

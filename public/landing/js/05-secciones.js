@@ -11,20 +11,8 @@
     if (!MOV) $$("#campo i").forEach(function (d, j) { d.classList.add("vis"); if (RIESGO.indexOf(j) > -1) d.classList.add("riesgo"); });
   }
 
-  /* ── la foto de Portofino en estrías (se revela al bajar) ── */
+  /* la foto de Portofino florece del duotono a su color (js/09-campos.js, Nico 29-10) */
   var foto = $("#fotoPortofino");
-  if (foto) {
-    var cv = foto.querySelector("canvas"), img = foto.querySelector("img");
-    var pintar = function () {
-      var dpr = Math.min(window.devicePixelRatio || 1, 2), w = foto.clientWidth;
-      if (!w || !img.naturalWidth) return;
-      cv.width = Math.round(w * dpr); cv.height = Math.round(w * dpr);
-      if (!LF.pintarEstrias(cv, img, 9 * dpr)) cv.style.display = "none";
-    };
-    if (img.complete) pintar(); else img.addEventListener("load", pintar);
-    var to; window.addEventListener("resize", function () { clearTimeout(to); to = setTimeout(pintar, 150); });
-    if (!MOV) cv.style.clipPath = "inset(0 0 0 100%)";
-  }
 
   /* piloto automático: al llegar al final, la noche corre sola */
   var NOCHE = [
@@ -43,23 +31,6 @@
     clearInterval(apI); apI = null;
     if (on) { apK = 0; apPaso(); if (MOV) apI = setInterval(apPaso, 2300); }
   };
-
-  /* fotos en estrías de voltaje (la de Portofino va aparte, abajo) */
-  $$(".foto-estrias").forEach(function (box) {
-    var cv = box.querySelector("canvas"), im = box.querySelector("img");
-    var pintarF = function () {
-      var dpr = Math.min(window.devicePixelRatio || 1, 2), w = box.clientWidth, h = box.clientHeight;
-      if (!w || !h || !im.naturalWidth) return;
-      cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
-      if (!LF.pintarEstrias(cv, im, (box.classList.contains("ciudad") ? 8 : 7) * dpr)) cv.style.display = "none";
-    };
-    if (im.complete && im.naturalWidth) pintarF(); else im.addEventListener("load", pintarF);
-    var tf; window.addEventListener("resize", function () { clearTimeout(tf); tf = setTimeout(pintarF, 160); });
-    /* en el celular no hay puntero: la foto se revela cuando la tarjeta llega al centro */
-    if (!box.classList.contains("ciudad") && window.matchMedia("(hover: none)").matches && "IntersectionObserver" in window) {
-      new IntersectionObserver(function (e) { box.classList.toggle("ver", e[0].isIntersecting); }, { rootMargin: "-35% 0px -35% 0px" }).observe(box);
-    }
-  });
 
   /* llamada en curso: el reloj corre */
   var rl = $("#relojLlamada"), seg = 102;
@@ -112,29 +83,11 @@
         .to(grupo.map(function (c) { return c.firstElementChild; }), { color: "#A29D95", duration: .03 }, b - .02);
     });
     /* el punto estalla en puntos de voltaje: un anillo de choque y una constelación que queda detrás del título */
-    var cvE = $(".estallido", esc), ctxE = cvE.getContext("2d"), part = [], estE = { e: 0 };
-    (function () { var r = Math.random; for (var i = 0; i < 1300; i++) { var a = r() * Math.PI * 2; part.push({ a: a, v: Math.pow(r(), .55), s: 2 + Math.round(r() * 5), c: r() < .62 ? "#1A40FF" : r() < .7 ? "#5D78FF" : "#A9B8FF", j: r() }); } })();
-    function medirE() { var d = Math.min(window.devicePixelRatio || 1, 2); cvE.width = Math.round(esc.offsetWidth * d); cvE.height = Math.round(esc.offsetHeight * d); cvE._d = d; dibujarE(); }
-    function dibujarE() {
-      var d = cvE._d || 1, W = cvE.width, H = cvE.height, e = estE.e; ctxE.clearRect(0, 0, W, H);
-      if (e <= 0) return;
-      var X = cx() * d, Y = cy() * d, R = Math.hypot(W, H) * .44, sale = 1 - Math.pow(1 - e, 3);
-      if (e < .22) { var g = ctxE.createRadialGradient(X, Y, 0, X, Y, R * .22 * (e / .22 + .2)); g.addColorStop(0, "rgba(26,64,255," + (1 - e / .22) * .55 + ")"); g.addColorStop(1, "rgba(26,64,255,0)"); ctxE.fillStyle = g; ctxE.fillRect(0, 0, W, H); }
-      for (var k = 0; k < 3; k++) {
-        var rr = R * sale * (.55 + k * .22), al = Math.max(0, 1 - e * 1.25) * (1 - k * .25);
-        if (al <= 0) continue; ctxE.fillStyle = "rgba(26,64,255," + al + ")";
-        var n = Math.round(rr / (11 * d)); for (var i = 0; i < n; i++) { var aa = i / n * Math.PI * 2; ctxE.fillRect(X + Math.cos(aa) * rr * 1.25 - 2 * d, Y + Math.sin(aa) * rr - 2 * d, 4 * d, 4 * d); }
-      }
-      var queda = 1 - .62 * Math.min(1, Math.max(0, (e - .45) / .55));
-      part.forEach(function (p) {
-        var dist = R * sale * (.18 + .82 * p.v), x = X + Math.cos(p.a) * dist * 1.25, y = Y + Math.sin(p.a) * dist * .82;
-        if (x < -10 || y < -10 || x > W + 10 || y > H + 10) return;
-        ctxE.globalAlpha = queda * (p.j < .3 ? .55 : 1); ctxE.fillStyle = p.c;
-        var t = p.s * d * (1 - .35 * e); ctxE.fillRect(x - t / 2, y - t / 2, t, t);
-      });
-      ctxE.globalAlpha = 1;
-    }
-    medirE(); window.addEventListener("resize", medirE);
+    /* 29-10 (Nico eligió «Ondas del símbolo»): en vez del estallido de puntos, el techo de Leasefy en ondas que nacen
+       del centro; el scroll las trae y las ondas siguen solas (CSS) */
+    var ondasE = $(".ondas-uno", esc), estE = { e: 0 };
+    function dibujarE() { if (!ondasE) return; var e = estE.e; ondasE.style.opacity = Math.min(1, e * 2.2); ondasE.style.transform = "scale(" + (.86 + .14 * Math.min(1, e * 1.6)) + ")"; }
+    dibujarE();
     /* el anillo que se llena: de .47 a .63, justo antes de que el punto crezca y estalle */
     var carga = document.createElement("div"); carga.className = "punto-carga"; carga.setAttribute("aria-hidden", "true");
     carga.innerHTML = '<svg viewBox="0 0 84 84"><circle class="base" cx="42" cy="42" r="36"/><circle class="lleno" cx="42" cy="42" r="36"/></svg><b>0 %</b>';
@@ -187,7 +140,7 @@
       lOn[i].style.strokeDasharray = n ? pat.join(" ") + " 0 " + (L + 24) : "0 " + (L + 24);
     };
     var activa = function (i) { capas.dataset.activa = i; items.forEach(function (li, j) { li.classList.toggle("on", j === i); }); };
-    window.addEventListener("resize", trazarRed); trazarRed();
+    LF.alCambiarDeTamano(trazarRed); trazarRed();
     ScrollTrigger.addEventListener("refresh", trazarRed);
     gsap.timeline({ scrollTrigger: { trigger: capas, start: "top 78%", end: "bottom 50%", scrub: .6,
       onUpdate: function (s) {
@@ -252,9 +205,14 @@
     var antes = actual; actual = i;
     pasos.forEach(function (p, j) { p.classList.toggle("on", j === i); });
     gsap.fromTo(chip, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: .35, onStart: function () { chip.textContent = LF.t(pasos[i].dataset.chip); } });
+    /* en el celular la figura 3D sólo cambia con un fundido: entrar girando en cada paso se veía como un parpadeo */
+    var suave = !LF.desk();
     tres.forEach(function (im, j) {
-      if (j === i) gsap.fromTo(im, { opacity: 0, y: 40, rotate: -10, scale: .8 }, { opacity: 1, y: 0, rotate: 0, scale: 1, duration: .8, ease: "expo.out" });
-      else if (j === antes) gsap.to(im, { opacity: 0, y: -30, rotate: 8, duration: .4 });
+      if (j === i) {
+        if (suave) gsap.fromTo(im, { opacity: 0 }, { opacity: 1, y: 0, rotate: 0, scale: 1, duration: .45, ease: "power1.out" });
+        else gsap.fromTo(im, { opacity: 0, y: 40, rotate: -10, scale: .8 }, { opacity: 1, y: 0, rotate: 0, scale: 1, duration: .8, ease: "expo.out" });
+      }
+      else if (j === antes) gsap.to(im, suave ? { opacity: 0, duration: .35 } : { opacity: 0, y: -30, rotate: 8, duration: .4 });
       else gsap.set(im, { opacity: 0 });
     });
     var quiereLaptop = i >= 4;
@@ -271,10 +229,22 @@
       caps.forEach(function (c, j) { c.classList.toggle("on", j === i - 4); });
     }
   }
-  pasos.forEach(function (p, i) {
-    ScrollTrigger.create({ trigger: p, start: function () { return LF.desk() ? "top 55%" : "top 80%"; }, end: function () { return LF.desk() ? "bottom 55%" : "bottom 80%"; },
-      onToggle: function (s) { if (s.isActive) ponPaso(i); } });
+  /* Nico 27-10 («en responsive, cuando llega a los lugares donde hay animación de scroll e imagen, la imagen
+     comienza a rebotar»): con el dedo el scroll va y viene unos píxeles. Parado en el borde entre dos pasos, cada
+     vaivén cambiaba de paso y la imagen volvía a entrar (subía, giraba y crecía) una y otra vez: 10 vaivenes de
+     25 px = 10 cambios. Ahora el paso cambia sólo al pasar el borde con holgura, y para volver al anterior hay que
+     devolverse esa misma holgura: el vaivén chico no cambia nada. */
+  var stPasos = pasos.map(function (p) {
+    return ScrollTrigger.create({ trigger: p, start: function () { return LF.desk() ? "top 55%" : "top 80%"; }, end: function () { return LF.desk() ? "bottom 55%" : "bottom 80%"; } });
   });
+  var elegirPaso = function () {
+    if (!stPasos.length) return;
+    var s = stPasos[0].scroll(), h = LF.holgura(), i = actual;
+    while (i < stPasos.length - 1 && s >= stPasos[i + 1].start + h) i++;
+    while (i > 0 && s <= stPasos[i].start - h) i--;
+    ponPaso(i);
+  };
+  ScrollTrigger.create({ start: 0, end: "max", onUpdate: elegirPaso, onRefresh: elegirPaso });
   ScrollTrigger.create({ trigger: ".escenario", start: "top 80%", once: true, onEnter: function () { introVista(0); } });
   gsap.from("#escCel", { y: 80, rotateX: 16, opacity: 0, duration: 1.2, ease: "expo.out", scrollTrigger: { trigger: ".como-grid", start: "top 80%" } });
 
@@ -317,7 +287,7 @@
       });
     };
     reservar();
-    window.addEventListener("resize", reservar);
+    LF.alCambiarDeTamano(reservar);
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(reservar);
     var rt = gsap.timeline({ scrollTrigger: { trigger: "#retVis", start: "top 75%", end: "bottom 30%", scrub: .6,
       onUpdate: function (s) {
@@ -379,20 +349,25 @@
       else w = centros[3] + (anchoRuta - centros[3]) * Math.min(1, (seg - 3) / .6);
       lleno.style.width = Math.max(0, w) + "px";
     };
-    window.addEventListener("resize", function () { centros = []; });
-    var stF = ScrollTrigger.create({ trigger: fin, start: "top top+=68", end: "bottom bottom", onUpdate: function (s) { llenar(s.progress); ponE(Math.min(3, Math.floor(s.progress * 3.6))); } });
+    LF.alCambiarDeTamano(function () { centros = []; });
+    /* el mismo vaivén del dedo (ver «cómo funciona»): cada paso cambia con holgura, no justo en el borde */
+    var elegirE = function (s) {
+      var seg = s.progress * 3.6, largo = (s.end - s.start) / 3.6, h = largo > 0 ? LF.holgura() / largo : 0, i = fAct;
+      while (i < 3 && seg >= i + 1 + h) i++;
+      while (i > 0 && seg <= i - h) i--;
+      ponE(i);
+    };
+    var stF = ScrollTrigger.create({ trigger: fin, start: "top top+=68", end: "bottom bottom", onUpdate: function (s) { llenar(s.progress); elegirE(s); } });
     estR.forEach(function (e, i) { e.addEventListener("click", function () { var y = stF.start + (stF.end - stF.start) * Math.min(.98, (i + .15) / 3.6); if (LF.lenis) LF.lenis.scrollTo(y, { duration: 1 }); else window.scrollTo(0, y); }); });
     ScrollTrigger.create({ trigger: fin, start: "top 70%", once: true, onEnter: function () { var c = $(".fin-b.on .cifra"); LF.contar(c, 0, +c.dataset.v, 1.3, +c.dataset.d); } });
     gsap.from("#finLap", { y: 80, rotateX: 18, opacity: 0, duration: 1.2, ease: "expo.out", scrollTrigger: { trigger: fin, start: "top 75%" } });
   }
 
-  /* ── la ciudad: las estrías se abren al bajar y aparece Medellín (foto de 3200 px, nítida a todo lo ancho) ── */
-  gsap.fromTo(".ciudad canvas", { clipPath: "inset(0 0% 0 0)" }, { clipPath: "inset(0 0% 0 100%)", ease: "none", scrollTrigger: { trigger: ".ciudad", start: "top 55%", end: "bottom 25%", scrub: .6 } });
+  /* ── la ciudad: Medellín florece del duotono (09-campos.js) y se acerca al bajar (foto de 3200 px, nítida a todo lo ancho) ── */
   gsap.fromTo(".ciudad > img", { scale: 1.06 }, { scale: 1, ease: "none", scrollTrigger: { trigger: ".ciudad", start: "top bottom", end: "bottom top", scrub: .6 } });
 
-  /* ── Portofino: de estrías a foto ── */
+  /* ── Portofino: la nota y su timbre ── */
   if (foto) {
-    gsap.fromTo(foto.querySelector("canvas"), { clipPath: "inset(0 0 0 0%)" }, { clipPath: "inset(0 0 0 100%)", ease: "none", scrollTrigger: { trigger: foto, start: "top 60%", end: "bottom 45%", scrub: .6 } });
     gsap.fromTo("#nota", { rotate: 7, y: 80, opacity: 0 }, { rotate: -1.6, y: 0, opacity: 1, ease: "none", scrollTrigger: { trigger: "#nota", start: "top 95%", end: "top 60%", scrub: .6 } });
     /* el timbre se estampa una vez, cuando la nota ya llegó; las ondas del matasellos aparecen detrás */
     gsap.timeline({ scrollTrigger: { trigger: "#nota", start: "top 62%", once: true } })
@@ -401,7 +376,7 @@
   }
 
   /* ── el cierre: la corriente sube y la noche corre sola ── */
-  gsap.to(".fin-pix", { opacity: 1, y: 0, ease: "none", scrollTrigger: { trigger: ".contacto", start: "top 85%", end: "top 25%", scrub: .6 } });
+  gsap.to(".fin-campo", { opacity: 1, y: 0, ease: "none", scrollTrigger: { trigger: ".contacto", start: "top 85%", end: "top 25%", scrub: .6 } });
   $$("#pista i").forEach(function (b, k) { b.style.animationDelay = (k * .09) + "s"; });
   gsap.from(".pl-todo .equipo .orbe-host", { scale: 0, stagger: .1, duration: .7, ease: "back.out(2)", scrollTrigger: { trigger: ".pl-todo", start: "top 80%" } });
   gsap.fromTo(".pl-todo", { clipPath: "inset(14% 10% 14% 10% round 28px)" }, { clipPath: "inset(0% 0% 0% 0% round 28px)", ease: "none", scrollTrigger: { trigger: ".pl-todo", start: "top 95%", end: "top 45%", scrub: .6 } });

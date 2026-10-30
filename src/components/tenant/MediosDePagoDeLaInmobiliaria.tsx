@@ -8,9 +8,10 @@
  */
 
 import { useState } from 'react';
-import { ArrowSquareOut, Bank, Check, Copy, DeviceMobile, DotsThree, Link as LinkIcon, Money, Wallet } from '@phosphor-icons/react';
+import { ArrowSquareOut, Bank, Check, Copy, DeviceMobile, DotsThree, Key, Link as LinkIcon, Money, Wallet } from '@phosphor-icons/react';
 import { Collapse } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
+import { QrParaPagar } from '@/components/tenant/QrParaPagar';
 import { useMediosDePagoParaInquilino } from '@/lib/hooks/use-medios-de-pago';
 import type { MedioDePagoParaInquilino, TipoDeMedioDePago } from '@/lib/api/medios-de-pago.types';
 
@@ -22,6 +23,7 @@ const ICONO: Record<TipoDeMedioDePago, typeof Bank> = {
   DAVIPLATA: DeviceMobile,
   ENLACE_DE_PAGO: LinkIcon,
   OTRO: DotsThree,
+  BRE_B: Key,
 };
 
 function tipoDeCuentaLegible(t: string | null): string | null {
@@ -41,7 +43,7 @@ export function MediosDePagoDeLaInmobiliaria() {
     <Collapse open={!cargando && conMedios.length > 0}>
     <section aria-labelledby="como-pagar" className="mb-8 space-y-4" data-testid="como-pagar">
       <div>
-        <h2 id="como-pagar" className="text-xl font-semibold text-fg">
+        <h2 id="como-pagar" className="text-h3 text-fg">
           Cómo pagar
         </h2>
         <p className="text-sm text-fg-muted">
@@ -60,7 +62,7 @@ export function MediosDePagoDeLaInmobiliaria() {
                   <dt className="text-sm text-fg-muted">
                     Tu referencia de recaudo{(bloque.referencias ?? []).length > 1 && r.inmueble ? ` · ${r.inmueble}` : ''}
                   </dt>
-                  <dd className="font-mono text-base font-semibold tabular-nums text-fg">{r.referencia}</dd>
+                  <dd className="font-mono text-base tabular-nums text-fg">{r.referencia}</dd>
                 </div>
               ))}
             </dl>
@@ -144,6 +146,7 @@ function TarjetaDeMedio({
           {medio.instrucciones && <p className="text-sm text-fg-muted">{medio.instrucciones}</p>}
         </div>
       </div>
+      {medio.qrUrl ? <QrParaPagar url={medio.qrUrl} nombre={medio.nombre} /> : null}
       <div className="flex flex-wrap gap-2">
         {medio.enlace && (
           <Button asChild size="sm" hideArrow>

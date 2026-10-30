@@ -164,7 +164,11 @@ describe('Autopago — cada fila', () => {
   it('🔴 es sólo lectura: ni un botón para cobrar, pausar o cancelar', async () => {
     get.mockResolvedValue(respuesta({ cobroAutomaticoActivo: true }));
     await montar();
-    expect(contenedor.querySelectorAll('button')).toHaveLength(0);
+    // Los únicos botones son los de ordenar (cabeceras y «Ordenar por», Nico 28-10); ninguno cobra ni pausa.
+    const botones = Array.from(contenedor.querySelectorAll('button')).filter(
+      (b) => !b.dataset.testid?.startsWith('ordenar-'),
+    );
+    expect(botones).toHaveLength(0);
   });
 
   it('en el teléfono es una lista, no una tabla', async () => {

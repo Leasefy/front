@@ -39,6 +39,11 @@ vi.mock('@leasefy/cadence', async (importOriginal) => ({
     React.createElement('button', { id, type: 'button', 'data-testid': 'elegir-dia', onClick: () => onChange(new Date(2026, 9, 15)) }, 'día'),
   TimePicker: () => null,
 }))
+// Desde el 29-10 el campo es el selector de la casa (con mes y año): el mismo doble.
+vi.mock('@/components/ui/SelectorDeFecha', () => ({
+  SelectorDeFecha: ({ id, onChange }: { id?: string; onChange: (d: Date) => void }) =>
+    React.createElement('button', { id, type: 'button', 'data-testid': 'elegir-dia', onClick: () => onChange(new Date(2026, 9, 15)) }, 'día'),
+}))
 
 import { ApiError } from '@/lib/api/client'
 import { NuevaTareaDrawer } from './NuevaTareaDrawer'

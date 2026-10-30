@@ -9,7 +9,7 @@
  */
 
 import { useRouter } from 'next/navigation';
-import { Crown, FileText, House } from '@phosphor-icons/react';
+import { Crown, FileText, Gift, House } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n';
@@ -68,6 +68,20 @@ export function SeccionPlan() {
         descripcion={es ? 'Cuántos puedes tener activos con tu plan' : 'How many you can have active on your plan'}
       >
         <span className="font-mono text-sm tabular-nums text-fg">{limite('unlimited_contracts')}</span>
+      </FilaDeAjuste>
+      {/* 28-10-2026 (Nico): Refiere y gana también en «Tu plan». */}
+      <FilaDeAjuste
+        icono={Gift}
+        titulo={es ? 'Refiere y gana' : 'Refer and earn'}
+        descripcion={
+          es
+            ? 'Cada colega que traigas y pague su primer mes te gana un mes gratis, hasta 3 al año'
+            : 'Every colleague you bring who pays their first month earns you a free month, up to 3 a year'
+        }
+      >
+        <Button size="sm" variant="secondary" hideArrow onClick={() => router.push('/panel/refiere-y-gana')} data-testid="ir-a-refiere-y-gana">
+          {es ? 'Ver mi enlace' : 'See my link'}
+        </Button>
       </FilaDeAjuste>
     </TarjetaDeAjustes>
   );

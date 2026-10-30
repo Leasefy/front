@@ -41,6 +41,8 @@
  */
 
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
 import Link from 'next/link';
 import { Progress } from '@leasefy/cadence';
 
@@ -555,6 +557,12 @@ function BloqueDeDeudores({ tablero, queMide }: { tablero: Tablero; queMide: boo
   const tr = useTr();
   const { cartera } = tablero;
   const plata = plataDelTablero(tablero);
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas».
+  const { ordenadas, orden, ordenarPor } = useOrdenDeLaTabla(
+    cartera.deudores,
+    { inquilino: (d) => d.nombre ?? null, debe: (d) => d.saldoCop, mora: (d) => d.diasDeMora ?? null, etapa: (d) => d.etapa ?? null },
+    { primero: { debe: 'desc', mora: 'desc' } },
+  );
   return (
     <section
       className="overflow-hidden rounded-[20px] border border-border bg-surface"
@@ -570,10 +578,12 @@ function BloqueDeDeudores({ tablero, queMide }: { tablero: Tablero; queMide: boo
       <Table className="max-md:block">
         <TableHeader className="max-md:hidden">
           <TableRow>
-            <TableHead>Inquilino</TableHead>
-            <TableHead className="text-right">Debe</TableHead>
-            <TableHead className="text-right">Días de mora</TableHead>
-            <TableHead title={QUE_ES_LA_ETAPA}>Etapa</TableHead>
+            <EncabezadoOrdenable campo="inquilino" orden={orden} onOrdenar={ordenarPor}>Inquilino</EncabezadoOrdenable>
+            <EncabezadoOrdenable campo="debe" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Debe</EncabezadoOrdenable>
+            <EncabezadoOrdenable campo="mora" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Días de mora</EncabezadoOrdenable>
+            <EncabezadoOrdenable campo="etapa" orden={orden} onOrdenar={ordenarPor}>
+              <span title={QUE_ES_LA_ETAPA}>Etapa</span>
+            </EncabezadoOrdenable>
           </TableRow>
         </TableHeader>
         <TableBody className="max-md:block">
@@ -584,7 +594,7 @@ function BloqueDeDeudores({ tablero, queMide }: { tablero: Tablero; queMide: boo
               </TableCell>
             </TableRow>
           ) : (
-            cartera.deudores.map((d, i) => (
+            ordenadas.map((d, i) => (
               <TableRow
                 key={d.clienteId ?? `${d.nombre}-${i}`}
                 data-testid="fila-deudor"

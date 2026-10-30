@@ -86,6 +86,9 @@ import { MagnifyingGlass } from '@phosphor-icons/react';
 import { TablePagination } from '@/components/ui/pagination';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden';
 
 type Pestana = 'abiertas' | 'respondidas' | 'todas';
 
@@ -163,7 +166,18 @@ export function SeccionProteccionDeDatos() {
       ),
     );
   }, [filas, busqueda]);
-  const pag = useTablePagination(filasVisibles, { resetKey: `${busqueda}|${pestana}` });
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas».
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(
+    filasVisibles,
+    {
+      titular: (s) => s.titular.nombre,
+      tipo: (s) => TIPO_EN_PALABRAS[s.tipo],
+      llego: (s) => s.recibidaEl ?? null,
+      plazo: (s) => s.venceEl ?? null,
+    },
+    { primero: { llego: 'desc' } },
+  );
+  const pag = useTablePagination(ordenadas, { resetKey: `${busqueda}|${pestana}|${orden?.campo ?? ''}|${orden?.sentido ?? ''}` });
 
   if (!lista && (cargando || error)) {
     return (
@@ -257,7 +271,7 @@ export function SeccionProteccionDeDatos() {
         </div>
 
         {filas.length > 0 ? (
-          <div className="border-b border-border px-4 py-3">
+          <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="relative w-full sm:w-80">
               <MagnifyingGlass
                 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted"
@@ -272,6 +286,18 @@ export function SeccionProteccionDeDatos() {
                 data-testid="buscar-solicitudes"
               />
             </div>
+            {filas.length > 1 ? (
+              <SelectorDeOrden
+                orden={orden}
+                onCambiar={setOrden}
+                className="w-full sm:w-56"
+                formas={[
+                  { campo: 'plazo', sentido: 'asc', etiqueta: 'Vence primero' },
+                  { campo: 'llego', sentido: 'desc', etiqueta: 'Más recientes' },
+                  { campo: 'titular', sentido: 'asc', etiqueta: 'Titular (A–Z)' },
+                ]}
+              />
+            ) : null}
           </div>
         ) : null}
 
@@ -298,10 +324,10 @@ export function SeccionProteccionDeDatos() {
             <Table className="max-md:block">
               <TableHeader className="max-md:hidden">
                 <TableRow>
-                  <TableHead>Titular</TableHead>
-                  <TableHead>Qué pide</TableHead>
-                  <TableHead>Llegó</TableHead>
-                  <TableHead>Plazo</TableHead>
+                  <EncabezadoOrdenable campo="titular" orden={orden} onOrdenar={ordenarPor}>Titular</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="tipo" orden={orden} onOrdenar={ordenarPor}>Qué pide</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="llego" orden={orden} onOrdenar={ordenarPor}>Llegó</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="plazo" orden={orden} onOrdenar={ordenarPor}>Plazo</EncabezadoOrdenable>
                 </TableRow>
               </TableHeader>
               <TableBody className="max-md:block">

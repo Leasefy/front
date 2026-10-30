@@ -186,6 +186,39 @@ describe('AceptarLegalesAlEntrar', () => {
     expect(ventana()).not.toBeNull();
   });
 
+  it('28-10 (Nico): con un back más viejo que el front, «Acepto» acepta lo que la ventana MOSTRÓ, no lo escrito en el front', async () => {
+    const delBackViejo = {
+      ...PIDE,
+      politica: { version: 'politica-tratamiento-v4.0', aceptada: false, aceptadaEl: null },
+      terminos: { version: 'terminos-v2.1', aceptada: false, aceptadaEl: null },
+    };
+    api.estado.mockResolvedValue(delBackViejo);
+    api.aceptar.mockResolvedValue({ ...delBackViejo, debeAceptar: false });
+    await act(async () => root.render(<AceptarLegalesAlEntrar />));
+    await esperar();
+    await act(async () => (document.querySelector('[data-testid="aceptar-legales-acepto"]') as HTMLElement).click());
+    await esperar();
+    expect(api.aceptar).toHaveBeenCalledWith('politica-tratamiento-v4.0', 'terminos-v2.1');
+    expect(ventana()).toBeNull();
+  });
+
+  it('si de verdad cambiaron con la ventana abierta, trae la versión de hoy y el siguiente «Acepto» la acepta (sin quedar atrapado)', async () => {
+    const vieja = { ...PIDE, terminos: { version: 'terminos-v2.1', aceptada: false, aceptadaEl: null } };
+    api.estado.mockResolvedValueOnce(vieja).mockResolvedValueOnce(PIDE);
+    api.aceptar
+      .mockRejectedValueOnce(Object.assign(new Error('cambiaron'), { status: 409, code: 'VERSION_LEGAL_DESACTUALIZADA' }))
+      .mockResolvedValueOnce({ ...PIDE, debeAceptar: false });
+    await act(async () => root.render(<AceptarLegalesAlEntrar />));
+    await esperar();
+    await act(async () => (document.querySelector('[data-testid="aceptar-legales-acepto"]') as HTMLElement).click());
+    await esperar();
+    expect(ventana()!.textContent).toMatch(/Hay una versión más nueva/);
+    await act(async () => (document.querySelector('[data-testid="aceptar-legales-acepto"]') as HTMLElement).click());
+    await esperar();
+    expect(api.aceptar).toHaveBeenLastCalledWith(VERSION_POLITICA_DE_TRATAMIENTO, VERSION_TERMINOS);
+    expect(ventana()).toBeNull();
+  });
+
   it('las rutas sin la ventana', () => {
     expect(rutaSinVentanaLegal('/terminos')).toBe(true);
     expect(rutaSinVentanaLegal('/auth/mfa-verify')).toBe(true);

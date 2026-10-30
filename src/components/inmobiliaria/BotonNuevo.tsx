@@ -399,8 +399,9 @@ export function BotonNuevo({ className, compacto = false }: BotonNuevoProps) {
           Sólo existe cuando el botón existe (arriba: sin flujos, `null`), así
           que el recorrido nunca señala un hueco. */}
       <div data-tour-target="nuevo">
+      {/* Nico, 28-10-2026: «¿por qué no es primary?»: es LA acción del panel. */}
       <SplitButton
-        variant="secondary"
+        variant="primary"
         size="sm"
         className={cn('w-full', className)}
         label={

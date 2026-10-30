@@ -32,6 +32,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { TablePagination } from '@/components/ui/pagination';
 import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
 
 type Pestana = 'captaciones' | 'arriendos';
 /** `todos`, `sin` (sin asesor) o el userId del asesor. */
@@ -168,14 +170,20 @@ function ResumenPorAsesor({
   sinAsesor: Datos['sinAsesor'];
 }) {
   const conSinAsesor = sinAsesor.captados > 0 || sinAsesor.arrendados > 0;
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas».
+  const { ordenadas, orden, ordenarPor } = useOrdenDeLaTabla(
+    asesores,
+    { asesor: (a) => a.nombre, captados: (a) => a.captados, arrendados: (a) => a.arrendados },
+    { primero: { captados: 'desc', arrendados: 'desc' } },
+  );
   return (
     <section className="overflow-hidden rounded-lg border border-border bg-surface" aria-label="Por asesor">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="p-3 pl-4 text-left">Asesor</TableHead>
-            <TableHead className="p-3 text-right">Captados</TableHead>
-            <TableHead className="p-3 pr-4 text-right">Arrendados</TableHead>
+            <EncabezadoOrdenable campo="asesor" orden={orden} onOrdenar={ordenarPor} className="p-3 pl-4 text-left">Asesor</EncabezadoOrdenable>
+            <EncabezadoOrdenable campo="captados" orden={orden} onOrdenar={ordenarPor} className="p-3 text-right" alineacion="derecha">Captados</EncabezadoOrdenable>
+            <EncabezadoOrdenable campo="arrendados" orden={orden} onOrdenar={ordenarPor} className="p-3 pr-4 text-right" alineacion="derecha">Arrendados</EncabezadoOrdenable>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -185,14 +193,14 @@ function ResumenPorAsesor({
                 <SinDatos
                   queSon="captaciones ni arriendos del equipo"
                   titulo="Nadie del equipo tiene captaciones ni arriendos en este rango"
-                  descripcion="Cuando un asesor traiga un mandato o cierre un arriendo, aparece aquí con su conteo."
+                  descripcion="Cuando un asesor traiga una consignación o cierre un arriendo, aparece aquí con su conteo."
                   ilustracion="equipo"
                   className="py-10"
                 />
               </TableCell>
             </TableRow>
           ) : null}
-          {asesores.map((a) => (
+          {ordenadas.map((a) => (
             <TableRow key={a.userId} className="border-t border-border" data-testid={`asesor-${a.userId}`}>
               <TableCell className="p-3 pl-4 text-fg [overflow-wrap:anywhere]">
                 {a.nombre}
@@ -245,7 +253,14 @@ function TablaDelPeriodo({
       }),
     [deLaPestana, asesor, q],
   );
-  const pag = useTablePagination(filas, { resetKey: `${pestana}|${asesor}|${q}` });
+  const { ordenadas: filasOrdenadas, orden: ordenDelPeriodo, ordenarPor: ordenarElPeriodo } = useOrdenDeLaTabla(
+    filas,
+    { inmueble: (f) => f.inmueble, persona: (f) => f.persona ?? null, asesor: (f) => f.asesor ?? null, fecha: (f) => f.fecha },
+    { primero: { fecha: 'desc' } },
+  );
+  const pag = useTablePagination(filasOrdenadas, {
+    resetKey: `${pestana}|${asesor}|${q}|${ordenDelPeriodo?.campo ?? ''}|${ordenDelPeriodo?.sentido ?? ''}`,
+  });
   const quien = pestana === 'captaciones' ? 'Propietario' : 'Inquilino';
 
   return (
@@ -299,10 +314,10 @@ function TablaDelPeriodo({
       <Table className="md:min-w-[720px] max-md:block">
         <TableHeader className="max-md:hidden">
           <TableRow className="border-b border-border-faint">
-            <TableHead className="p-3 pl-4 text-left">Inmueble</TableHead>
-            <TableHead className="p-3 text-left">{quien}</TableHead>
-            <TableHead className="p-3 text-left">Asesor</TableHead>
-            <TableHead className="p-3 pr-4 text-right">Fecha</TableHead>
+            <EncabezadoOrdenable campo="inmueble" orden={ordenDelPeriodo} onOrdenar={ordenarElPeriodo} className="p-3 pl-4 text-left">Inmueble</EncabezadoOrdenable>
+            <EncabezadoOrdenable campo="persona" orden={ordenDelPeriodo} onOrdenar={ordenarElPeriodo} className="p-3 text-left">{quien}</EncabezadoOrdenable>
+            <EncabezadoOrdenable campo="asesor" orden={ordenDelPeriodo} onOrdenar={ordenarElPeriodo} className="p-3 text-left">Asesor</EncabezadoOrdenable>
+            <EncabezadoOrdenable campo="fecha" orden={ordenDelPeriodo} onOrdenar={ordenarElPeriodo} className="p-3 pr-4 text-right" alineacion="derecha">Fecha</EncabezadoOrdenable>
           </TableRow>
         </TableHeader>
         <TableBody className="max-md:block">
@@ -315,7 +330,7 @@ function TablaDelPeriodo({
                   titulo={pestana === 'captaciones' ? 'Ninguna captación en el rango' : 'Ningún arriendo cerrado en el rango'}
                   descripcion={
                     pestana === 'captaciones'
-                      ? 'Cuando el equipo traiga un mandato en estas fechas, aparece aquí con quién lo trajo.'
+                      ? 'Cuando el equipo traiga una consignación en estas fechas, aparece aquí con quién lo trajo.'
                       : 'Cuando el equipo cierre un arriendo en estas fechas, aparece aquí con quién lo cerró.'
                   }
                   ilustracion={pestana === 'captaciones' ? 'megafono' : 'llaves'}

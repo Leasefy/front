@@ -139,7 +139,7 @@ describe('sin sesión, «Publicar inmueble» abre la cuenta ENCIMA (Nico, 09-10)
     expect(ventana.getAttribute('data-inmobiliaria')).toBe('/publica?perfil=agency');
   });
 
-  it('con sesión, el enlace navega como siempre', () => {
+  it('con sesión TAMBIÉN abre la ventana y no navega (Nico 28-10: «por si quiero crear otra cuenta»; retomar es «Ir al panel»)', () => {
     sesion.actual = { isLoading: false, hasActiveAgencyMembership: false, agencyRole: null, isAuthenticated: true, user: { role: 'landlord' } };
     container = document.createElement('div');
     document.body.appendChild(container);
@@ -149,6 +149,7 @@ describe('sin sesión, «Publicar inmueble» abre la cuenta ENCIMA (Nico, 09-10)
     act(() => {
       container.querySelector('[data-testid="boton-publicar"]')!.dispatchEvent(evento);
     });
-    expect(container.querySelector('[data-testid="ventana-de-la-cuenta"]')).toBeNull();
+    expect(evento.defaultPrevented).toBe(true);
+    expect(container.querySelector('[data-testid="ventana-de-la-cuenta"]')).not.toBeNull();
   });
 });

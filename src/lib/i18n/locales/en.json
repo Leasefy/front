@@ -960,6 +960,8 @@
       "vacioTexto": "It's the list of what's in the property and its condition. Make it and complete it: without it you can't start a lease.",
       "empezar": "Start the inventory",
       "volverAlContrato": "Back to the lease",
+      "cajonDescripcion": "What is in the property and its condition. Add it and complete it right here: what you have of the contract is kept.",
+      "cajonAyuda": "Closing it takes you back to the contract just as you left it.",
       "volverListo": "Done: the inventory is complete. You can continue with the lease.",
       "volverPendiente": "You came from creating a lease: once you complete the inventory, come back to continue."
     },
@@ -1026,7 +1028,7 @@
       "soportes": "Candidate documents",
       "piloto": "Home",
       "chat": "Chat",
-      "secCaptacion": "Acquisition & leasing",
+      "secCaptacion": "Leasing",
       "secOperacionDelContrato": "Operations",
       "secDinero": "Money",
       "caraInquilinos": "Collect from tenants",
@@ -1057,7 +1059,12 @@
       "portalesDePublicacion": "Portals",
       "calificacionLeasefy": "Leasefy rating",
       "requisitosDePostulacion": "Requirements",
-      "calceDeLeads": "What to offer",
+      "calceDeLeads": "Opportunities",
+      "colecciones": "Collections",
+      "resenas": "Reviews",
+      "comisionCompartida": "Shared commission",
+      "firmas": "Signatures",
+      "tuDia": "Your day",
       "visitasDelPipeline": "Get visits ready",
       "comisionesYMetas": "Commissions and goals",
       "reclamosDeCandidatos": "Claims",
@@ -1075,7 +1082,7 @@
       "recibos": "Receipts",
       "deudaDelMes": "Debt this month",
       "girosAPropietarios": "Owner payouts",
-      "secCaptacionCorta": "Acquisition",
+      "secCaptacionCorta": "Leasing",
       "diasHabiles": "Business days",
       "incrementos": "Rent increases",
       "serviciosPublicos": "Utilities"
@@ -1427,6 +1434,7 @@
           "sinLectura": "I couldn't read your agents' status right now. These are the ones the Autopilot can have:"
         },
         "agente": {
+          "servicios": "Reads each utility bill the tenant uploads and proposes «up to date» or a rejection with its reason; also the adjustments to deduct from the owner and the service-cut warning. Rejecting and deducting are always your call.",
           "cobranza": "Calls and writes by WhatsApp and email to tenants with pending payments, within the hours the law allows.",
           "cotizador": "Checks a candidate with the insurers when you ask.",
           "conciliacion": "Matches bank deposits with your charges and issues the receipt for exact matches. Anything doubtful goes to the Inbox.",
@@ -4209,7 +4217,7 @@
         "inProcess": "In process",
         "maintenance": "Maint.",
         "draft": "Draft",
-        "sinMandato": "No mandate",
+        "sinMandato": "No owner",
         "allTypes": "All",
         "apartment": "Apt",
         "house": "House",
@@ -4281,7 +4289,7 @@
         "descripcionCajon": "Everything that can change on the property and its mandate. Only what you change is saved.",
         "seccionInmueble": "Property",
         "seccionPrecio": "Price",
-        "seccionMandato": "Mandate",
+        "seccionMandato": "Consignment contract",
         "seccionPublicacion": "Publication",
         "seccionFotosYDocumentos": "Photos and documents",
         "description": "Description",
@@ -4468,7 +4476,7 @@
           "property": "Property",
           "commission": "Commission",
           "agent": "Agent",
-          "inventory": "Photos & inventory",
+          "inventory": "Inventory",
           "photos": "Photos",
           "confirm": "Confirm"
         },
@@ -4514,7 +4522,7 @@
           "subtitle": "Pick one or more owners, or create a new one"
         },
         "step2": {
-          "dondeVanLasFotos": "Photos and the property video are uploaded in the «Photos & inventory» step; you can pick several photos at once.",
+          "dondeVanLasFotos": "Photos and the property video go in the next step, «Photos»; you can pick several at once.",
           "title": "Property Data",
           "subtitle": "Enter the basic property information",
           "propertyTypeLabel": "Property type",
@@ -5337,7 +5345,9 @@
         "photoTake": "Take photo",
         "photoChange": "Change photo",
         "photoRemove": "Remove",
-        "photoHelp": "The photo is kept on this phone and uploaded once there is signal. JPG, PNG or WebP, up to 5 MB. Or paste the link of a photo already published:",
+        "photoAttach": "Attach image",
+        "photoDrop": "Or drag the image here.",
+        "photoHelp": "It is kept on this device and uploaded once there is signal. JPG, PNG or WebP, up to 5 MB.",
         "photoUrl": "Photo (link)",
         "photoUrlPlaceholder": "https://…",
         "photoUrlHelp": "A link to the photo. Uploading from here comes later.",
@@ -5460,7 +5470,7 @@
       "property": "Property",
       "change": "Change",
       "searchProperty": "Search property...",
-      "noRentedProperties": "No rented properties yet: maintenance is reported on a property with an active lease.",
+      "noRentedProperties": "No properties yet: maintenance is reported on a property that is already in Leasefy.",
       "noPropertiesFound": "No properties found",
       "maintenanceType": "Maintenance type",
       "priorityLabel": "Priority",
@@ -8789,6 +8799,7 @@
           "system": "System"
         },
         "agente": {
+          "servicios": "Utilities",
           "cobranza": "Collections",
           "cotizador": "Insurability",
           "conciliacion": "Reconciliation",
@@ -10371,7 +10382,7 @@
         "aprobacionPedida": "We asked the owner for approval",
         "emergenciaRegistrada": "Emergency repair: deducted and notice generated",
         "inquilino": "The tenant",
-        "inquilinoAyuda": "Nothing is deducted from the owner: it goes on the tenant's statement as a one-time charge, on this month's installment or the next unpaid one.",
+        "inquilinoAyuda": "Nothing is deducted from the owner: it goes on the tenant's statement as a one-time charge, on this month's installment or the next unpaid one. We let them know right away by email and WhatsApp, with the link to pay it.",
         "cancelar": "Cancel",
         "confirmar": "Approve quote",
         "aprobando": "Approving…",
@@ -10720,7 +10731,7 @@
       "horariosGuardados": "Visit hours saved",
       "horarioAgenteTitle": "Visit hours",
       "horarioAgenteDesc": "One schedule for all of this agent's properties.",
-      "horarioAgenteGuardado": "Schedule applied to {count} properties",
+      "horarioAgenteGuardado": "Schedule applied to {{count}} properties",
       "horarioAgenteError": "Could not save the schedule",
       "citaTitle": "Schedule a visit",
       "citaProperty": "Property",
@@ -11047,37 +11058,54 @@
       },
       "flujos": {
         "consignacion": {
-          "label": "New listing agreement",
-          "desc": "Add a property to the portfolio with its owner",
+          "label": "New consignment",
+          "desc": "Add a property to the portfolio; the owner, if you already have them",
           "intro": {
-            "titulo": "You're creating a listing agreement",
-            "resumen": "It's the agreement with the owner to manage their property. It goes into your portfolio and you publish it from there.",
+            "titulo": "You're creating a consignment",
+            "resumen": "It adds the property to your portfolio and publishes it on the marketplace. The owner and the inventory are optional: you add them when you make the contract.",
             "pasos": {
               "p1": {
-                "titulo": "The owner",
-                "texto": "You pick them, or create them if they aren't there yet. With several owners, you split the share."
+                "titulo": "The property",
+                "texto": "Type, title, address, city and rent (or sale price). If it's already listed elsewhere, paste the link and we bring it over."
               },
               "p2": {
-                "titulo": "The property",
-                "texto": "Type, title, address, city and rent (or sale price). The rest can wait."
+                "titulo": "The photos",
+                "texto": "Upload them or bring them from the listing's link. The video is optional."
               },
               "p3": {
-                "titulo": "The commission",
-                "texto": "The terms of the mandate with the owner."
+                "titulo": "The owner, if you have them",
+                "texto": "Optional. Name and phone are enough; ID and bank are asked when you make the contract."
               },
               "p4": {
-                "titulo": "Who handles it",
-                "texto": "If you're an administrator, you pick the agent; if you don't, it's you."
+                "titulo": "Commission and who handles it",
+                "texto": "What you agree on when you take the listing, and the agent who shows it; if you don't pick one, it's you."
               },
               "p5": {
-                "titulo": "Inventory and photos",
-                "texto": "Optional: the record with its rooms and the photos. At the end you confirm."
+                "titulo": "Inventory, optional",
+                "texto": "If you have it, write it down. At the end you confirm and decide whether it goes on the marketplace."
               }
             },
             "antes": {
-              "a1": "The owner's details: name and ID.",
-              "a2": "The property's exact address, city and rent.",
-              "a3": "The photos and the inventory, if you already have them."
+              "a1": "The property's exact address, city and rent.",
+              "a2": "The photos, or the link to the listing where it's already published.",
+              "a3": "The owner and the inventory, if you have them: they're optional."
+            }
+          }
+        },
+        "publicar": {
+          "label": "Publish a property",
+          "desc": "Put it on the marketplace: by link, from Excel or one by one",
+          "intro": {
+            "titulo": "You're publishing properties",
+            "resumen": "To show them on the Leasefy marketplace fast: paste the links where they're already listed, upload an Excel file or add them one by one. No owner or contract needed.",
+            "pasos": {
+              "p1": { "titulo": "Paste the links", "texto": "We bring the details and photos from Fincaraíz, Metrocuadrado or your own website." },
+              "p2": { "titulo": "Or upload an Excel file", "texto": "One or a hundred properties at once; we read the columns." },
+              "p3": { "titulo": "Review and publish", "texto": "They appear on the marketplace under your name." }
+            },
+            "antes": {
+              "a1": "The links to your listings, or the Excel file with your properties.",
+              "a2": "Nothing else: the owner and the contract come later."
             }
           }
         },
@@ -13514,6 +13542,11 @@
       "avance": "{{hechos}} of {{total}} steps done · next: {{paso}}",
       "migrar": "Migrate now",
       "cerrar": "Close the migration reminder",
+      "cerrarBoton": "Close",
+      "cerradaTitulo": "Migration removed from the menu",
+      "cerradaDetalle": "You can find it anytime in Settings → Migration.",
+      "irAMigracion": "Go to Migration",
+      "noSeCerro": "We couldn't remove the migration from the menu",
       "paso": "Step {{n}} of {{total}}",
       "sigue": "Next up: {{paso}}. Pick it up where you left off.",
       "continuar": "Continue migration"
@@ -13979,6 +14012,7 @@
     "porVencer": "Not yet due"
   },
   "agentes": {
+    "servicios": {"rol": "Utilities", "historia": "Checks the utility bill each tenant uploads against the property account and proposes what to do with it.", "hace": {"lee": "Reads the bill the tenant uploads, as a photo or PDF", "compara": "Compares it with the property account (EPM, Enel, Vanti or whichever it has), the period, that it says paid and the amount", "propone": "Proposes «up to date» or a rejection with its reason, ready for one click", "ajustes": "Finds billed-concept adjustments and proposes deducting them from the owner", "corte": "Warns about a service cut when a tenant has gone two months without an up-to-date bill"}, "noHace": {"rechaza": "Never rejects a bill or deducts from the owner without a person clicking", "escribe": "Does not message the tenant: Mori does that on WhatsApp"}},
     "equipo": {
       "titulo": "Your agency's team",
       "resumen": "{{agentes}} agents across {{frentes}} areas",

@@ -17,6 +17,7 @@
  */
 
 import Link from 'next/link'
+import { useMemo } from 'react'
 import { Presence } from '@leasefy/cadence'
 
 import { useI18n } from '@/lib/i18n'
@@ -26,12 +27,13 @@ import {
   Table,
   TableBodyAnimado,
   TableCell,
-  TableHead,
   TableHeader,
   TableRow,
   TableRowAnimada,
 } from '@/components/ui/table'
 import { useTr } from '@/lib/i18n/use-tr'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
 
 const CASOS_HREF = '/panel/inmobiliaria/pagos/cobranza/deudores'
 const TOP_N = 5
@@ -41,7 +43,18 @@ export function CobranzaDeudoresQuePesan() {
   const { formatCurrency } = useI18n()
   const { data, isLoading } = useDailyReport()
 
-  const deudores = (data?.top_debtors ?? []).slice(0, TOP_N)
+  // Los cinco que más deben (así los manda el reporte); el orden de la tabla sólo reacomoda esos cinco.
+  const losQueMasPesan = useMemo(() => (data?.top_debtors ?? []).slice(0, TOP_N), [data])
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas».
+  const { ordenadas: deudores, orden, ordenarPor } = useOrdenDeLaTabla(
+    losQueMasPesan,
+    {
+      deudor: (d) => d.debtor_name ?? toDebtorRef(d.debtor_id_masked ?? d.debtor_id),
+      mora: (d) => d.dpd,
+      saldo: (d) => d.balance_cop,
+    },
+    { primero: { mora: 'desc', saldo: 'desc' } },
+  )
 
   // El reporte llega después del resto del panorama: la tarjeta entra con su
   // animación (`Presence`) en vez de aparecer de golpe al lado del embudo.
@@ -64,13 +77,13 @@ export function CobranzaDeudoresQuePesan() {
         <TableHeader>
           {/* El encabezado no es una fila sobre la que se pueda actuar: sin hover. */}
           <TableRow className="hover:bg-transparent">
-            <TableHead scope="col">{tr("Deudor")}</TableHead>
-            <TableHead scope="col" numeric>
+            <EncabezadoOrdenable campo="deudor" orden={orden} onOrdenar={ordenarPor}>{tr("Deudor")}</EncabezadoOrdenable>
+            <EncabezadoOrdenable campo="mora" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">
               {tr("Días de mora")}
-            </TableHead>
-            <TableHead scope="col" numeric>
+            </EncabezadoOrdenable>
+            <EncabezadoOrdenable campo="saldo" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">
               {tr("Saldo")}
-            </TableHead>
+            </EncabezadoOrdenable>
           </TableRow>
         </TableHeader>
         <TableBodyAnimado>

@@ -84,6 +84,13 @@ import {
 import { TablePagination } from '@/components/ui/pagination'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { useTablePagination } from '@/lib/hooks/use-table-pagination'
+import {
+  useOrdenDeLaTabla,
+  type OrdenDeLaTabla,
+  type SentidoDelOrden,
+  type ValorParaOrdenar,
+} from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
 import { refDelInquilino } from '@/lib/estado-de-cuenta/con-quien-se-abre'
 import { rutaDelEstadoDeCuenta } from '@/lib/api/estado-de-cuenta.service'
 import { rotuloDelContrato } from '@/lib/cartera/conceptos'
@@ -131,10 +138,27 @@ export interface CuotasDelMesTablaProps {
    * a que salgan las de antes. Buscar, en cambio, saca las que ya no están.
    */
   vista?: string
+  /**
+   * El orden lo puede llevar quien tiene la barra (Deuda del mes pone «Ordenar por» junto al buscador y le pasa las
+   * filas YA ordenadas). Sin esto, la tabla ordena lo que recibe.
+   */
+  orden?: OrdenDeLaTabla<CampoDeLaCuota> | null
+  onOrdenar?: (campo: CampoDeLaCuota) => void
 }
 
 /** Las cinco de datos más la del kebab. */
 const COLUMNAS = 5
+
+export type CampoDeLaCuota = 'inquilino' | 'vence' | 'estado' | 'falta'
+
+/** Cómo se ordena cada columna (Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas»). */
+export const ORDEN_DE_CUOTAS: Record<CampoDeLaCuota, (f: FilaDeLaCuotaDelMes) => ValorParaOrdenar> = {
+  inquilino: (f) => f.inquilino ?? null,
+  vence: (f) => f.vence ?? null,
+  estado: (f) => nombreDeLaFila(f),
+  falta: (f) => f.pendienteCop,
+}
+export const PRIMERO_DE_CUOTAS: Partial<Record<CampoDeLaCuota, SentidoDelOrden>> = { falta: 'desc' }
 
 export function CuotasDelMesTabla({
   filas,
@@ -143,14 +167,25 @@ export function CuotasDelMesTabla({
   onLimpiarFiltros,
   sinMarco = false,
   vista = '',
+  orden: ordenExterno,
+  onOrdenar,
 }: CuotasDelMesTablaProps) {
   const { locale, t } = useI18n()
   const idioma = locale === 'es' ? 'es' : 'en'
   /** La fila abierta en el cajón. `null` = cerrado. */
   const [abierta, setAbierta] = useState<FilaDeLaCuotaDelMes | null>(null)
 
-  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
-    useTablePagination(filas, { initialPageSize: 10, resetKey: `${mes}|${hayFiltros}` })
+  // La lista ENTERA se ordena antes de cortar la página (aquí o en quien tiene la barra).
+  const propio = useOrdenDeLaTabla(filas, ORDEN_DE_CUOTAS, { primero: PRIMERO_DE_CUOTAS })
+  const deAfuera = onOrdenar !== undefined
+  const ordenadas = deAfuera ? filas : propio.ordenadas
+  const orden = deAfuera ? (ordenExterno ?? null) : propio.orden
+  const ordenarPor = onOrdenar ?? propio.ordenarPor
+
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } = useTablePagination(ordenadas, {
+    initialPageSize: 10,
+    resetKey: `${mes}|${hayFiltros}|${orden?.campo ?? ''}|${orden?.sentido ?? ''}`,
+  })
 
   // Los mismos decimales en cada columna de plata (revisión 22-10).
   const plataDeLaColumna = plataPareja(pageItems.flatMap((f) => [f.totalCop, f.pendienteCop, f.pagadoCop, interesPendiente(f)]))
@@ -173,12 +208,12 @@ export function CuotasDelMesTabla({
       <Table className="max-md:block">
         <TableHeader className="max-md:hidden">
           <TableRow>
-            <TableHead className="whitespace-nowrap">Inquilino</TableHead>
-            <TableHead className="whitespace-nowrap">Vence</TableHead>
-            <TableHead className="whitespace-nowrap">Estado</TableHead>
-            <TableHead className="whitespace-nowrap" numeric>
+            <EncabezadoOrdenable campo="inquilino" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Inquilino</EncabezadoOrdenable>
+            <EncabezadoOrdenable campo="vence" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Vence</EncabezadoOrdenable>
+            <EncabezadoOrdenable campo="estado" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Estado</EncabezadoOrdenable>
+            <EncabezadoOrdenable campo="falta" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap text-right" alineacion="derecha">
               Falta
-            </TableHead>
+            </EncabezadoOrdenable>
             {/* La del kebab. Sin rótulo: nombrar «Acciones» gasta ancho para
                 decir lo que el icono ya dice. */}
             <TableHead className="w-10" />

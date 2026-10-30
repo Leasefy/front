@@ -134,10 +134,12 @@ export function paginaDe(i: { slug: string | null; id: string }): string {
 }
 
 export const marketplaceApi = {
-  inmobiliarias(opciones: { ids?: string[]; limite?: number } = {}): Promise<TarjetaDeInmobiliaria[]> {
+  inmobiliarias(opciones: { ids?: string[]; limite?: number; q?: string; desde?: number } = {}): Promise<TarjetaDeInmobiliaria[]> {
     const q = new URLSearchParams();
     if (opciones.ids?.length) q.set('ids', opciones.ids.join(','));
     if (opciones.limite) q.set('limite', String(opciones.limite));
+    if (opciones.q?.trim()) q.set('q', opciones.q.trim());
+    if (opciones.desde) q.set('desde', String(opciones.desde));
     const qs = q.toString();
     return apiClient.get<TarjetaDeInmobiliaria[]>(`${BASE}/inmobiliarias${qs ? `?${qs}` : ''}`);
   },

@@ -43,7 +43,7 @@ describe('BloqueoPorInventario', () => {
     });
     expect(host.textContent).toContain('Todavía no puedes iniciar este contrato');
     expect(host.textContent).toContain('por actualizar tras el contrato B-4, que terminó el 1 de septiembre de 2026');
-    expect(host.querySelector('a')?.getAttribute('href')).toBe('/panel/inmobiliaria/inmuebles/cons-1#inventario');
+    expect(host.querySelector('a')?.getAttribute('href')).toBe('/panel/inmobiliaria/inmuebles/cons-1?pestana=arrendarlo#inventario');
   });
 
   it('sin consignación no inventa un enlace: dice dónde buscar', () => {
@@ -65,7 +65,7 @@ describe('BloqueoPorInventario', () => {
     const a = host.querySelector('a')!;
     expect(a.textContent).toBe('Hacer el inventario');
     expect(a.getAttribute('href')).toBe(
-      `/panel/inmobiliaria/inmuebles/cons-1?volver=${encodeURIComponent('/panel/inmobiliaria/contratos/nuevo?inmueble=p-1')}#inventario`,
+      `/panel/inmobiliaria/inmuebles/cons-1?pestana=arrendarlo&volver=${encodeURIComponent('/panel/inmobiliaria/contratos/nuevo?inmueble=p-1')}#inventario`,
     );
   });
 

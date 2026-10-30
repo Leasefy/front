@@ -1,3 +1,4 @@
+import type { AccesoDeLaCuenta } from '@/lib/conversion/acceso'
 /**
  * Auth Types - Type definitions for authentication system
  *
@@ -168,12 +169,19 @@ export interface Agency {
    * back anterior = como siempre.
    */
   modoComercial?: boolean
+  /** 27-10-2026: la «inmobiliaria» es la cuenta de un agente inmobiliario (su demo y sus pasos son otros). */
+  cuentaDeAgente?: boolean;
   /**
    * Llegó por el registro rápido del marketplace (Nico, 20-10-2026:
    * «márcalas»); sigue en `true` después de activarla. Ausente en un back
    * anterior = no se sabe (se trata como `false`).
    */
   vinoDelMarketplace?: boolean
+  /**
+   * 27-10-2026 (Nico): qué ve la cuenta — pagado, prueba (el mes gratis de un aliado), gratis o cliente
+   * (`lib/conversion/acceso.ts`). Ausente en un back anterior = manda `modoComercial`, como antes.
+   */
+  acceso?: AccesoDeLaCuenta | null
 }
 
 export type AgencySize = 'small' | 'medium' | 'large' | 'enterprise'
@@ -351,7 +359,8 @@ export interface AuthContextType extends AuthState {
   /** Manually retry fetching the agency membership (e.g. an error card's
    *  "Intentar de nuevo" button). Also re-arms the automatic self-heal
    *  backstop in `AuthProvider` if it had already given up retrying. */
-  refreshAgency: () => Promise<void>
+  /** `despuesDeUnCambio`: no reusar una pregunta que salió antes del cambio (el mes gratis, el pago, la activación). */
+  refreshAgency: (opciones?: { despuesDeUnCambio?: boolean }) => Promise<void>
   /** Switch the active context for a DUAL-CONTEXT user. Persisted per-user;
    *  a no-op for single-context users. */
   setActiveContext: (context: ActiveContext) => void

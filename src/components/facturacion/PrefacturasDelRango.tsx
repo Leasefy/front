@@ -63,6 +63,8 @@ import {
   type FacturasPorGenerar,
   type MesDelRango,
 } from '@/lib/api/facturacion-por-mes.service'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
 
 /** El aviso del CEO, en un solo lugar: se muestra y además se prueba. */
 export const AVISO_SE_GENERAN_POR_MES =
@@ -219,6 +221,21 @@ function Totales({ datos }: { datos: FacturasPorGenerar }) {
 
 /** Las filas de un mes, sólo para mirar: sin casillas y sin botón. */
 function FilasDelMes({ filas }: { filas: FacturaDelMes[] }) {
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Antes de la salida (es un hook).
+  const { ordenadas, orden, ordenarPor } = useOrdenDeLaTabla(
+    filas,
+    {
+      contrato: (f) => f.numeroExterno ?? f.codigo,
+      tercero: (f) => f.terceroNombre,
+      inmueble: (f) => f.inmueble,
+      para: (f) => f.destinatario,
+      base: (f) => f.baseCop,
+      iva: (f) => f.ivaCop,
+      total: (f) => f.totalCop,
+      estado: (f) => f.estado,
+    },
+    { primero: { base: 'desc', iva: 'desc', total: 'desc' } },
+  )
   if (filas.length === 0) {
     return (
       <p className="px-4 py-3 text-caption text-fg-muted">
@@ -231,18 +248,18 @@ function FilasDelMes({ filas }: { filas: FacturaDelMes[] }) {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="whitespace-nowrap">Contrato</TableHead>
-          <TableHead className="whitespace-nowrap">Tercero</TableHead>
-          <TableHead className="whitespace-nowrap">Inmueble</TableHead>
-          <TableHead className="whitespace-nowrap">Para</TableHead>
-          <TableHead className="whitespace-nowrap text-right">Base</TableHead>
-          <TableHead className="whitespace-nowrap text-right">IVA</TableHead>
-          <TableHead className="whitespace-nowrap text-right">Total</TableHead>
-          <TableHead className="whitespace-nowrap">Estado</TableHead>
+          <EncabezadoOrdenable campo="contrato" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Contrato</EncabezadoOrdenable>
+          <EncabezadoOrdenable campo="tercero" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Tercero</EncabezadoOrdenable>
+          <EncabezadoOrdenable campo="inmueble" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Inmueble</EncabezadoOrdenable>
+          <EncabezadoOrdenable campo="para" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Para</EncabezadoOrdenable>
+          <EncabezadoOrdenable campo="base" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap text-right" alineacion="derecha">Base</EncabezadoOrdenable>
+          <EncabezadoOrdenable campo="iva" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap text-right" alineacion="derecha">IVA</EncabezadoOrdenable>
+          <EncabezadoOrdenable campo="total" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap text-right" alineacion="derecha">Total</EncabezadoOrdenable>
+          <EncabezadoOrdenable campo="estado" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Estado</EncabezadoOrdenable>
         </TableRow>
       </TableHeader>
       <TableBodyAnimado>
-        {filas.map((f) => (
+        {ordenadas.map((f) => (
           <TableRowAnimada key={f.clave} data-testid={`rango-fila-${f.clave}`}>
             <TableCell className="whitespace-nowrap tabular-nums font-medium text-fg">
               {f.numeroExterno ?? `#${f.codigo ?? '—'}`}

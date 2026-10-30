@@ -13,7 +13,7 @@
  *     imagen exista;
  *   - ningún enlace sea un «#» muerto ni lleve a una pantalla que no existe;
  *   - el mega menú de «Producto» tenga las mismas opciones y rutas que el del
- *     front (`LandingHeaderV2`) más las páginas por público (`/para/*`), y se
+ *     front (`BarraDeLaHome`, la barra de las páginas en React) más las páginas por público (`/para/*`), y se
  *     abra con el mouse, al tocar y con el teclado.
  */
 
@@ -30,7 +30,8 @@ const HTML = readFileSync(join(CARPETA, 'index.html'), 'utf8')
 const SCRIPTS_PROPIOS = readdirSync(join(CARPETA, 'js')).filter((f) => f.endsWith('.js') && f !== 'en.js')
 const JS = SCRIPTS_PROPIOS.map((f) => readFileSync(join(CARPETA, 'js', f), 'utf8')).join('\n')
 const MEGA_MENU_JS = readFileSync(join(CARPETA, 'js', '08-mega-menu.js'), 'utf8')
-const CABECERA_V2 = readFileSync('src/components/landing-v2/LandingHeaderV2.tsx', 'utf8')
+// La barra de las páginas públicas en React es la MISMA de la home (Nico, 27-10: «solo debe haber una landing»).
+const BARRA_REACT = readFileSync('src/components/landing-v2/BarraDeLaHome.tsx', 'utf8')
 
 function documento(): Document {
   return new DOMParser().parseFromString(HTML, 'text/html')
@@ -163,7 +164,7 @@ describe('la home es la landing 2 (Ronda 30, Nico)', () => {
         ['Contacto', '/contacto'],
         ['Publicar gratis', '/publica'],
         ['Entrar', '/auth'],
-        ['Crear cuenta', '/auth?mode=register'],
+        ['Publicar gratis', '/publica'],
       ]),
     )
     expect(enlaces).toContain('mailto:hola@leasefy.co')
@@ -186,12 +187,15 @@ describe('la home es la landing 2 (Ronda 30, Nico)', () => {
     ])
     // Los mismos textos del mega menú del front: título y la línea de debajo.
     for (const [href, titulo, linea] of [...SISTEMA, ...AGENTES]) {
-      expect(CABECERA_V2, `${href} ya no está en el mega menú del front`).toContain(`href={enlace("${href}")}`)
-      expect(CABECERA_V2).toContain(`tx("${titulo}"`)
-      expect(CABECERA_V2).toContain(`tx("${linea}"`)
+      expect(BARRA_REACT, `${href} ya no está en la barra de las páginas en React`).toContain(`href: "${href}"`)
+      expect(BARRA_REACT).toContain(`titulo: ["${titulo}"`)
+      expect(BARRA_REACT).toContain(`linea: ["${linea}"`)
       expect(panel.querySelector(`a[href="${href}"]`)?.textContent).toContain(linea)
     }
-    for (const [href] of PUBLICO) expect(existeLaPantalla(href), href).toBe(true)
+    for (const [href, titulo] of PUBLICO) {
+      expect(existeLaPantalla(href), href).toBe(true)
+      expect(BARRA_REACT).toContain(`href: "${href}", titulo: ["${titulo}"`)
+    }
     // En el celular, el mismo menú dentro de «Menú».
     const movil = d.getElementById('pmM')!
     expect(movil.hasAttribute('hidden')).toBe(true)

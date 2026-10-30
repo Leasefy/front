@@ -40,7 +40,9 @@
  * casa: puesta sobre la pantalla, empuja lo que la persona vino a hacer.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
 import { useDropzone } from 'react-dropzone';
 import Link from 'next/link';
 import { CheckCircle, Plus, UploadSimple, WarningOctagon } from '@phosphor-icons/react';
@@ -462,6 +464,19 @@ function ArchivosImportados({
     void cargar();
   }, [cargar, version]);
 
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Antes de la salida (es un hook).
+  const lista = useMemo(() => archivos ?? [], [archivos]);
+  const { ordenadas, orden, ordenarPor } = useOrdenDeLaTabla(
+    lista,
+    {
+      importado: (a) => a.createdAt,
+      archivo: (a) => a.nombre,
+      banco: (a) => a.banco ?? null,
+      pagos: (a) => a.filasValidas,
+      total: (a) => a.totalCop,
+    },
+    { primero: { importado: 'desc', pagos: 'desc', total: 'desc' } },
+  );
   if (archivos && archivos.length === 0) return null;
   return (
     <section className="space-y-3" data-testid="archivos-importados">
@@ -477,16 +492,16 @@ function ArchivosImportados({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Importado</TableHead>
-                  <TableHead>Archivo</TableHead>
-                  <TableHead>Banco</TableHead>
-                  <TableHead className="text-right">Pagos</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
+                  <EncabezadoOrdenable campo="importado" orden={orden} onOrdenar={ordenarPor}>Importado</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="archivo" orden={orden} onOrdenar={ordenarPor}>Archivo</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="banco" orden={orden} onOrdenar={ordenarPor}>Banco</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="pagos" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Pagos</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="total" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Total</EncabezadoOrdenable>
                   <TableHead />
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {archivos.map((a) => (
+                {ordenadas.map((a) => (
                   <TableRow key={a.id} data-testid={`archivo-${a.id}`} data-state={abierto === a.id ? 'selected' : undefined}>
                     <TableCell className="whitespace-nowrap">{diaLegible(a.createdAt)}</TableCell>
                     <TableCell className="max-w-[18rem] truncate" title={a.nombre}>

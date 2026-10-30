@@ -149,7 +149,9 @@ describe('🔴 los InputWrapper requeridos: su control lleva aria-required', () 
     // (banco, tipo y número, apenas se empieza) son requeridos A VECES
     // (`required={…}`), con su `aria-required` igual de condicional: eso lo
     // prueba `PropietarioForm.qa-prop.test.tsx`. El teléfono ya no lo es.
-    ['src/components/inmobiliaria/PropietarioForm.tsx', 3],
+    // 27-10-2026 (Juan, marketplace): el tipo y el número de documento también pasan a ser A VECES
+    // (`required={!documentoOpcional}`, el propietario sin documento del asistente): siempre, sólo el nombre.
+    ['src/components/inmobiliaria/PropietarioForm.tsx', 1],
     ['src/components/inmobiliaria/ConfigPerfilAgencia.tsx', 1],
   ] as const)('%s', (archivo, cuantos) => {
     const campos = requeridos(archivo).filter((c) => c.control !== null)

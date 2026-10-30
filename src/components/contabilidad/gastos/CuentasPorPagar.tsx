@@ -13,7 +13,7 @@
  * Antes había un segundo formulario (el del agente de pagos) que guardaba la
  * factura en otro lado: no llegaba al libro, ni al P&G, ni a la exógena.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Money, Plus } from '@phosphor-icons/react';
 import { SinDatos } from '@/components/estado/SinDatos';
@@ -28,6 +28,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden';
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
 import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import { MasDetalles } from '@/components/pantalla/MasDetalles';
 import {
@@ -135,7 +138,23 @@ export function CuentasPorPagar({
   }, [contar]);
 
   const actual = VISTAS.find((v) => v.valor === vista)!;
-  const facturas = pagina?.facturas ?? [];
+  const facturas = useMemo(() => pagina?.facturas ?? [], [pagina]);
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». «Factura» ordena por su
+  // fecha (los números de proveedores distintos no se comparan) y, el mismo día, por el número.
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(
+    facturas,
+    {
+      proveedor: (f) => f.proveedorNombre,
+      factura: (f) => (f.fecha ? `${f.fecha} ${numeroDeLaFactura(f)}` : numeroDeLaFactura(f) || null),
+      vence: (f) => f.fechaDeVencimiento ?? null,
+      neto: (f) => f.netoCop,
+      estado: (f) => {
+        const e = estadoDePago(f, dia);
+        return e ? NOMBRE_DEL_ESTADO_DE_PAGO[e] : null;
+      },
+    },
+    { primero: { factura: 'desc', neto: 'desc' } },
+  );
 
   return (
     <section className="space-y-4" data-testid="cuentas-por-pagar">
@@ -156,6 +175,19 @@ export function CuentasPorPagar({
             }))}
           />
           <div className="flex flex-wrap items-center gap-3">
+            {facturas.length > 1 ? (
+              <SelectorDeOrden
+                orden={orden}
+                onCambiar={setOrden}
+                className="w-full sm:w-56"
+                formas={[
+                  { campo: 'vence', sentido: 'asc', etiqueta: 'Vence primero' },
+                  { campo: 'neto', sentido: 'desc', etiqueta: 'Monto: mayor primero' },
+                  { campo: 'proveedor', sentido: 'asc', etiqueta: 'Proveedor (A–Z)' },
+                  { campo: 'factura', sentido: 'desc', etiqueta: 'Más recientes' },
+                ]}
+              />
+            ) : null}
             <MasDetalles etiqueta="Cómo se pagan" etiquetaAbierto="Ocultar" className="text-caption" classNameDelContenido="max-w-md text-caption text-fg-muted">
               Las facturas de proveedor se registran y se causan en Contabilidad, en Gastos. Aquí ves las
               causadas y las mandas a pagar: el pago queda en Egresos, donde se arma el lote y lo aprueba
@@ -187,11 +219,11 @@ export function CuentasPorPagar({
           <Table className="max-md:block">
             <TableHeader className="max-md:hidden">
               <TableRow>
-                <TableHead>Proveedor</TableHead>
-                <TableHead>Factura</TableHead>
-                <TableHead>Vence</TableHead>
-                <TableHead className="text-right">A girar</TableHead>
-                <TableHead>Estado</TableHead>
+                <EncabezadoOrdenable campo="proveedor" orden={orden} onOrdenar={ordenarPor}>Proveedor</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="factura" orden={orden} onOrdenar={ordenarPor}>Factura</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="vence" orden={orden} onOrdenar={ordenarPor}>Vence</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="neto" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">A girar</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="estado" orden={orden} onOrdenar={ordenarPor}>Estado</EncabezadoOrdenable>
                 <TableHead>
                   <span className="sr-only">Acciones</span>
                 </TableHead>
@@ -225,7 +257,7 @@ export function CuentasPorPagar({
                   </TableCell>
                 </TableRow>
               ) : (
-                facturas.map((f) => {
+                ordenadas.map((f) => {
                   const estado = estadoDePago(f, dia);
                   return (
                     <TableRow

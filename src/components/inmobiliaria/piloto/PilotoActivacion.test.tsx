@@ -20,6 +20,7 @@ void React
 const lectura = vi.hoisted(() => ({
   data: null as unknown,
   cambiar: vi.fn(),
+  contratar: vi.fn(),
   refetch: vi.fn(async () => {}),
 }))
 
@@ -32,6 +33,7 @@ vi.mock('@/lib/hooks/piloto/use-piloto-opera-sola', () => ({
     refetch: lectura.refetch,
     cambiando: false,
     cambiar: lectura.cambiar,
+    contratar: lectura.contratar,
   }),
 }))
 vi.mock('@/lib/hooks/piloto/piloto-flota-context', () => ({
@@ -110,6 +112,8 @@ const botonCon = (texto: string) =>
 beforeEach(() => {
   lectura.cambiar.mockReset()
   lectura.cambiar.mockResolvedValue({ ok: true })
+  lectura.contratar.mockReset()
+  lectura.contratar.mockResolvedValue({ ok: true })
 })
 afterEach(() => {
   act(() => root?.unmount())
@@ -174,6 +178,30 @@ describe('PI-01: la franja del Piloto automático de la inmobiliaria', () => {
     expect(q('[data-testid="piloto-activacion-apagar"]')!.textContent).toContain('tu prueba sigue corriendo hasta el 4 de noviembre de 2026')
     await act(async () => botonCon('Sí, apagarlo')!.click())
     expect(lectura.cambiar).toHaveBeenCalledWith(false)
+  })
+
+  it('🔴 contratarlo desde el panel (Nico, 27-10: $900 por inmueble): en la prueba, con lo que cuesta y sin cobrar lo que queda', async () => {
+    pintar({ ...EN_PRUEBA, sePuedeContratar: true })
+    await act(async () => botonCon('Contratar el Piloto')!.click())
+    const que = q('[data-testid="piloto-contratar-que-va-a-pasar"]')!.textContent ?? ''
+    expect(que).toMatch(/900 más por inmueble al mes/)
+    expect(que).toContain('hasta el 4 de noviembre de 2026) no se cobra')
+    await act(async () => botonCon('Sí, contratarlo')!.click())
+    expect(lectura.contratar).toHaveBeenCalledTimes(1)
+    expect(lectura.cambiar).not.toHaveBeenCalled()
+    // «Apagar» sigue a la mano.
+    expect(botonCon('Apagar el Piloto')).toBeDefined()
+  })
+
+  it('contratarlo: también cuando terminó la prueba; nunca si el micro no lo ofrece o quien mira no es administrador', () => {
+    pintar({ ...SIN_ACTIVAR, motivo: 'prueba_terminada', sePuedeActivar: false, sePuedeContratar: true })
+    expect(botonCon('Contratar el Piloto')).toBeDefined()
+    act(() => root?.unmount())
+    pintar({ ...EN_PRUEBA })
+    expect(botonCon('Contratar el Piloto')).toBeUndefined()
+    act(() => root?.unmount())
+    pintar({ ...EN_PRUEBA, sePuedeContratar: true, puedeCambiarlo: false })
+    expect(botonCon('Contratar el Piloto')).toBeUndefined()
   })
 
   it('prueba terminada y apagado por Leasefy: lo dicen y no ofrecen prenderlo', () => {

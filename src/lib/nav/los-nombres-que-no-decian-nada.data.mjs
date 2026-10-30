@@ -45,7 +45,9 @@ const P = '/panel/inmobiliaria'
 
 /** @type {Array<{ source: string, destination: string, permanent: boolean }>} */
 export const LOS_NOMBRES_QUE_NO_DECIAN_NADA_DATA = [
-  { source: `${P}/pipeline/calce`, destination: `${P}/pipeline/que-ofrecer`, permanent: false },
+  { source: `${P}/pipeline/calce`, destination: `${P}/pipeline/oportunidades`, permanent: false },
+  // 27-10-2026 (Juan: «le pondría otro nombre»): «Qué ofrecer» → «Oportunidades».
+  { source: `${P}/pipeline/que-ofrecer`, destination: `${P}/pipeline/oportunidades`, permanent: false },
   {
     source: `${P}/pipeline/visitas`,
     destination: `${P}/pipeline/preparar-visitas`,

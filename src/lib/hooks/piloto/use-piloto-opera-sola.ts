@@ -20,6 +20,7 @@ import {
   fetchPilotoLoQueHizo,
   fetchPilotoPreferencias,
   fetchPilotoQueFalta,
+  postContratarPiloto,
   putPilotoActivo,
   putPilotoPreferencias,
   type CambiosDePreferencias,
@@ -142,6 +143,8 @@ export interface UsePilotoActivoResult extends LecturaDelPiloto<PilotoActivoResp
    * repite. Si salió, la respuesta ya trae el estado nuevo.
    */
   cambiar: (activo: boolean) => Promise<{ ok: boolean; error?: string; fallo?: unknown }>
+  /** Contratarlo desde el panel ($900 por inmueble). Mismo trato del segundo factor que `cambiar`. */
+  contratar: () => Promise<{ ok: boolean; error?: string; fallo?: unknown }>
 }
 
 /** El Piloto automático de la inmobiliaria: ¿activo?, la prueba y lo que le falta. Se lee al montar. */
@@ -166,5 +169,18 @@ export function usePilotoActivo(): UsePilotoActivoResult {
     },
     [agency?.id, refetch],
   )
-  return { ...lectura, cambiando, cambiar }
+  const contratar = useCallback(async () => {
+    if (!agency?.id) return { ok: false, error: 'sin_inmobiliaria' }
+    setCambiando(true)
+    try {
+      const r = await postContratarPiloto(agency.id)
+      if (r.ok) await refetch()
+      return r.ok
+        ? { ok: true }
+        : { ok: false, ...(r.error ? { error: r.error } : {}), ...(r.fallo !== undefined ? { fallo: r.fallo } : {}) }
+    } finally {
+      setCambiando(false)
+    }
+  }, [agency?.id, refetch])
+  return { ...lectura, cambiando, cambiar, contratar }
 }

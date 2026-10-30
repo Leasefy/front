@@ -126,7 +126,8 @@ function useEsMac(): boolean {
 function AtajoDelBuscador() {
   const mac = useEsMac();
   return (
-    <span className="pointer-events-none absolute right-5 top-[calc(50%-2px)] -translate-y-1/2" aria-hidden="true">
+    // Nico, 28-10-2026: centrado en la caja del buscador (se veía caído).
+    <span className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center leading-none" aria-hidden="true">
       <Kbd size="sm">{mac ? '⌘K' : 'Ctrl K'}</Kbd>
     </span>
   );
@@ -1078,7 +1079,7 @@ export function SidebarContent({
       {!isCollapsed && (onSearchClick || aboveNav) && (
         <div className="relative px-3 pb-1" data-tour-target="buscador">
           {onSearchClick ? (
-            <>
+            <div className="relative">
               <SidebarSearch
                 readOnly
                 placeholder={tr(searchPlaceholder ?? 'Buscar')}
@@ -1090,7 +1091,7 @@ export function SidebarContent({
               />
               {/* Revisora r23 (barra C4): el atajo también con la barra abierta, no sólo en el riel plegado. */}
               <AtajoDelBuscador />
-            </>
+            </div>
           ) : (
             aboveNav
           )}
@@ -1182,9 +1183,10 @@ export function SidebarContent({
       )}
 
       {/* Footer — cadence §Navigation: invite card + upgrade CTA, then Help.
-          Collapsed rail shows only the Help icon. */}
+          Collapsed rail shows only the Help icon. El pie va sólido para que el menú no se vea por detrás, con la MISMA
+          arena de la barra (Nico, 29-10: en oscuro el papel de la página dejaba negros los lados de las tarjetas). */}
       {isCollapsed ? (
-        <div data-testid="pie-de-la-barra" className="shrink-0 bg-bg px-2 pb-3 space-y-1">
+        <div data-testid="pie-de-la-barra" className="shrink-0 bg-surface-muted px-2 pb-3 space-y-1">
           {ayudaHref && (
             <Link
               href={ayudaHref}
@@ -1198,7 +1200,7 @@ export function SidebarContent({
           <SidebarThemeToggle collapsed />
         </div>
       ) : (
-        <div data-testid="pie-de-la-barra" className="shrink-0 bg-bg px-3 pb-3 space-y-2.5">
+        <div data-testid="pie-de-la-barra" className="shrink-0 bg-surface-muted px-3 pb-3 space-y-2.5">
           {footerCards}
           {showInvite && !inviteDismissed && (
             <div className="relative group/invite">

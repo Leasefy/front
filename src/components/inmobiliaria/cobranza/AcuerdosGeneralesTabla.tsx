@@ -57,6 +57,8 @@ import {
   type AcuerdoGeneral,
 } from '@/lib/hooks/cobranza/use-acuerdos-generales'
 import { cuandoAplica, queOfrece } from '@/lib/cobranza/acuerdo-general-vocab'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
 
 const BASE = '/panel/inmobiliaria/pagos/cobranza/acuerdos/generales'
 
@@ -75,11 +77,24 @@ export function AcuerdosGeneralesTabla() {
    */
   const [aBorrar, setABorrar] = useState<AcuerdoGeneral | null>(null)
 
-  // Sin `resetKey`: la tabla no tiene filtros ni búsqueda, así que no hay nada
-  // que cambie el conjunto de filas y obligue a volver a la página 1. Si el
-  // total encoge (se borró un acuerdo), el hook reencuadra solo.
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Antes de paginar.
+  const { ordenadas, orden, ordenarPor } = useOrdenDeLaTabla(
+    acuerdos,
+    {
+      acuerdo: (a) => a.name,
+      cuando: (a) => cuandoAplica(a),
+      ofrece: (a) => queOfrece(a),
+      prioridad: (a) => a.priority,
+      activo: (a) => a.active,
+    },
+    // «Gana el de mayor prioridad»: al tocar la columna, primero el que gana; y primero los prendidos.
+    { primero: { prioridad: 'desc', activo: 'desc' } },
+  )
+
+  // La tabla no tiene filtros ni búsqueda: sólo el orden vuelve a la página 1. Si el total encoge (se borró un
+  // acuerdo), el hook reencuadra solo.
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
-    useTablePagination(acuerdos)
+    useTablePagination(ordenadas, { resetKey: `${orden?.campo ?? ''}|${orden?.sentido ?? ''}` })
 
   const alternar = useCallback(
     async (a: AcuerdoGeneral) => {
@@ -218,11 +233,13 @@ export function AcuerdosGeneralesTabla() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Acuerdo</TableHead>
-                <TableHead>Cuándo aplica</TableHead>
-                <TableHead>Qué ofrece</TableHead>
-                <TableHead className="text-right">Prioridad</TableHead>
-                <TableHead>Activo</TableHead>
+                <EncabezadoOrdenable campo="acuerdo" orden={orden} onOrdenar={ordenarPor}>Acuerdo</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="cuando" orden={orden} onOrdenar={ordenarPor}>Cuándo aplica</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="ofrece" orden={orden} onOrdenar={ordenarPor}>Qué ofrece</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="prioridad" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">
+                  Prioridad
+                </EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="activo" orden={orden} onOrdenar={ordenarPor}>Activo</EncabezadoOrdenable>
                 <TableHead>
                   <span className="sr-only">Acciones</span>
                 </TableHead>

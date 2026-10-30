@@ -27,7 +27,9 @@
  * marcaba «Entregada» y, a los tres días hábiles, «Aceptada tácitamente».
  */
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
 import { EnvelopeSimple, Warning } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
@@ -106,6 +108,20 @@ function estadoParaMostrar(e: EntregaDeDocumento): { texto: string; tono: string
 
 export function EntregasYAcuse() {
   const [datos, setDatos] = useState<EntregasDeDocumentos | null>(null)
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas».
+  const entregas = useMemo(() => datos?.entregas ?? [], [datos])
+  const { ordenadas, orden, ordenarPor } = useOrdenDeLaTabla(
+    entregas,
+    {
+      documento: (e) => e.numeroDian ?? e.documentoTipo,
+      canal: (e) => e.canalNombre ?? e.canal,
+      destinatario: (e) => e.destinatario ?? null,
+      estado: (e) => e.estado,
+      entregada: (e) => e.enviadaAt ?? null,
+      tacita: (e) => e.aceptaTacitoAt ?? null,
+    },
+    { primero: { entregada: 'desc', tacita: 'asc' } },
+  )
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<unknown>(null)
   /** La entrega que se está rechazando: el diálogo pide el motivo. */
@@ -249,14 +265,14 @@ export function EntregasYAcuse() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="whitespace-nowrap">Documento</TableHead>
-                <TableHead className="whitespace-nowrap">Canal</TableHead>
-                <TableHead className="whitespace-nowrap">Destinatario</TableHead>
-                <TableHead className="whitespace-nowrap">Estado</TableHead>
-                <TableHead className="whitespace-nowrap">Entregada</TableHead>
-                <TableHead className="whitespace-nowrap">
+                <EncabezadoOrdenable campo="documento" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Documento</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="canal" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Canal</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="destinatario" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Destinatario</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="estado" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Estado</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="entregada" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Entregada</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="tacita" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">
                   Aceptación tácita
-                </TableHead>
+                </EncabezadoOrdenable>
                 <TableHead />
               </TableRow>
             </TableHeader>
@@ -281,7 +297,7 @@ export function EntregasYAcuse() {
                   </TableCell>
                 </TableRow>
               ) : (
-                datos.entregas.map((e) => {
+                ordenadas.map((e) => {
                   const estado = estadoParaMostrar(e)
                   return (
                   <TableRow key={e.id} data-testid={`entrega-${e.id}`}>

@@ -33,6 +33,13 @@ const DOCUMENTED_EXCEPTIONS = [
   '::view-transition-new(root)',
   '::view-transition-group(root)',
   '::view-transition-image-pair(root)',
+  // 27-10 (Nico: «no quiero interacciones toscas entre secciones»): la barra queda quieta entre páginas.
+  '::view-transition-group(lf-barra)',
+  '::view-transition-old(lf-barra)',
+  '::view-transition-new(lf-barra)',
+  '::view-transition-group(*)',
+  '::view-transition-old(*)',
+  '::view-transition-new(*)',
 ]
 
 function stripComments(css: string): string {

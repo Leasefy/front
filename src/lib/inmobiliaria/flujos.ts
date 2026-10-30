@@ -17,11 +17,11 @@
  * y cada opción se nombra completa.
  */
 
-import { Buildings, Scales, ShieldCheck, FilePlus, type Icon } from '@phosphor-icons/react'
+import { Buildings, Megaphone, Scales, ShieldCheck, FilePlus, type Icon } from '@phosphor-icons/react'
 
 import { isAgentModule } from '@/lib/auth/agent-module-access'
 
-export type FlujoKey = 'consignacion' | 'avaluo' | 'asegurabilidad' | 'contrato'
+export type FlujoKey = 'consignacion' | 'publicar' | 'avaluo' | 'asegurabilidad' | 'contrato'
 
 /** Los momentos del negocio, en el orden en que ocurren. */
 export type GrupoFlujo = 'captar' | 'evaluar' | 'cerrar'
@@ -80,6 +80,17 @@ export const FLUJOS: readonly FlujoNuevo[] = [
     grupo: 'captar',
     icon: Buildings,
     href: '/panel/inmobiliaria/inmuebles/nuevo',
+    module: 'portafolio',
+    accion: 'create',
+  },
+  // 🔴 Nico y Juan, 27-10-2026: «nuevo mandato debería cambiar a nueva consignación… y deberíamos tener una opción
+  // nueva que sea publicar inmueble, que es diferente»: una cosa es recibir el inmueble del propietario y otra
+  // sólo mostrarlo. Lleva al publicador rápido del marketplace (enlaces, Excel o uno por uno).
+  {
+    key: 'publicar',
+    grupo: 'captar',
+    icon: Megaphone,
+    href: '/publica?perfil=agency',
     module: 'portafolio',
     accion: 'create',
   },

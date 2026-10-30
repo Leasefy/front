@@ -128,6 +128,8 @@ vi.mock('@/components/ui/pagination', () => ({
 }))
 
 vi.mock('@leasefy/cadence', () => ({
+  // FalloDeCarga pinta la ilustración 3D del fallo (Nico, 27-10-2026): acá un marcador vacío.
+  Ilustracion: () => React.createElement('span', { 'data-ilustracion': 'fallo' }),
   Eyebrow: ({ children }: { children?: React.ReactNode }) =>
     React.createElement('p', null, children),
   // Cadence 2: el inquilino con su Avatar (iniciales y tono). Acá un span vacío: no suma texto a la fila.

@@ -422,7 +422,7 @@ export function PipelineDetail({
             )}
             {/* Revisora r22 (Qué ofrecer #4): desde el interesado se llega a «Qué ofrecer» con él ya elegido. */}
             <Link
-              href={`/panel/inmobiliaria/pipeline/que-ofrecer?interesado=${encodeURIComponent(item.id)}`}
+              href={`/panel/inmobiliaria/pipeline/oportunidades?interesado=${encodeURIComponent(item.id)}`}
               className="flex items-center justify-between px-4 py-3 border-t border-border text-sm font-medium text-primary hover:bg-muted/50 transition-colors"
               data-testid="lead-que-ofrecerle"
             >

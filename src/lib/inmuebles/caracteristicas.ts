@@ -77,15 +77,54 @@ export const CARACTERISTICAS: readonly Caracteristica[] = [
   { id: 'near_parks', nombre: 'Cerca a parques', grupo: 'sector', otrosNombres: ['parques'] },
 ];
 
+/**
+ * El detalle de dos características (Nico, 28-10-2026: «falta si tiene parqueadero (cuántos) y cuarto útil, porque es
+ * saber si es privado o público»). No son casillas sueltas: salen al marcar la de arriba y se quitan con ella.
+ * También en `AMENIDADES_VALIDAS` del back.
+ */
+export const DETALLES_DE_CARACTERISTICAS: Readonly<Record<'parking' | 'storage', ReadonlyArray<{ id: string; nombre: string; corto: string }>>> = {
+  parking: [
+    { id: 'parking_private', nombre: 'Parqueadero privado', corto: 'Privado' },
+    { id: 'parking_communal', nombre: 'Parqueadero comunal', corto: 'Comunal' },
+  ],
+  storage: [
+    { id: 'storage_private', nombre: 'Cuarto útil privado', corto: 'Privado' },
+    { id: 'storage_communal', nombre: 'Cuarto útil comunal', corto: 'Comunal' },
+  ],
+};
+const DETALLES_POR_ID = new Map(
+  Object.values(DETALLES_DE_CARACTERISTICAS)
+    .flat()
+    .map((d) => [d.id, d]),
+);
+
+/** Al cambiar el detalle de una característica (privado o comunal): uno solo a la vez. */
+export function conElDetalle(valor: readonly string[], de: 'parking' | 'storage', id: string | null): string[] {
+  const deEsa = new Set(DETALLES_DE_CARACTERISTICAS[de].map((d) => d.id));
+  const sin = valor.filter((v) => !deEsa.has(v));
+  return id ? [...sin, id] : sin;
+}
+
+/** Quitar una característica también quita su detalle. */
+export function sinLaCaracteristica(valor: readonly string[], id: string): string[] {
+  const detalle = id === 'parking' || id === 'storage' ? new Set(DETALLES_DE_CARACTERISTICAS[id].map((d) => d.id)) : null;
+  return valor.filter((v) => v !== id && !(detalle && detalle.has(v)));
+}
+
 const POR_ID = new Map(CARACTERISTICAS.map((c) => [c.id, c]));
 
 /** El nombre de una característica; un id que no está (dato viejo o raro), `null`. */
 export function nombreDeLaCaracteristica(id: string): string | null {
-  return POR_ID.get(id)?.nombre ?? null;
+  return POR_ID.get(id)?.nombre ?? DETALLES_POR_ID.get(id)?.nombre ?? null;
 }
 
 export function esCaracteristica(id: string): boolean {
-  return POR_ID.has(id);
+  return POR_ID.has(id) || DETALLES_POR_ID.has(id);
+}
+
+/** ¿Es el detalle de otra (privado o comunal)? Se pinta junto a la suya, no como casilla. */
+export function esDetalleDeCaracteristica(id: string): boolean {
+  return DETALLES_POR_ID.has(id);
 }
 
 /** Las características en sus tres grupos, en el orden de la lista. */

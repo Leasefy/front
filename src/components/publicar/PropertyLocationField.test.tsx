@@ -43,6 +43,14 @@ vi.mock('./AddressAutocomplete', () => ({
   },
 }));
 
+// La vuelta de «¿qué dirección es este punto?»: la prueba decide qué contesta.
+const geocodificacion = vi.hoisted(() => ({ resultado: null as null | { road?: string; label?: string; placeId?: string } }))
+vi.mock('@/lib/hooks/use-reverse-geocode', () => ({
+  useReverseGeocode: (alResolver: (r: unknown, c: { lat: number; lng: number }) => void) => ({
+    reverseGeocode: (lat: number, lng: number) => alResolver(geocodificacion.resultado, { lat, lng }),
+  }),
+}))
+
 vi.mock('@/components/map/LocationPicker', () => ({
   LocationPicker: (props: any) => {
     locationPickerMock(props);
@@ -56,7 +64,7 @@ vi.mock('@/components/map/LocationPicker', () => ({
   },
 }));
 
-import { PropertyLocationField } from './PropertyLocationField';
+import { PropertyLocationField, type PropertyLocationValue } from './PropertyLocationField';
 
 let container: HTMLDivElement;
 let root: Root;
@@ -78,7 +86,7 @@ afterEach(() => {
 });
 
 function render(props: Partial<React.ComponentProps<typeof PropertyLocationField>> = {}) {
-  const onChange = props.onChange ?? vi.fn();
+  const onChange = (props.onChange ?? vi.fn()) as ReturnType<typeof vi.fn<(partial: PropertyLocationValue) => void>>;
   act(() => {
     root.render(
       <PropertyLocationField
@@ -148,4 +156,32 @@ describe('<PropertyLocationField>', () => {
       coordsSource: 'geocoded',
     });
   });
+
+  // 🔴 27-10-2026: escribir la ciudad centra el mapa; la dirección de ese punto pisaba la escrita (o la borraba).
+  it('la dirección del punto en el mapa NO pisa la que ya se escribió; sólo mueve las coordenadas', () => {
+    geocodificacion.resultado = { road: 'Calle 52', label: 'Calle 52, Medellín', placeId: 'p-1' }
+    const { onChange } = render({ address: 'Carrera 76 # 33-20' })
+    act(() => {
+      ;(container.querySelector('[data-testid="fire-pin-drag"]') as HTMLButtonElement).click()
+    })
+    const ultima = onChange.mock.calls[onChange.mock.calls.length - 1][0]
+    expect(ultima).not.toHaveProperty('address')
+    expect(ultima).toMatchObject({ latitude: 5.1, longitude: -75.2, geocodePlaceId: 'p-1' })
+  })
+
+  it('con la dirección vacía, el punto del mapa la llena; una respuesta sin calle nunca la deja en blanco', () => {
+    geocodificacion.resultado = { road: 'Calle 52', label: 'Calle 52, Medellín', placeId: 'p-1' }
+    const { onChange } = render({ address: '' })
+    act(() => {
+      ;(container.querySelector('[data-testid="fire-pin-drag"]') as HTMLButtonElement).click()
+    })
+    expect(onChange.mock.calls[onChange.mock.calls.length - 1][0]).toMatchObject({ address: 'Calle 52' })
+
+    geocodificacion.resultado = { road: '', label: '' }
+    const otra = render({ address: '' }).onChange
+    act(() => {
+      ;(container.querySelector('[data-testid="fire-pin-drag"]') as HTMLButtonElement).click()
+    })
+    expect(otra.mock.calls[otra.mock.calls.length - 1][0]).not.toHaveProperty('address')
+  })
 });

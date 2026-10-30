@@ -13,7 +13,9 @@
  */
 
 import * as React from 'react'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
 
 import { useI18n } from '@/lib/i18n'
 import { useDebtorCalls } from '@/lib/hooks/cobranza/use-debtor-calls'
@@ -69,6 +71,19 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
    * condicional rompe el orden de hooks de React. Alimenta las dos vistas
    * (tabla en ≥md, tarjetas en móvil) para que muestren la misma página.
    */
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas».
+  const llamadas = useMemo(() => data?.calls ?? [], [data])
+  const { ordenadas, orden, ordenarPor } = useOrdenDeLaTabla(
+    llamadas,
+    {
+      cuando: (c) => c.started_at ?? null,
+      duracion: (c) => c.duration_seconds ?? null,
+      resultado: (c) => c.status ?? null,
+      calidad: (c) => c.qa_score ?? null,
+      cumplimiento: (c) => c.compliance_flags_count ?? null,
+    },
+    { primero: { cuando: 'desc', duracion: 'desc', calidad: 'desc', cumplimiento: 'desc' } },
+  )
   const {
     pageItems,
     total,
@@ -77,7 +92,7 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
     setPage,
     setPageSize,
     shouldPaginate,
-  } = useTablePagination(data?.calls ?? [])
+  } = useTablePagination(ordenadas, { resetKey: `${orden?.campo ?? ''}|${orden?.sentido ?? ''}` })
 
   // Movimiento: cada salida en un `CrossFade` con su clave (cargando →
   // llamadas, → fallo, → vacío).
@@ -139,21 +154,21 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
         <Table className="min-w-full divide-y divide-border text-sm">
           <TableHeader className="bg-surface-muted">
             <TableRow>
-              <TableHead>
+              <EncabezadoOrdenable campo="cuando" orden={orden} onOrdenar={ordenarPor}>
                 {t('inmobiliaria.ai.cobranza.detail.llamadas.columns.startedAt')}
-              </TableHead>
-              <TableHead>
+              </EncabezadoOrdenable>
+              <EncabezadoOrdenable campo="duracion" orden={orden} onOrdenar={ordenarPor}>
                 {t('inmobiliaria.ai.cobranza.detail.llamadas.columns.duration')}
-              </TableHead>
-              <TableHead>
+              </EncabezadoOrdenable>
+              <EncabezadoOrdenable campo="resultado" orden={orden} onOrdenar={ordenarPor}>
                 {t('inmobiliaria.ai.cobranza.detail.llamadas.columns.outcome')}
-              </TableHead>
-              <TableHead>
+              </EncabezadoOrdenable>
+              <EncabezadoOrdenable campo="calidad" orden={orden} onOrdenar={ordenarPor}>
                 {t('inmobiliaria.ai.cobranza.detail.llamadas.columns.qa')}
-              </TableHead>
-              <TableHead>
+              </EncabezadoOrdenable>
+              <EncabezadoOrdenable campo="cumplimiento" orden={orden} onOrdenar={ordenarPor}>
                 {t('inmobiliaria.ai.cobranza.detail.llamadas.columns.compliance')}
-              </TableHead>
+              </EncabezadoOrdenable>
             </TableRow>
           </TableHeader>
           {/* Paginar o una llamada nueva en vivo: las filas entran

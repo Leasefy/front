@@ -1409,6 +1409,31 @@ describe('🔴 «No vengo de otro sistema, arranco de cero»', () => {
     expect(estadoMock.omitir).toHaveBeenCalledTimes(1);
   });
 
+  it('🔴 confirmando también quita la migración del menú (Nico, 27-10: «no le quita eso cuando le da clic en omitir»)', async () => {
+    estadoMock.recordatorio.mockResolvedValue({});
+    estadoMock.omitir.mockResolvedValue({ bloquea: false, resuelta: 'omitida', pasos: RECIEN_LLEGADA });
+
+    await pintar();
+    await click('muro-arrancar-de-cero');
+    await click('muro-confirmar-si');
+    await act(async () => {});
+
+    expect(estadoMock.recordatorio).toHaveBeenCalledWith(true);
+    expect(estadoMock.omitir).toHaveBeenCalledTimes(1);
+  });
+
+  it('si no se pudo quitar del menú, igual omite: molesta, no encierra', async () => {
+    estadoMock.recordatorio.mockRejectedValue(new Error('500'));
+    estadoMock.omitir.mockResolvedValue({ bloquea: false, resuelta: 'omitida', pasos: RECIEN_LLEGADA });
+
+    await pintar();
+    await click('muro-arrancar-de-cero');
+    await click('muro-confirmar-si');
+    await act(async () => {});
+
+    expect(estadoMock.omitir).toHaveBeenCalledTimes(1);
+  });
+
   it('si el POST falla el muro se queda puesto y lo dice — no finge que salió', async () => {
     estadoMock.omitir.mockRejectedValue(new Error('500'));
 
@@ -1659,6 +1684,28 @@ describe('la migración abierta a mano, con el muro abajo', () => {
     expect(estadoMock.omitir).not.toHaveBeenCalled();
     expect(q('muro-migracion')).toBeNull();
     expect((q('panel-detras-del-muro') as HTMLElement).getAttribute('inert')).toBeNull();
+  });
+
+  it('🔴 quien la había quitado del menú y la vuelve a abrir la tiene otra vez en el menú (Nico, 27-10)', async () => {
+    const cerrada = { bloquea: false, resuelta: 'omitida', pasos: A_MEDIAS, recordatorioDescartado: true };
+    estadoMock.estado.mockResolvedValue(cerrada);
+    estadoMock.recordatorio.mockResolvedValue({ ...cerrada, recordatorioDescartado: false });
+    await pintarConAbridor();
+
+    await click('abrir-migracion');
+    await act(async () => {});
+    expect(estadoMock.recordatorio).toHaveBeenCalledWith(false);
+    expect(q('muro-migracion')).not.toBeNull();
+  });
+
+  it('abrirla sin haberla quitado del menú no toca el recordatorio', async () => {
+    estadoMock.estado.mockResolvedValue({ bloquea: false, resuelta: 'omitida', pasos: A_MEDIAS, recordatorioDescartado: false });
+    await pintarConAbridor();
+
+    await click('abrir-migracion');
+    await act(async () => {});
+    expect(estadoMock.recordatorio).not.toHaveBeenCalled();
+    expect(q('muro-migracion')).not.toBeNull();
   });
 
   it('con todo listo, «Entrar al panel» la marca terminada y la cierra', async () => {

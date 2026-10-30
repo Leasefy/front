@@ -58,6 +58,9 @@ import {
 import { TablePagination } from '@/components/ui/pagination'
 import { BarraDeAccionesMasivas } from '@/components/ui/acciones-masivas'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden'
 import { useExtractoDelBack } from '@/lib/hooks/conciliacion/use-extracto-del-back'
 import {
   LARGO_MAXIMO_DEL_MOTIVO_DE_RECHAZO,
@@ -126,6 +129,16 @@ const COLUMNAS = [
   'Sugerencia del agente',
   'Acciones',
 ] as const
+
+/** Por qué se ordena cada columna (la de las acciones no se ordena). */
+const CAMPO_DE_LA_COLUMNA: Record<(typeof COLUMNAS)[number], 'fecha' | 'movimiento' | 'monto' | 'tipo' | 'sugerencia' | null> = {
+  Fecha: 'fecha',
+  Movimiento: 'movimiento',
+  Monto: 'monto',
+  Tipo: 'tipo',
+  'Sugerencia del agente': 'sugerencia',
+  Acciones: null,
+}
 
 // ── Formato ──────────────────────────────────────────────────────────────────
 
@@ -216,8 +229,20 @@ function ConciliacionCola() {
 
   // El recorte es de presentación: el filtro ya viajó al backend, así que el
   // `resetKey` es el propio filtro — cambiarlo vuelve a la página 1.
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas».
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(
+    items,
+    {
+      fecha: (i) => i.movement.valueDate,
+      movimiento: (i) => i.movement.description?.trim() || null,
+      monto: (i) => i.movement.amountCop,
+      tipo: (i) => i.caseType ?? null,
+      sugerencia: (i) => i.confidenceScore,
+    },
+    { primero: { fecha: 'desc', monto: 'desc', sugerencia: 'desc' } },
+  )
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
-    useTablePagination(items, { resetKey: caseFilter })
+    useTablePagination(ordenadas, { resetKey: `${caseFilter}|${orden?.campo ?? ''}|${orden?.sentido ?? ''}` })
 
   const eligibleItems = useMemo(() => items.filter(isBulkEligible), [items])
   const eligibleIds = useMemo(() => eligibleItems.map((i) => i.id), [eligibleItems])
@@ -345,7 +370,7 @@ function ConciliacionCola() {
             (a 390 eran tres renglones de pastillas). El micro filtra por tipo y no manda el
             conteo de cada uno: el número va en la pestaña abierta (lo que se leyó). */}
         {error && !conteoPorTipo ? null : (
-        <div className="border-b border-border p-4 empty:hidden">
+        <div className="flex flex-col gap-3 border-b border-border p-4 empty:hidden lg:flex-row lg:items-center lg:justify-between">
           <PestanasDeEstado
             etiqueta="Filtrar por tipo de caso"
             valor={caseFilter}
@@ -366,6 +391,19 @@ function ConciliacionCola() {
               testid: `tipo-${f.value}`,
             }))}
           />
+          {items.length > 1 ? (
+            <SelectorDeOrden
+              orden={orden}
+              onCambiar={setOrden}
+              className="w-full shrink-0 sm:w-56"
+              formas={[
+                { campo: 'fecha', sentido: 'desc', etiqueta: 'Más recientes' },
+                { campo: 'monto', sentido: 'desc', etiqueta: 'Monto más alto' },
+                { campo: 'sugerencia', sentido: 'desc', etiqueta: 'Más confianza' },
+                { campo: 'sugerencia', sentido: 'asc', etiqueta: 'Menos confianza' },
+              ]}
+            />
+          ) : null}
         </div>
         )}
 
@@ -389,11 +427,25 @@ function ConciliacionCola() {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-10" aria-label="Seleccionar" />
-                {COLUMNAS.map((c) => (
-                  <TableHead key={c} className="whitespace-nowrap">
-                    {c}
-                  </TableHead>
-                ))}
+                {COLUMNAS.map((c) => {
+                  const campo = CAMPO_DE_LA_COLUMNA[c]
+                  return campo ? (
+                    <EncabezadoOrdenable
+                      key={c}
+                      campo={campo}
+                      orden={orden}
+                      onOrdenar={ordenarPor}
+                      className="whitespace-nowrap"
+                      alineacion={c === 'Monto' ? 'derecha' : 'izquierda'}
+                    >
+                      {c}
+                    </EncabezadoOrdenable>
+                  ) : (
+                    <TableHead key={c} className="whitespace-nowrap">
+                      {c}
+                    </TableHead>
+                  )
+                })}
               </TableRow>
             </TableHeader>
             <TableBodyAnimado>

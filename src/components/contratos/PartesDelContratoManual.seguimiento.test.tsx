@@ -105,7 +105,7 @@ describe('el correo del inquilino nuevo es obligatorio (Nico, CR-14)', () => {
       propertyId: 'p',
       inquilino: { modo: 'nuevo', nombre: 'Camila R', documento: '1020304', correo: '  ', telefono: '' },
     })
-    expect(errores.correo).toBe('Escribe el correo: es obligatorio para invitarlo al portal y que firme.')
+    expect(errores.correo).toBe('Escribe el correo: es obligatorio para invitarlo al portal.')
   })
 
   it('mal escrito: el mensaje de siempre', () => {

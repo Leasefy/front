@@ -76,6 +76,8 @@ export type CampoDeContrato =
   | "estadoContrato"
   | "fechaTerminacion"
   | "observaciones"
+  /** Nico 29-10-2026: «ID 47591 EPM 13249728 VIGENCIA 12 MESES SIN COBERTURA» (opcional; el back guarda la cuenta de EPM). */
+  | "serviciosPublicos"
   | "fechaCreacionOrigen"
   | "creadoPor"
   | "inquilinoNombre"
@@ -940,6 +942,12 @@ const DICCIONARIO: Array<{ campo: CampoDeContrato; terminos: string[] }> = [
   {
     campo: "observaciones",
     terminos: ["observaciones", "observacion", "comentarios", "comentario", "notas", "nota"],
+  },
+  {
+    // Nico 29-10-2026 («hoy no se migra eso, por eso decimos que es sumarlo como opcional»): cómo guarda el sistema
+    // anterior los servicios del inmueble. El back lee la cuenta de EPM; si el dato viene en las observaciones, también.
+    campo: "serviciosPublicos",
+    terminos: ["servicios publicos", "servicios", "epm", "contrato epm", "cuenta epm", "contrato de servicios"],
   },
   {
     campo: "fechaCreacionOrigen",

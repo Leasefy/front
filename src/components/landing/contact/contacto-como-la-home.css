@@ -1,0 +1,60 @@
+/* ──────────────────────────────────────────────────────────────────────────────
+   Contacto con la letra de la landing nueva (Nico, 27-10-2026: «hay muchas
+   secciones que cuando uno le da clic lo lleva a uno a la landing vieja»).
+   Host Grotesk liviana para el título y el texto, DM Mono para las cejas y las
+   etiquetas, y los botones de radio completo de la home. Las variables las pone
+   el layout del grupo (`fuentes-de-la-home.ts`).
+   ────────────────────────────────────────────────────────────────────────────── */
+
+html .landing-scope .landing-cp {
+  --cp-f: var(--font-host-grotesk), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cp-m: var(--font-dm-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--cp-f);
+}
+
+html .landing-scope .landing-cp__left h1 {
+  font-family: var(--cp-f);
+  font-weight: 360;
+  letter-spacing: -0.04em;
+  line-height: 1.02;
+}
+
+html .landing-scope .landing-cp__kicker,
+html .landing-scope .landing-cp__channel-k,
+html .landing-scope .landing-cp__chead,
+html .landing-scope .landing-cp__field > span {
+  font-family: var(--cp-m);
+  font-size: 11.5px;
+  letter-spacing: 0.08em;
+}
+
+html .landing-scope .landing-cp__lead {
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+html .landing-scope .landing-cp__channel-v,
+html .landing-scope .landing-cp__chip {
+  font-weight: 500;
+}
+
+html .landing-scope .landing-cp__field input,
+html .landing-scope .landing-cp__field textarea,
+html .landing-scope .landing-cp__chip,
+html .landing-scope .landing-cp__send {
+  font-family: var(--cp-f);
+}
+
+html .landing-scope .landing-cp__send {
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  text-transform: none;
+}
+
+@supports (corner-shape: superellipse(1.5)) {
+  html .landing-scope .landing-cp__send,
+  html .landing-scope .landing-cp__chip {
+    border-radius: 999px;
+    corner-shape: superellipse(1.5);
+  }
+}

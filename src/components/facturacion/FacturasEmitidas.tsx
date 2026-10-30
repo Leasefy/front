@@ -77,6 +77,8 @@ import { useDescargarFacturas } from './useDescargarFacturas'
 import { Input } from '@/components/ui/input'
 import { TablePagination } from '@/components/ui/pagination'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import { SinDatos } from '@/components/estado/SinDatos'
 import {
@@ -467,7 +469,20 @@ export function FacturasEmitidas({ mes, vista }: Props) {
       ).includes(q),
     )
   }, [facturas, busqueda, vista])
-  const paginado = useTablePagination(ventas, { resetKey: `${mes}|${busqueda}` })
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas».
+  const { ordenadas, orden, ordenarPor } = useOrdenDeLaTabla(
+    ventas,
+    {
+      numero: (f) => f.numero,
+      dian: (f) => f.numeroDian,
+      cliente: (f) => f.terceroNombre,
+      inmueble: (f) => f.inmueble,
+      total: (f) => f.totalCop,
+      estado: (f) => (f.notaCredito ? 'Anulada' : (f.transmision?.nombre ?? null)),
+    },
+    { primero: { numero: 'desc', total: 'desc' } },
+  )
+  const paginado = useTablePagination(ordenadas, { resetKey: `${mes}|${busqueda}|${orden?.campo ?? ''}|${orden?.sentido ?? ''}` })
   /*
    * 🔴 QA-FACT ronda 2 (Nico, la recomendada): a 390 px la tabla de Ventas se
    * corría de lado dentro de su tarjeta. Por debajo de 768 px cada factura es una
@@ -676,12 +691,12 @@ export function FacturasEmitidas({ mes, vista }: Props) {
                       queSon="facturas"
                     />
                   </TableHead>
-                  <TableHead>Número</TableHead>
-                  <TableHead>DIAN</TableHead>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Inmueble</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                  <TableHead>Estado</TableHead>
+                  <EncabezadoOrdenable campo="numero" orden={orden} onOrdenar={ordenarPor}>Número</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="dian" orden={orden} onOrdenar={ordenarPor}>DIAN</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="cliente" orden={orden} onOrdenar={ordenarPor}>Cliente</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="inmueble" orden={orden} onOrdenar={ordenarPor}>Inmueble</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="total" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Total</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="estado" orden={orden} onOrdenar={ordenarPor}>Estado</EncabezadoOrdenable>
                 </>
               ) : (
                 <>

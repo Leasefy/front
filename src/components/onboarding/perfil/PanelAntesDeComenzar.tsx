@@ -16,6 +16,7 @@ import {
   type UseOnboardingProvisioningResult,
 } from '@/lib/hooks/use-onboarding-provisioning'
 import { PERFIL_INMOBILIARIA } from './perfiles'
+import { SoloPublicarEnElMarketplace } from './SoloPublicarEnElMarketplace'
 
 export type AprovisionamientoDelPanel = Pick<
   UseOnboardingProvisioningResult,
@@ -179,6 +180,11 @@ export function PanelAntesDeComenzar({
                 <WarningCircle className="mt-0.5 h-4 w-4 shrink-0 text-warning" weight="fill" aria-hidden />
                 <p className="text-body-sm text-fg">{fallo.mensaje}</p>
               </div>
+            ) : null}
+            {/* Recién llegando (sin un registro empezado): si sólo quiere
+                publicar, el atajo sin NIT (Nico, 27-10). */}
+            {status === 'needs-info' && !corrigiendo && !fallo && !valoresGuardados ? (
+              <SoloPublicarEnElMarketplace perfil="agency" className="mb-6" />
             ) : null}
             <OwnerNameStepForm
               onSubmit={provision}

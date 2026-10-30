@@ -57,7 +57,8 @@ describe('CambiarContrasenaModal — el fallo dice lo que pasó', () => {
       errorDeSupabase(429, 'over_email_send_rate_limit', 'For security purposes, you can only request this after 47 seconds.'),
     )
     const texto = await enviar()
-    expect(texto).toContain('Ya te enviamos varios correos hace poco')
+    // 27-10-2026: dice cuánto esperar (los segundos que manda Supabase).
+    expect(texto).toContain('Puedes pedir otro en 47 segundos')
     expect(texto).not.toMatch(/security purposes/)
   })
 

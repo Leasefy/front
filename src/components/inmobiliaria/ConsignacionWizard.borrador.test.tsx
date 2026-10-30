@@ -124,12 +124,13 @@ vi.mock('./ConsignacionWizardSteps', () => {
     return Paso
   }
   return {
-    StepSelectPropietario: espia('step-1'),
-    StepPropertyData: espia('step-2'),
-    StepCommissionTerms: espia('step-3'),
-    StepAssignAgent: espia('step-4'),
-    StepActaEntrega: espia('step-5'),
-    StepConfirmation: espia('step-6'),
+    StepPropertyData: espia('paso-inmueble'),
+    StepFotos: espia('paso-fotos'),
+    StepSelectPropietario: espia('paso-propietario'),
+    StepCommissionTerms: espia('paso-comision'),
+    StepAssignAgent: espia('paso-agente'),
+    StepInventario: espia('paso-inventario'),
+    StepConfirmation: espia('paso-confirmar'),
   }
 })
 
@@ -146,9 +147,10 @@ let almacen: AlmacenDeBorradores
 function borradorGuardado(parcial: Record<string, unknown> = {}) {
   return {
     llave: LLAVE,
-    datos: { propietarioId: 'prop-1', propertyTitle: 'Apartamento en Laureles' },
+    // `ordenDePasos: 2`: guardado con el orden de pasos de hoy (27-10-2026, el inmueble primero).
+    datos: { propietarioId: 'prop-1', propertyTitle: 'Apartamento en Laureles', ordenDePasos: 2 },
     fotos: [] as File[],
-    paso: 3,
+    paso: 4,
     actualizadoEn: Date.now() - 60_000,
     version: VERSION_DEL_FORMATO,
     ...parcial,
@@ -205,15 +207,15 @@ function hayBoton(texto: string): boolean {
 }
 
 function pasoVisible(): string {
-  const paso = container.querySelector('[data-testid^="step-"]')
+  const paso = container.querySelector('[data-testid^="paso-"]')
   return paso?.getAttribute('data-testid') ?? 'ninguno'
 }
 
 describe('<ConsignacionWizard> — el borrador reanudable (W4)', () => {
-  it('sin borrador no muestra ningún aviso y arranca en el paso 1', async () => {
+  it('sin borrador no muestra ningún aviso y arranca en el primer paso (el inmueble)', async () => {
     await montar()
     expect(hayBoton('borrador.continuar')).toBe(false)
-    expect(pasoVisible()).toBe('step-1')
+    expect(pasoVisible()).toBe('paso-inmueble')
   })
 
   /**
@@ -226,7 +228,7 @@ describe('<ConsignacionWizard> — el borrador reanudable (W4)', () => {
     await montar()
 
     expect(hayBoton('borrador.continuar')).toBe(true)
-    expect(pasoVisible()).toBe('step-1')
+    expect(pasoVisible()).toBe('paso-inmueble')
     expect(container.textContent).toContain('sin-titulo')
   })
 
@@ -238,9 +240,25 @@ describe('<ConsignacionWizard> — el borrador reanudable (W4)', () => {
       boton('borrador.continuar').click()
     })
 
-    expect(pasoVisible()).toBe('step-3')
+    expect(pasoVisible()).toBe('paso-comision')
     expect(container.textContent).toContain('Apartamento en Laureles')
     expect(hayBoton('borrador.continuar')).toBe(false)
+  })
+
+  // 27-10-2026: el orden de los pasos cambió. Un borrador de antes guardó su número de paso con el orden viejo
+  // (el 3 era «Comisión», hoy es «Propietario»): retoma desde el primero, con sus datos.
+  it('un borrador guardado con el orden de pasos de antes retoma desde el primer paso', async () => {
+    await almacen.guardar(
+      borradorGuardado({ datos: { propietarioId: 'prop-1', propertyTitle: 'Apartamento en Laureles' }, paso: 3 }),
+    )
+    await montar()
+
+    await act(async () => {
+      boton('borrador.continuar').click()
+    })
+
+    expect(pasoVisible()).toBe('paso-inmueble')
+    expect(container.textContent).toContain('Apartamento en Laureles')
   })
 
   /**
@@ -249,14 +267,14 @@ describe('<ConsignacionWizard> — el borrador reanudable (W4)', () => {
    */
   it('las fotos guardadas vuelven, una sola vez', async () => {
     const foto = new File([new Uint8Array(3)], 'sala.jpg', { type: 'image/jpeg', lastModified: 1 })
-    await almacen.guardar(borradorGuardado({ fotos: [foto, foto], paso: 5 }))
+    await almacen.guardar(borradorGuardado({ fotos: [foto, foto], paso: 2 }))
     await montar()
 
     await act(async () => {
       boton('borrador.continuar').click()
     })
 
-    expect(pasoVisible()).toBe('step-5')
+    expect(pasoVisible()).toBe('paso-fotos')
     expect(container.textContent).toContain('fotos:1')
   })
 
@@ -273,7 +291,7 @@ describe('<ConsignacionWizard> — el borrador reanudable (W4)', () => {
 
     expect(await almacen.leer(LLAVE)).toBeNull()
     expect(hayBoton('borrador.continuar')).toBe(false)
-    expect(pasoVisible()).toBe('step-1')
+    expect(pasoVisible()).toBe('paso-inmueble')
   })
 
   /**
@@ -299,8 +317,9 @@ describe('<ConsignacionWizard> — el borrador reanudable (W4)', () => {
           bathrooms: 1,
           area: 60,
           propertyDescription: 'Descripción suficientemente larga para pasar la validación.',
+          ordenDePasos: 2,
         },
-        paso: 6,
+        paso: 7,
       }),
     )
     await montar()
@@ -308,7 +327,7 @@ describe('<ConsignacionWizard> — el borrador reanudable (W4)', () => {
     await act(async () => {
       boton('borrador.continuar').click()
     })
-    expect(pasoVisible()).toBe('step-6')
+    expect(pasoVisible()).toBe('paso-confirmar')
 
     await act(async () => {
       boton('wizard.confirmConsignment').click()
@@ -348,11 +367,11 @@ describe('<ConsignacionWizard> — el borrador reanudable (W4)', () => {
    * El dueño lo pueden borrar mientras el borrador duerme. Mandar ese id al
    * back sería morir en el último paso con un 400 que no explica nada.
    */
-  it('si el propietario del borrador ya no existe, vuelve al paso 1 con todo lo demás', async () => {
+  it('si el propietario del borrador ya no existe, vuelve al paso del propietario con todo lo demás', async () => {
     await almacen.guardar(
       borradorGuardado({
-        datos: { propietarioId: 'prop-borrado', propertyTitle: 'Apartamento en Laureles' },
-        paso: 5,
+        datos: { propietarioId: 'prop-borrado', propertyTitle: 'Apartamento en Laureles', ordenDePasos: 2 },
+        paso: 6,
       }),
     )
     await montar()
@@ -361,7 +380,7 @@ describe('<ConsignacionWizard> — el borrador reanudable (W4)', () => {
       boton('borrador.continuar').click()
     })
 
-    expect(pasoVisible()).toBe('step-1')
+    expect(pasoVisible()).toBe('paso-propietario')
     expect(container.textContent).toContain('Apartamento en Laureles')
   })
 })

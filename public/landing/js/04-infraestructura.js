@@ -5,6 +5,9 @@
   var $ = LF.$, $$ = LF.$$, MOV = LF.MOV, root = document.documentElement;
   var DESK = "(min-width: 900px)";
   LF.desk = function () { return window.matchMedia(DESK).matches; };
+  /* La holgura para cambiar de paso con el scroll (Nico 27-10: «la imagen comienza a rebotar»): con el dedo,
+     hasta 56 px (7 % de la pantalla); con mouse o trackpad, 20 px. */
+  LF.holgura = function () { return window.matchMedia("(hover: none) and (pointer: coarse)").matches ? Math.min(56, innerHeight * .07) : 20; };
 
   /* motivos, esferas y orbes (también sin movimiento) */
   $$("[data-motivo]").forEach(LF.motivo);
@@ -56,6 +59,7 @@
     return anclas[anclas.length - 1].m;
   }
   function reloj(min) {
+    if (!horaEl) return; /* Nico 27-10: el reloj salió de la barra */
     min = Math.round(min);
     var h = Math.floor(min / 60), m = min % 60;
     horaEl.textContent = (h < 10 ? "0" : "") + h + ":" + (m < 10 ? "0" : "") + m;
@@ -75,7 +79,7 @@
     aviso.classList.toggle("ver", y > finHero && !enFondo && !(r && r.top < innerHeight && r.bottom > 0));
   }
   window.addEventListener("scroll", alScroll, { passive: true });
-  window.addEventListener("resize", function () { anclas = null; alScroll(); });
+  LF.alCambiarDeTamano(function () { anclas = null; alScroll(); });
   window.addEventListener("load", function () { anclas = null; alScroll(); });
   alScroll();
 
@@ -105,6 +109,8 @@
 
   /* ── scroll suave con Lenis, atado a ScrollTrigger ── */
   gsap.registerPlugin(ScrollTrigger);
+  /* la barra del navegador del celular no recalcula el scroll (ver LF.alCambiarDeTamano) */
+  ScrollTrigger.config({ ignoreMobileResize: true });
   var lenis = null;
   if (window.Lenis) {
     lenis = new Lenis({ lerp: .05, wheelMultiplier: .9, smoothWheel: true });
@@ -137,7 +143,7 @@
   ScrollTrigger.batch("[data-r]", { start: "top 90%", once: true, onEnter: function (b) { gsap.to(b, { opacity: 1, y: 0, duration: .9, ease: "expo.out", stagger: .08, overwrite: "auto" }); } });
   gsap.to(".hero [data-r]", { opacity: 1, y: 0, duration: 1, ease: "expo.out", stagger: .1, delay: .55 });
   gsap.from(".mk-banda", { opacity: 0, y: -10, duration: .8, ease: "expo.out", delay: .05 });
-  gsap.to(".hero-pix", { opacity: .9, duration: 2.2, ease: "power2.out", delay: .4 });
+  gsap.to(".hero-campo", { opacity: 1, duration: 2.2, ease: "power2.out", delay: .4 });
 
   /* parallax de los 3D */
   $$("[data-px]").forEach(function (el) {
@@ -206,15 +212,20 @@
   function cinta(track, base, centro) {
     if (!track) return;
     var x = 0, vel = 0, dir = 1, cuadro = 0, visible = true, actual = null;
+    /* Nico 27-10 («más wow»): con el cursor encima la cinta se frena suave, para poder elegir un inmueble */
+    var ritmo = 1, metaRitmo = 1;
+    track.parentNode.addEventListener("mouseenter", function () { metaRitmo = 0; });
+    track.parentNode.addEventListener("mouseleave", function () { metaRitmo = 1; });
     var items = Array.prototype.slice.call(track.children);
     new IntersectionObserver(function (e) { visible = e[0].isIntersecting; }).observe(track.parentNode);
     gsap.ticker.add(function (t, dt) {
       if (!visible) return;
       var v = lenis ? lenis.velocity : 0;
       vel += (v - vel) * .12;
+      ritmo += (metaRitmo - ritmo) * .08;
       if (Math.abs(vel) > .6) dir = vel > 0 ? 1 : -1;
       var mitad = track.scrollWidth / 2;
-      x -= dir * (base * dt / 16.7 + Math.min(36, Math.abs(vel)) * .5);
+      x -= dir * (base * ritmo * dt / 16.7 + Math.min(36, Math.abs(vel)) * .5);
       if (x <= -mitad) x += mitad; if (x > 0) x -= mitad;
       var sesgo = Math.max(-8, Math.min(8, -vel * .3));
       track.style.transform = "translate3d(" + x + "px,0,0) skewX(" + sesgo + "deg)";

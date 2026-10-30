@@ -64,6 +64,8 @@ const PERMITIDOS: Record<string, string[]> = {
   'BetaLayout.tsx': ['<a href>'],
   'MarkdownRenderer.tsx': ['<a href>'],
   'AvisoDePreguntas.tsx': ['<a href>'],
+  // «Recargar» las preguntas del mes (28-10-2026): abre la compra en OTRA pestaña; la conversación sigue aquí.
+  'PreguntasDelMes.tsx': ['<a href>'],
 };
 
 describe('guardián: el chat no tiene salidas', () => {

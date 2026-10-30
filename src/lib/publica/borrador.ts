@@ -15,7 +15,12 @@
 import type { ImportProperty } from '@/components/inmobiliaria/import/lib/importTypes';
 import { tipoEfectivo } from '@/components/inmobiliaria/import/lib/requisitosDelBack';
 
-export type Operacion = 'rent' | 'sale';
+/**
+ * `ambos` (Nico, 28-10-2026: «debe haber una opción que diga ambas, porque se puede publicar para arriendo y para
+ * venta»): una tarjeta, dos publicaciones con las mismas fotos — una en «Arrendar» con el canon y otra en «Comprar»
+ * con el precio de venta. Un inmueble de la base es de arriendo O de venta, por eso son dos.
+ */
+export type Operacion = 'rent' | 'sale' | 'ambos';
 
 export type TipoRapido = 'APARTMENT' | 'HOUSE' | 'STUDIO' | 'ROOM' | 'COMMERCIAL' | 'OFFICE' | 'WAREHOUSE';
 
@@ -60,16 +65,23 @@ export interface InmuebleRapido {
    */
   ubicado?: 'direccion' | 'municipio' | 'ninguna';
   /** Pesos, sin puntos. `null` = no lo ha escrito. */
+  /** El canon (arriendo y «ambos») o el precio de venta (venta). */
   precio: number | null;
+  /** Sólo con «ambos»: el precio de venta (el canon va en `precio`). */
+  precioVenta?: number | null;
   habitaciones: number | null;
   banos: number | null;
   area: number | null;
   descripcion: string;
+  /** Nico 29-10-2026: «todas las características, opcionales, pero que se le muestren» (ids del catálogo). */
+  caracteristicas?: string[];
   /** El código de la inmobiliaria (columna «Código» del Excel): acomoda las carpetas de fotos. */
   codigo?: string;
   origen?: OrigenDelInmueble;
   /** El id del inmueble ya creado: publicar de nuevo sólo sube las fotos que falten. */
   idCreado?: string;
+  /** Con «ambos»: la publicación de venta (la de arriendo es `idCreado`). */
+  idGemelo?: string;
 }
 
 /** Una llave de 8 a 64 caracteres `[A-Za-z0-9-]`, como la pide el back. */
@@ -96,13 +108,14 @@ export function inmuebleVacio(clave: string, base?: Partial<InmuebleRapido>): In
   };
 }
 
-export type CampoQueFalta = 'tipo' | 'direccion' | 'ciudad' | 'precio' | 'fotos';
+export type CampoQueFalta = 'tipo' | 'direccion' | 'ciudad' | 'precio' | 'precioVenta' | 'fotos';
 
 const FRASES: Record<CampoQueFalta, string> = {
   tipo: 'el tipo',
   direccion: 'la dirección',
   ciudad: 'la ciudad',
   precio: 'el precio',
+  precioVenta: 'el precio de venta',
   fotos: 'al menos una foto',
 };
 
@@ -114,6 +127,7 @@ export function loQueFalta(i: InmuebleRapido, fotos: number): CampoQueFalta[] {
   if (!i.direccion.trim()) faltan.push('direccion');
   if (!i.ciudad.trim()) faltan.push('ciudad');
   if (!i.precio || i.precio <= 0) faltan.push('precio');
+  if (i.operacion === 'ambos' && (!i.precioVenta || i.precioVenta <= 0)) faltan.push('precioVenta');
   return faltan;
 }
 
@@ -126,9 +140,10 @@ export function fraseDeLoQueFalta(faltan: CampoQueFalta[]): string {
 }
 
 /** «Apartamento en arriendo en Laureles, 3 habitaciones»: lo que dice la tarjeta del marketplace. */
-export function tituloDe(i: InmuebleRapido): string {
+export function tituloDe(i: InmuebleRapido, lado?: 'rent' | 'sale'): string {
   const tipo = TIPOS.find((t) => t.valor === i.tipo)?.nombre ?? 'Inmueble';
-  const operacion = i.operacion === 'sale' ? 'en venta' : 'en arriendo';
+  const cual = lado ?? i.operacion;
+  const operacion = cual === 'sale' ? 'en venta' : cual === 'ambos' ? 'en arriendo y venta' : 'en arriendo';
   const donde = i.barrio.trim() || i.ciudad.trim();
   const habs =
     i.habitaciones && i.habitaciones > 0 && i.tipo !== 'ROOM'
@@ -138,24 +153,29 @@ export function tituloDe(i: InmuebleRapido): string {
 }
 
 /** Lo que va a `POST /properties`. El estado AVAILABLE + en el marketplace: es publicar. */
-export function paraCrear(i: InmuebleRapido) {
-  const venta = i.operacion === 'sale';
+export function paraCrear(i: InmuebleRapido, lado?: 'rent' | 'sale') {
+  // Con «ambos» se llama dos veces: una por lado (la de arriendo con el canon, la de venta con su precio).
+  const cual = lado ?? (i.operacion === 'sale' ? 'sale' : 'rent');
+  const venta = cual === 'sale';
+  const precioDeVenta = i.operacion === 'ambos' ? (i.precioVenta ?? null) : i.precio;
   return {
-    title: tituloDe(i),
+    title: tituloDe(i, cual),
     ...(i.descripcion.trim().length >= 20 ? { description: i.descripcion.trim() } : {}),
+    ...(i.caracteristicas && i.caracteristicas.length > 0 ? { amenities: [...i.caracteristicas] } : {}),
     type: i.tipo as string,
     city: i.ciudad.trim(),
     neighborhood: i.barrio.trim() || null,
     address: i.direccion.trim(),
     listingType: venta ? ('sale' as const) : ('rent' as const),
     monthlyRent: venta ? null : i.precio,
-    ...(venta ? { salePrice: i.precio } : {}),
+    ...(venta ? { salePrice: precioDeVenta } : {}),
     bedrooms: i.habitaciones,
     bathrooms: i.banos,
     area: i.area,
     ...(i.latitud != null && i.longitud != null ? { latitude: i.latitud, longitude: i.longitud } : {}),
     status: 'AVAILABLE',
-    publicadoEnMarketplace: true,
+    // Sin `publicadoEnMarketplace`: publicado es lo que la base pone sola (default true). Mandarlo de más hacía que un
+    // back sin el campo contestara «el formulario mandó un dato que no esperábamos» (Nico, 28-10, en su 3001).
   };
 }
 
@@ -349,4 +369,13 @@ export function borrarBorrador(usuario: string): void {
   } catch {
     // nada
   }
+}
+
+/** «$ 2.500.000 / mes», «$ 450.000.000» o, con «ambos», «$ 2.500.000 / mes · $ 450.000.000 venta». */
+export function precioEnFrase(i: InmuebleRapido): string {
+  const pesos = (v: number) => `$\u00a0${v.toLocaleString('es-CO')}`;
+  if (!i.precio) return '';
+  if (i.operacion === 'sale') return pesos(i.precio);
+  const canon = `${pesos(i.precio)} / mes`;
+  return i.operacion === 'ambos' && i.precioVenta ? `${canon} · ${pesos(i.precioVenta)} venta` : canon;
 }

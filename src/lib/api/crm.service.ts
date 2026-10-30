@@ -581,6 +581,21 @@ export const matchingApi = {
   guardarPesos: (body: Partial<PesosDelMatching>) =>
     apiClient.put<{ pesos: PesosDelMatching }>(`${BASE}/matching/pesos`, body),
 
+  /** Oportunidades automáticas (27-10-2026): los interesados vivos con sus mejores inmuebles, sin elegir uno. */
+  paraTodos: () =>
+    apiClient.get<{
+      interesados: {
+        lead: { pipelineItemId: string; nombre: string; correo: string | null }
+        opciones: {
+          propertyId: string
+          puntaje: number
+          porQue: string[]
+          porQueEn?: string[]
+          inmueble: { title: string; neighborhood: string | null; city: string; monthlyRent: number | null; foto: string | null } | null
+        }[]
+      }[]
+    }>(`${BASE}/matching/leads`),
+
   paraElLead: (pipelineItemId: string) =>
     apiClient.get<{
       lead: { pipelineItemId: string; nombre: string; correo: string | null }

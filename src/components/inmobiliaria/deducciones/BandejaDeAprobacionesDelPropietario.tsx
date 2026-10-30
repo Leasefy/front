@@ -204,12 +204,14 @@ export function BandejaDeAprobacionesDelPropietario({
     >
       <div
         className={cn(
-          'flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between',
-          abierto && 'border-b border-border',
+          'flex gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between',
+          // 29-10 (revisión a 390 con los datos de Portofino): plegada, «Ver» va a la derecha del resumen en el
+          // celular también (antes bajaba solo a un renglón propio, corrido por su relleno).
+          abierto ? 'flex-col border-b border-border' : 'flex-row items-center justify-between',
         )}
       >
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold text-fg">Con el propietario</h2>
+          <h2 className="text-sm font-medium text-fg">Con el propietario</h2>
           <p className="text-caption text-fg-muted" data-testid="bandeja-resumen">
             {abierto
               ? 'Lo que espera su aprobación, lo que rechazó y lo que está haciendo él.'
@@ -218,7 +220,7 @@ export function BandejaDeAprobacionesDelPropietario({
                   .join(' · ') || 'Nada con el propietario por ahora.'}
           </p>
         </div>
-        <div className="flex w-full items-center gap-2 sm:w-auto">
+        <div className={cn('flex items-center gap-2 sm:w-auto', abierto ? 'w-full' : 'shrink-0')}>
         {abierto ? (
         <div className="relative w-full sm:w-72">
           <MagnifyingGlass

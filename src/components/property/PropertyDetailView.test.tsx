@@ -137,7 +137,6 @@ describe('<PropertyDetailView> — la ficha con el diseño nuevo (ronda 30)', ()
       'total-al-mes',
       'datos-clave',
       'ofrecido-por',
-      'te-podemos-arrendar',
       'lo-especial',
       'costos-del-arriendo',
       'pie-de-la-ficha',
@@ -160,11 +159,9 @@ describe('<PropertyDetailView> — la ficha con el diseño nuevo (ronda 30)', ()
     expect(mas.textContent).not.toContain('Apartamento en Envigado');
   });
 
-  it('«¿Te podemos arrendar?» es el momento de medianoche: tokens oscuros adentro', async () => {
+  it('Nico 29-10-2026: «¿Te podemos arrendar?» (el estudio con Fianly) no sale por ahora', async () => {
     await montar();
-    const tpa = hay('te-podemos-arrendar')!;
-    expect(tpa.className).toContain('dark');
-    expect(tpa.className).not.toMatch(/\bshadow/);
+    expect(hay('te-podemos-arrendar')).toBeNull();
   });
 
   it('no vuelve lo que la identidad saca: letra de 9 a 11 px, vidrio ni sombras', async () => {

@@ -16,6 +16,8 @@ import { PuntajeDeVinci, QUIEN } from '@/components/retencion/vinci'
 import type { CasoDeVinci, PlanDelCaso } from '@/lib/types/retencion'
 import { casoDeRetencion } from '@/lib/nav/rutas-de-retencion'
 import { traducir, useTr, type Tr } from '@/lib/i18n/use-tr'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
 
 export const hrefDelCaso = (caseId: string) => casoDeRetencion(caseId)
 
@@ -60,20 +62,32 @@ export function TablaDeCasos({
 }) {
   const tr = useTr();
   const router = useRouter()
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Antes de la salida (es un hook).
+  const { ordenadas, orden, ordenarPor } = useOrdenDeLaTabla(
+    casos,
+    {
+      quien: (c) => c.nombre ?? null,
+      riesgo: (c) => c.puntaje ?? null,
+      porque: (c) => c.senales.length,
+      canon: (c) => c.canonEnJuegoCop ?? null,
+      plan: (c) => (c.plan ? 1 : 0),
+    },
+    { primero: { riesgo: 'desc', porque: 'desc', canon: 'desc', plan: 'desc' } },
+  )
   if (casos.length === 0) return <>{vacio}</>
   return (
     <Table data-testid="vinci-casos">
       <TableHeader>
         <TableRow>
-          <TableHead className="whitespace-nowrap pl-5">{tr("Quién")}</TableHead>
-          <TableHead className="hidden whitespace-nowrap sm:table-cell">{tr("Riesgo")}</TableHead>
-          <TableHead className="hidden whitespace-nowrap md:table-cell">{tr("Por qué")}</TableHead>
-          <TableHead className={conPlan ? 'hidden whitespace-nowrap text-right sm:table-cell' : 'hidden whitespace-nowrap pr-5 text-right sm:table-cell'}>{tr("Canon en juego")}</TableHead>
-          {conPlan ? <TableHead className="hidden whitespace-nowrap pr-5 lg:table-cell">{tr("Plan")}</TableHead> : null}
+          <EncabezadoOrdenable campo="quien" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap pl-5">{tr("Quién")}</EncabezadoOrdenable>
+          <EncabezadoOrdenable campo="riesgo" orden={orden} onOrdenar={ordenarPor} className="hidden whitespace-nowrap sm:table-cell">{tr("Riesgo")}</EncabezadoOrdenable>
+          <EncabezadoOrdenable campo="porque" orden={orden} onOrdenar={ordenarPor} className="hidden whitespace-nowrap md:table-cell">{tr("Por qué")}</EncabezadoOrdenable>
+          <EncabezadoOrdenable campo="canon" orden={orden} onOrdenar={ordenarPor} alineacion="derecha" className={conPlan ? 'hidden whitespace-nowrap text-right sm:table-cell' : 'hidden whitespace-nowrap pr-5 text-right sm:table-cell'}>{tr("Canon en juego")}</EncabezadoOrdenable>
+          {conPlan ? <EncabezadoOrdenable campo="plan" orden={orden} onOrdenar={ordenarPor} className="hidden whitespace-nowrap pr-5 lg:table-cell">{tr("Plan")}</EncabezadoOrdenable> : null}
         </TableRow>
       </TableHeader>
       <TableBody>
-        {casos.map((c) => {
+        {ordenadas.map((c) => {
           const href = hrefDelCaso(c.caseId)
           return (
             <TableRow

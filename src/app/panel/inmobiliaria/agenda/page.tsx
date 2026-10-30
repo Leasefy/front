@@ -40,6 +40,15 @@ import { useMiUserId } from '@/lib/agenda/use-equipo';
 import { horaDeLaCasa, diaDeLaCasa, lunesDe } from '@/lib/agenda/hora-de-la-casa';
 import { aFechaIso } from '@/lib/fechas-locales';
 import { tareaIdOf, type VistaDeAgenda } from '@/lib/api/agenda.types';
+import { AREAS_DE_LA_AGENDA, NOMBRE_DEL_AREA, esAreaDeLaAgenda, type AreaDeLaAgenda } from '@/lib/agenda/areas-de-la-agenda';
+
+/** La agenda por área (Nico y Portofino, 29-10-2026): «Todas» o una. Queda en la URL (`?area=`). */
+type FiltroDeArea = AreaDeLaAgenda | 'todas';
+function areaDeLaUrl(): FiltroDeArea {
+  if (typeof window === 'undefined') return 'todas';
+  const v = new URLSearchParams(window.location.search).get('area');
+  return esAreaDeLaAgenda(v) ? v : 'todas';
+}
 
 /** Resumen por tipo de evento — color por tipo (estático). */
 const RESUMEN_ITEMS: { key: string; tono?: TonoDeCifra; field: keyof typeof RESUMEN_AGENDA_VACIO }[] = [
@@ -207,13 +216,31 @@ function AgendaContent() {
    * visitas, las que nadie atiende todavía y sus tareas.
    */
   const esAsesor = canAccess('pipeline', 'edit') && !canAccess('operaciones', 'view');
-  const [pestana, setPestana] = useState<Pestana>('proximas');
+  // Abre en el calendario de la semana, no en la lista (Nico, 28-10-2026: «el calendario quede como predeterminado y no
+  // lista»). La lista sigue a un toque, con sus pestañas y su buscador.
+  const [pestana, setPestana] = useState<Pestana>('semana');
   const [soloLoMio, setSoloLoMio] = useState<boolean>(esAsesor);
   useEffect(() => setSoloLoMio(esAsesor), [esAsesor]);
   const [lunes, setLunes] = useState<Date>(() => lunesDe(new Date()));
   /** AG-08: cancelar y rechazar desde la fila también preguntan el motivo. */
   const [motivoDe, setMotivoDe] = useState<{ visitId: string; cual: 'cancelar' | 'rechazar' } | null>(null);
   const [errorDelMotivo, setErrorDelMotivo] = useState<string | null>(null);
+  /** La agenda por área: el filtro arranca en lo que diga la URL (un enlace puede abrirla filtrada). */
+  const [area, setArea] = useState<FiltroDeArea>('todas');
+  useEffect(() => setArea(areaDeLaUrl()), []);
+  const areas = useMemo(() => (area === 'todas' ? undefined : [area]), [area]);
+  const cambiarArea = useCallback((v: FiltroDeArea) => {
+    setArea(v);
+    setPage(1);
+    try {
+      const url = new URL(window.location.href);
+      if (v === 'todas') url.searchParams.delete('area');
+      else url.searchParams.set('area', v);
+      window.history.replaceState(window.history.state, '', url);
+    } catch {
+      // Sin URL que escribir (pruebas): el filtro funciona igual.
+    }
+  }, []);
 
   const load = useCallback(() => {
     setIsLoading(true);
@@ -227,11 +254,29 @@ function AgendaContent() {
           })()
         : { vista: pestana as VistaDeAgenda, page, pageSize };
     agendaApi
-      .getAgenda({ ...semana, mias: soloLoMio })
+      .getAgenda({ ...semana, mias: soloLoMio, areas })
       .then(setData)
       .catch(setError)
       .finally(() => setIsLoading(false));
-  }, [page, pageSize, pestana, soloLoMio, lunes]);
+  }, [page, pageSize, pestana, soloLoMio, lunes, areas]);
+
+  /**
+   * En el calendario el back no manda los conteos de la lista: se piden aparte (una página de un evento) para avisar
+   * las atrasadas, que no caben en la semana. Lo pendiente primero (decisión 24 de Nico, 22-10) sin quitarle al
+   * calendario ser lo primero que se ve (28-10).
+   */
+  const [atrasadasDelCalendario, setAtrasadasDelCalendario] = useState(0);
+  useEffect(() => {
+    if (pestana !== 'semana') return;
+    let vivo = true;
+    agendaApi
+      .getAgenda({ vista: 'proximas', page: 1, pageSize: 1, mias: soloLoMio, areas })
+      .then((r) => vivo && setAtrasadasDelCalendario(r?.porVista?.vencidas ?? 0))
+      .catch(() => vivo && setAtrasadasDelCalendario(0));
+    return () => {
+      vivo = false;
+    };
+  }, [pestana, soloLoMio, areas]);
 
   /** Cambiar cuántas filas se ven vuelve a la primera página. */
   const cambiarTamano = useCallback((tamano: number) => {
@@ -299,6 +344,8 @@ function AgendaContent() {
   }, [load]);
 
   const resumen = data?.resumen ?? RESUMEN_AGENDA_VACIO;
+  /** Los tipos con algo en el período: los que van en la franja (29-10). */
+  const resumenConAlgo = RESUMEN_ITEMS.filter((item) => resumen[item.field] > 0);
   const eventos = data?.eventos ?? [];
   /**
    * `total` es el feed ENTERO; `eventos` es sólo esta página. Si una respuesta
@@ -438,7 +485,8 @@ function AgendaContent() {
    */
   const yaAbrioEnLoPendiente = useRef(false);
   useEffect(() => {
-    if (yaAbrioEnLoPendiente.current || !porVista) return;
+    // Sólo cuenta en la lista: en el calendario las atrasadas salen en su aviso.
+    if (yaAbrioEnLoPendiente.current || !porVista || pestana === 'semana') return;
     yaAbrioEnLoPendiente.current = true;
     if (pestana === 'proximas' && porVista.vencidas > 0) {
       setPestana('vencidas');
@@ -595,36 +643,69 @@ function AgendaContent() {
         <SectionLabel>
           {pestana === 'vencidas' ? 'Atrasadas' : pestana === 'hechas' ? 'Hechas (última semana)' : pestana === 'semana' ? 'Esta semana' : t(k('resumenLabel'))}
         </SectionLabel>
-        {/* Cadence 2: los seis tipos en UNA franja (antes, seis tarjetas sueltas). */}
-        <FranjaDeCifras data-testid="agenda-resumen">
-          {RESUMEN_ITEMS.map((item) => (
-            <Cifra
-              key={item.key}
-              etiqueta={t(k(`tipo_${item.key}`))}
-              // Revisora r24 (Agenda #5): el punto sólo cuando hay algo que mirar; nunca sobre un cero.
-              tono={!isLoading && !error && resumen[item.field] > 0 ? item.tono : undefined}
-              // Revisora r24 (Agenda #6): a 390 el rótulo va en dos renglones, entero («FIRMAS PENDIENTES»).
-              className="max-md:[&_.truncate]:whitespace-normal"
-              // El número entra a los cuatro estados: con la carga caída, la tabla decía «no se
-              // pudo cargar» y un renglón más arriba los tiles afirmaban «0 visitas · 0 firmas».
-              // Un cero es un dato; «no sé» no es cero.
-              valor={
-                <KpiValor cargando={isLoading} fallo={error}>
-                  {resumen[item.field]}
-                </KpiValor>
-              }
-            />
-          ))}
-        </FranjaDeCifras>
+        {/* Cadence 2: los seis tipos en UNA franja (antes, seis tarjetas sueltas).
+            Revisión en pantalla con los datos de Portofino (29-10): de seis cifras salían cuatro o cinco en cero
+            («Visitas 0 · Firmas 0 · Seguimientos 0…»). Ahora sólo los tipos que tienen algo (§12.4: un cero no es
+            una cifra) y, si todo está en cero, una línea. Mientras carga o si falló, los seis con su estado. */}
+        {!isLoading && !error && resumenConAlgo.length === 0 ? (
+          <p className="text-body-sm text-fg-muted" data-testid="agenda-resumen-vacio">
+            {pestana === 'vencidas'
+              ? 'Nada atrasado: estás al día.'
+              : pestana === 'hechas'
+                ? 'Nada hecho en la última semana.'
+                : pestana === 'semana'
+                  ? 'Nada en la agenda esta semana.'
+                  : 'Nada próximo en la agenda.'}
+          </p>
+        ) : (
+          <FranjaDeCifras data-testid="agenda-resumen">
+            {(isLoading || error ? RESUMEN_ITEMS : resumenConAlgo).map((item) => (
+              <Cifra
+                key={item.key}
+                etiqueta={t(k(`tipo_${item.key}`))}
+                // Revisora r24 (Agenda #5): el punto sólo cuando hay algo que mirar; nunca sobre un cero.
+                tono={!isLoading && !error && resumen[item.field] > 0 ? item.tono : undefined}
+                // Revisora r24 (Agenda #6): a 390 el rótulo va en dos renglones, entero («FIRMAS PENDIENTES»).
+                className="max-md:[&_.truncate]:whitespace-normal"
+                // El número entra a los cuatro estados: con la carga caída, la tabla decía «no se
+                // pudo cargar» y un renglón más arriba los tiles afirmaban «0 visitas · 0 firmas».
+                // Un cero es un dato; «no sé» no es cero.
+                valor={
+                  <KpiValor cargando={isLoading} fallo={error}>
+                    {resumen[item.field]}
+                  </KpiValor>
+                }
+              />
+            ))}
+          </FranjaDeCifras>
+        )}
       </section>
 
       {/* La tabla, sin título encima: no se nombran las tablas (Nico, 2026-09-03). */}
       <section className="rounded-lg border border-border bg-card overflow-hidden">
         {/* Revisora r24 (Agenda #2): la barra de la lista DENTRO de la tarjeta —los estados con su conteo, «Sólo lo
-            mío» y la vista (Lista · Semana)—, como en Contratos e Inquilinos. */}
+            mío» y la vista (Calendario · Lista)—, como en Contratos e Inquilinos. */}
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-border px-4 py-3" data-testid="agenda-barra">
           {pestana === 'semana' ? (
-            <p className="text-body-sm text-fg-muted">La semana, día por día</p>
+            atrasadasDelCalendario > 0 ? (
+              <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-body-sm text-fg-muted" data-testid="agenda-aviso-atrasadas">
+                <span className="size-1.5 shrink-0 rounded-full bg-warning" aria-hidden="true" />
+                {atrasadasDelCalendario === 1 ? 'Tienes 1 atrasada.' : `Tienes ${atrasadasDelCalendario} atrasadas.`}
+                <button
+                  type="button"
+                  className="text-primary underline-offset-4 hover:underline"
+                  onClick={() => {
+                    setPestana('vencidas');
+                    setPage(1);
+                  }}
+                  data-testid="agenda-ver-atrasadas"
+                >
+                  {atrasadasDelCalendario === 1 ? 'Verla' : 'Verlas'}
+                </button>
+              </p>
+            ) : (
+              <p className="text-body-sm text-fg-muted">La semana, día por día</p>
+            )
           ) : (
             <PestanasDeEstado<VistaDeAgenda>
               etiqueta="Qué ver"
@@ -678,12 +759,40 @@ function AgendaContent() {
                 setPage(1);
               }}
               options={[
+                { value: 'semana', label: <span data-testid="agenda-pestana-semana">Calendario</span>, ariaLabel: 'Calendario' },
                 { value: 'lista', label: <span data-testid="agenda-vista-lista">Lista</span>, ariaLabel: 'Lista' },
-                { value: 'semana', label: <span data-testid="agenda-pestana-semana">Semana</span>, ariaLabel: 'Semana' },
               ]}
             />
           </div>
         </div>
+        {/* La agenda por área (29-10-2026): las áreas con su conteo, de una (sin el cero). Un back anterior no
+            manda `porArea`: no se pinta. */}
+        {data?.porArea ? (
+          <div className="flex min-w-0 items-center gap-3 border-b border-border px-4 py-2" data-testid="agenda-areas">
+            <span className="shrink-0 font-mono text-label uppercase text-fg-subtle">{tr('Área')}</span>
+            <PestanasDeEstado<FiltroDeArea>
+              etiqueta={tr('Área de la agenda')}
+              valor={area}
+              onCambio={cambiarArea}
+              className="flex-1"
+              pestanas={[
+                {
+                  valor: 'todas',
+                  etiqueta: tr('Todas'),
+                  cuantos: AREAS_DE_LA_AGENDA.reduce((suma, a) => suma + (data.porArea?.[a] ?? 0), 0),
+                  fija: true,
+                  testid: 'agenda-area-todas',
+                },
+                ...AREAS_DE_LA_AGENDA.map((a) => ({
+                  valor: a,
+                  etiqueta: tr(NOMBRE_DEL_AREA[a]),
+                  cuantos: data.porArea?.[a] ?? 0,
+                  testid: `agenda-area-${a}`,
+                })),
+              ]}
+            />
+          </div>
+        ) : null}
         <EstadoDeDatos
           cargando={isLoading && data === null}
           error={error}
@@ -723,7 +832,10 @@ function AgendaContent() {
                   <CaretRight className="h-4 w-4" />
                 </Button>
               </div>
-              <div className="grid grid-cols-1 divide-y divide-border md:grid-cols-7 md:divide-x md:divide-y-0">
+              {/* 29-10 (con los datos de Portofino): a 768 y 1024 los siete días en columnas dejaban cada evento en
+                  «Vence el …» (no se sabía de qué contrato). Los siete en columnas desde xl; antes, día por día y
+                  sus eventos en dos o tres columnas. El título va en dos renglones, entero al pasar el puntero. */}
+              <div className="grid grid-cols-1 divide-y divide-border xl:grid-cols-7 xl:divide-x xl:divide-y-0">
                 {diasDeLaSemana.map((d) => {
                   const iso = aFechaIso(d);
                   const delDia = eventos.filter((e) => e.fecha.slice(0, 10) === iso);
@@ -733,7 +845,7 @@ function AgendaContent() {
                       <p className={cn('mb-2 text-caption font-medium', esHoy ? 'text-primary' : 'text-fg-muted')}>
                         {new Intl.DateTimeFormat('es-CO', { weekday: 'short', day: 'numeric' }).format(d)}
                       </p>
-                      <ul className="space-y-1.5">
+                      <ul className="space-y-1.5 md:grid md:grid-cols-2 md:gap-1.5 md:space-y-0 lg:grid-cols-3 xl:block xl:space-y-1.5">
                         <AnimatePresence initial={false}>
                           {delDia.map((e) => (
                             <motion.li
@@ -746,8 +858,9 @@ function AgendaContent() {
                               <button
                                 type="button"
                                 onClick={() => setSeleccionado(e)}
+                                title={e.titulo}
                                 className={cn(
-                                  'w-full rounded-md border border-border px-2 py-1.5 text-left text-caption hover:border-primary/40',
+                                  'h-full w-full rounded-md border border-border px-2 py-1.5 text-left text-caption hover:border-primary/40',
                                   e.estado === 'vencido' && 'border-danger/40',
                                   (e.estado === 'completado' || e.estado === 'cancelado') && 'opacity-60',
                                 )}
@@ -756,7 +869,7 @@ function AgendaContent() {
                                   <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', puntoDelEvento(e))} />
                                   <span className="tabular-nums text-fg-muted">{e.hora ? horaDeLaCasa(e.hora) : 'Todo el día'}</span>
                                 </span>
-                                <span className="mt-0.5 block truncate text-fg">{e.titulo}</span>
+                                <span className="mt-0.5 line-clamp-2 break-words text-fg">{e.titulo}</span>
                               </button>
                             </motion.li>
                           ))}
@@ -772,7 +885,11 @@ function AgendaContent() {
           <>
           {/* AG-14: a 390 px, tarjetas en vez de una tabla que se corre a los lados. */}
           <ul className="divide-y divide-border md:hidden" data-testid="agenda-tarjetas">
-            {total === 0 ? (
+            {total === 0 && area !== 'todas' ? (
+              <li>
+                <SinDatos queSon="eventos" hayFiltros onLimpiarFiltros={() => cambiarArea('todas')} />
+              </li>
+            ) : total === 0 ? (
               <li>
                 <SinDatos
                   queSon="eventos"
@@ -817,6 +934,7 @@ function AgendaContent() {
                       <span className="block text-caption text-fg-muted">
                         <span className="font-mono">{formatFechaCorta(e.fecha)}</span>
                         {e.hora ? ` · ${horaDeLaCasa(e.hora)}` : ''} · {t(k(`rowTipo_${e.tipo}`))}
+                        {e.area && area === 'todas' ? <EtiquetaDelArea area={e.area} nombre={tr(NOMBRE_DEL_AREA[e.area])} /> : null}
                         {!elTituloEsElInmueble(e) && e.vinculoLabel ? ` · ${e.vinculoLabel}` : ''}
                       </span>
                       {e.responsableNombre && (
@@ -856,7 +974,13 @@ function AgendaContent() {
               </TableRow>
             </TableHeader>
             <TableBodyAnimado>
-              {total === 0 ? (
+              {total === 0 && area !== 'todas' ? (
+                <TableRowAnimada key="vacio-del-area">
+                  <TableCell colSpan={COLUMNS.length} className="p-0">
+                    <SinDatos queSon="eventos" hayFiltros onLimpiarFiltros={() => cambiarArea('todas')} />
+                  </TableCell>
+                </TableRowAnimada>
+              ) : total === 0 ? (
                 <TableRowAnimada key="vacio">
                   <TableCell colSpan={COLUMNS.length} className="p-0">
                     <SinDatos
@@ -922,6 +1046,7 @@ function AgendaContent() {
                             <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', puntoDelEvento(e, pestana === 'vencidas'))} />
                             {t(k(`rowTipo_${e.tipo}`))}
                           </span>
+                          {e.area && area === 'todas' ? <EtiquetaDelArea area={e.area} nombre={tr(NOMBRE_DEL_AREA[e.area])} /> : null}
                           {!elTituloEsElInmueble(e) && e.vinculoLabel ? ` · ${e.vinculoLabel}` : ''}
                           {/* AG-13: «Tú» sólo a quien creó la tarea. Sin «· Sistema» (revisora r22, #3). */}
                           {/* Revisora r25: en una tarea sin responsable, quién la creó pasa a la columna Persona
@@ -1023,6 +1148,7 @@ function AgendaContent() {
         onOpenChange={setTareaOpen}
         onCreada={load}
         coordina={canAccess('operaciones', 'edit')}
+        areaSeGuarda={data?.areaSeGuarda !== false}
       />
       <EventoAgendaDrawer
         evento={seleccionado}
@@ -1030,8 +1156,22 @@ function AgendaContent() {
         onCambio={load}
         onAccionVisita={runCitaAction}
         puedeEditar={puedeEditar}
+        areaSeGuarda={data?.areaSeGuarda !== false}
       />
     </div>
+  );
+}
+
+/**
+ * El área de una fila, discreta: un rótulo mono después del tipo. Con un área elegida no se pinta (diría lo mismo
+ * en todas las filas).
+ */
+function EtiquetaDelArea({ area, nombre }: { area: AreaDeLaAgenda; nombre: string }) {
+  return (
+    <span className="font-mono text-label uppercase text-fg-subtle" data-testid="agenda-area-de-la-fila" data-area={area}>
+      {' · '}
+      {nombre}
+    </span>
   );
 }
 

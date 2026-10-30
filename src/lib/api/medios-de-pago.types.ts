@@ -9,7 +9,9 @@ export type TipoDeMedioDePago =
   | 'NEQUI'
   | 'DAVIPLATA'
   | 'ENLACE_DE_PAGO'
-  | 'OTRO';
+  | 'OTRO'
+  /** Nico 29-10-2026: la llave Bre-B (va en `numeroDeCuenta`). */
+  | 'BRE_B';
 
 export type TipoDeCuenta = 'AHORROS' | 'CORRIENTE';
 
@@ -30,6 +32,8 @@ export interface MedioDePago {
   orden: number;
   createdAt: string;
   updatedAt: string;
+  /** Nico 29-10-2026: el QR del banco, firmado por una hora (`null` = no tiene). Un back viejo no lo manda. */
+  qrUrl?: string | null;
 }
 
 /** Lo que se manda al crear. Los textos vacíos viajan como `null`. */
@@ -67,6 +71,8 @@ export interface MedioDePagoParaInquilino {
   numeroDeCuentaEnmascarado: string | null;
   titular: string | null;
   enlace: string | null;
+  /** El QR del banco para escanear y pagar (`null` = no tiene). Un back viejo no lo manda. */
+  qrUrl?: string | null;
 }
 
 export interface MediosDeUnaInmobiliariaParaInquilino {

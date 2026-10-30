@@ -10,7 +10,7 @@ import { LandingFooterV2 } from '@/components/landing-v2/LandingFooterV2';
 export default function InmobiliariaNoEncontrada() {
   return (
     <LandingChrome activo="inmuebles">
-      <main id="main-content" className="min-h-screen bg-background pt-16 lg:pt-[76px]">
+      <main id="main-content" className="min-h-screen bg-background pt-[68px]">
         <div className="mx-auto max-w-[720px] px-4 py-24 text-center" data-testid="inmobiliaria-no-existe">
           <h1 className="font-heading text-[28px] font-semibold text-fg">No encontramos esa inmobiliaria</h1>
           <p className="mt-2 text-[15px] text-fg-muted">

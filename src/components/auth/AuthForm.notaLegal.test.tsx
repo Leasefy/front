@@ -65,7 +65,8 @@ afterEach(() => {
 describe('la nota legal', () => {
   it('no está al iniciar sesión', () => {
     act(() => root.render(<AuthForm defaultMode="login" />))
-    expect(container.textContent).toContain('Bienvenido de vuelta')
+    // La pantalla de entrar saluda según la hora (Nico 28-10): «Buenas tardes. Qué bueno verte.»
+    expect(container.textContent).toMatch(/(Buenos días|Buenas tardes|Buenas noches)\.Qué bueno verte\./)
     expect(container.querySelector('[data-testid="auth-nota-legal"]')).toBeNull()
     expect(container.textContent).not.toMatch(/Al continuar, aceptas/)
   })

@@ -48,6 +48,9 @@ import {
   EnvelopeSimple,
   BookOpenText,
   FolderSimple,
+  Handshake,
+  SunHorizon,
+  Star,
 } from '@phosphor-icons/react';
 import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
 import { ROLES_QUE_CONCILIAN, ROLES_QUE_VEN_LOS_BANCOS, SIN_EL_AUXILIAR_DE_CARTERA } from './el-auxiliar-de-cartera-no-ve-los-bancos';
@@ -443,6 +446,14 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
       {
         key: 'pipeline', labelKey: 'inmobiliaria.nav.pipelineCorto', href: r('/pipeline'), icon: Kanban, module: 'pipeline', scope: 'comercial',
         pantallas: [
+          // «Tu día» (27-10-2026, investigación de agentes): a quién llamar hoy, con la llamada preparada. Primero.
+          { labelKey: 'inmobiliaria.nav.tuDia', href: r('/pipeline/tu-dia'), icon: SunHorizon, module: 'pipeline', scope: 'comercial' },
+          // Colecciones (28-10-2026): un enlace con los inmuebles que le propones a un cliente; él marca y comenta.
+          { labelKey: 'inmobiliaria.nav.colecciones', href: r('/pipeline/colecciones'), icon: FolderSimple, module: 'pipeline', scope: 'comercial' },
+          // Reseñas (28-10-2026): sólo de clientes de Leasefy; se responden, no se borran.
+          { labelKey: 'inmobiliaria.nav.resenas', href: r('/pipeline/resenas'), icon: Star, module: 'pipeline', scope: 'comercial' },
+          // Comisión compartida (28-10-2026): el que capta propone el reparto y el otro lo acepta; Leasefy no cobra.
+          { labelKey: 'inmobiliaria.nav.comisionCompartida', href: r('/pipeline/comisiones-compartidas'), icon: Handshake, module: 'pipeline', scope: 'comercial' },
           // 🔴 B-07 (18-09-2026): «informe por origen (leads y arriendos por
           // portal) para saber qué portal vale la pena pagar». Cuelga del
           // pipeline y NO de Reportes a propósito: la decide el comercial con
@@ -451,7 +462,7 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
           // G-02 (18-09-2026): qué se le manda a cada lead y a quién le calza
           // un inmueble que se libera. Cuelga del pipeline porque la entrada es
           // un LEAD, no un inquilino con preferencias guardadas.
-          { labelKey: 'inmobiliaria.nav.calceDeLeads', href: r('/pipeline/que-ofrecer'), icon: GitMerge, module: 'pipeline', scope: 'comercial' },
+          { labelKey: 'inmobiliaria.nav.calceDeLeads', href: r('/pipeline/oportunidades'), icon: GitMerge, module: 'pipeline', scope: 'comercial' },
           // E-03 y D-02: las visitas con lo que les falta (asesor y aviso al
           // inquilino). Va acá y no en Agenda porque lo que se hace en esta
           // pantalla es trabajo COMERCIAL sobre prospectos; la agenda sigue
@@ -462,26 +473,6 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
           { labelKey: 'inmobiliaria.nav.comisionesYMetas', href: r('/pipeline/comisiones'), icon: Wallet, module: 'agentes', scope: 'comercial' },
         ],
       },
-      // Agenda estaba en Operación y se mudó acá (Nico, 2026-09-12: «Agenda
-      // interna: la sección de agenda la debemos llevar para la sección de
-      // captación y arriendo»). Va detrás de Pipeline porque lo que llena la
-      // agenda son las VISITAS del prospecto —«Pedir cita» pide el nombre del
-      // prospecto y la propiedad—: primero el prospecto, después la cita, y
-      // recién ahí el inmueble que se le muestra y la postulación que firma.
-      // Conserva su `module: 'operaciones'` y su `scope: 'administracion'`:
-      // cambiar de grupo no le abre la pantalla a nadie que no la tuviera ni
-      // se la cierra a quien la tenía (ver la regla al principio del archivo).
-      // Efecto colateral asumido: la barra inferior del móvil muestra las 5
-      // primeras filas navegables (`MobileNavBar`), así que Agenda entra ahí y
-      // Postulaciones pasa al «más». Ninguna puerta se pierde —el sheet las
-      // lista todas— y mover la fila sin mover el móvil sería tener dos menús
-      // que no coinciden.
-      // 🔴 Desde el 17-09-2026 la agenda también es del ASESOR COMERCIAL
-      // (`pipeline`): lo que la llena son las visitas de sus prospectos. El back
-      // le muestra sólo visitas y tareas si no ve contratos. `scope: 'comercial'`
-      // sumado a lo que ya tenía: el encuadre por rol la sigue dejando al
-      // contador (administración) y al asesor (comercial).
-      { key: 'agenda', labelKey: 'inmobiliaria.nav.agenda', href: r('/agenda'), icon: CalendarBlank, module: 'operaciones', modulos: ['operaciones', 'pipeline'], scope: 'administracion' },
       // Avalúos se mudó a «Agentes IA» (2026-09-16): Inmuebles se queda sin
       // secciones y `SeccionesDelModulo` no dibuja el riel de una sola card.
       { key: 'inmuebles', labelKey: 'inmobiliaria.nav.inmuebles', href: r('/inmuebles'), icon: Buildings, module: 'portafolio', scope: 'comercial', dataTourTarget: 'sidebar-inmuebles' },
@@ -536,6 +527,9 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
           { labelKey: 'inmobiliaria.nav.soportesCorto', href: r('/postulaciones/soportes'), icon: ListChecks, module: 'documentos', roles: SIN_EL_ABOGADO_EXTERNO, scope: 'administracion', ia: true },
         ],
       },
+      // Firmas (Nico, 28-10-2026): cualquier documento firmado con nuestro código, en el CRM. Todas las cuentas,
+      // también las gratis (por eso `comercial`: abierta sin activar). Enviar pide `documentos:create`.
+      { key: 'firmas', labelKey: 'inmobiliaria.nav.firmas', href: r('/firmas'), icon: Signature, module: 'documentos', scope: 'comercial' },
     ],
   },
 
@@ -579,6 +573,12 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
           // 03-10-2026) y las rutas viejas redirigen a `/retencion`.
         ],
       },
+      // 🔴 Agenda vuelve a Operación (Nico, 28-10-2026: «pasa la sección agenda dentro de operación y el calendario
+      // quede como predeterminado y no lista»). Antes (12-09) se había mudado a Captación y arriendo porque la llenan
+      // las visitas del prospecto. Conserva `module: 'operaciones'`, `modulos` (también la ve el asesor por
+      // `pipeline`) y `scope`: cambiar de grupo no le abre la pantalla a nadie que no la tuviera ni se la cierra a
+      // quien la tenía. Abre en el calendario (`agenda/page.tsx`).
+      { key: 'agenda', labelKey: 'inmobiliaria.nav.agenda', href: r('/agenda'), icon: CalendarBlank, module: 'operaciones', modulos: ['operaciones', 'pipeline'], scope: 'administracion' },
       // Sin `ia: true` ni la pantalla «Tickets»: el agente de mantenimiento
       // (bandeja de tickets, resumen, ficha) es mock-first y el micro no tiene
       // su endpoint (`/api/agency/:id/mantenimiento/inbox` no existe). Con

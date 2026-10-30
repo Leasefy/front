@@ -27,7 +27,9 @@
  * selector de fecha del DS (FA-R29 / FA-R30); la plata, `formatCurrency`.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
 import { PencilSimple, Plus, Receipt, Warning } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
@@ -167,6 +169,23 @@ const VACIO: Formulario = {
 
 export function DocumentoSoporte() {
   const [documentos, setDocumentos] = useState<Documentos | null>(null)
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas».
+  const lista = useMemo(() => documentos?.documentos ?? [], [documentos])
+  const { ordenadas, orden, ordenarPor } = useOrdenDeLaTabla(
+    lista,
+    {
+      numero: (d) => d.numeroInterno,
+      dian: (d) => d.numeroDian ?? null,
+      proveedor: (d) => d.proveedorNombre,
+      concepto: (d) => d.concepto,
+      fecha: (d) => d.fecha,
+      base: (d) => d.baseCop,
+      retenciones: (d) => (d.retefuenteCop ?? 0) + (d.reteicaCop ?? 0) + (d.reteivaCop ?? 0),
+      neto: (d) => d.netoCop,
+      estado: (d) => d.transmision?.estadoNombre ?? null,
+    },
+    { primero: { numero: 'desc', fecha: 'desc', base: 'desc', retenciones: 'desc', neto: 'desc' } },
+  )
   const [proveedores, setProveedores] = useState<ProveedoresNoObligados | null>(
     null,
   )
@@ -466,19 +485,19 @@ export function DocumentoSoporte() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="whitespace-nowrap">N°</TableHead>
-                <TableHead className="whitespace-nowrap">N° DIAN</TableHead>
-                <TableHead className="whitespace-nowrap">Proveedor</TableHead>
-                <TableHead className="whitespace-nowrap">Concepto</TableHead>
-                <TableHead className="whitespace-nowrap">Fecha</TableHead>
-                <TableHead className="whitespace-nowrap text-right">Base</TableHead>
-                <TableHead className="whitespace-nowrap text-right">
+                <EncabezadoOrdenable campo="numero" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">N°</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="dian" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">N° DIAN</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="proveedor" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Proveedor</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="concepto" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Concepto</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="fecha" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Fecha</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="base" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap text-right" alineacion="derecha">Base</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="retenciones" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap text-right" alineacion="derecha">
                   Retenciones
-                </TableHead>
-                <TableHead className="whitespace-nowrap text-right">
+                </EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="neto" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap text-right" alineacion="derecha">
                   Se le paga
-                </TableHead>
-                <TableHead className="whitespace-nowrap">DIAN</TableHead>
+                </EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="estado" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">DIAN</EncabezadoOrdenable>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -502,7 +521,7 @@ export function DocumentoSoporte() {
                   </TableCell>
                 </TableRow>
               ) : (
-                documentos.documentos.map((d) => (
+                ordenadas.map((d) => (
                   <TableRow key={d.id} data-testid={`documento-soporte-${d.id}`}>
                     <TableCell className="whitespace-nowrap font-mono tabular-nums text-fg">
                       {d.numeroInterno}

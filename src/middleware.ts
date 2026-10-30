@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
+import { esLectorDeVistaPrevia } from '@/lib/seo/lector-de-vista-previa';
 import {
   CABECERA_DEL_NONCE,
   GRUPO_DE_REPORTES_CSP,
@@ -51,7 +52,32 @@ export function middleware(request: NextRequest) {
    *     mueven) y la página sabe su idioma por `x-idioma`. Navegar en un idioma
    *     lo deja recordado.
    */
-  const { idioma, ruta } = separarIdioma(request.nextUrl.pathname);
+  const separada = separarIdioma(request.nextUrl.pathname);
+  const { ruta } = separada;
+  /*
+   * 🔴 Nico, 28-10-2026: «sigues sin mostrar la imagen de la url que se comparten de nuestras propiedades, y sí o sí
+   * tiene que ir». La ficha (`/propiedades/<id>`) ya trae su `og:image`, pero el enlace que se comparte va SIN idioma
+   * y respondía 307 a `/es/…`: el lector de la vista previa (WhatsApp, Facebook, Telegram…) no siempre sigue esa
+   * redirección y se quedaba con «leasefy.co» sin foto. A esos lectores se les sirve la página en español ahí mismo,
+   * sin redirigir (la ficha existe sólo en español y su canonical ya apunta a `/es/…`).
+   */
+  const idioma =
+    separada.idioma ??
+    (esLectorDeVistaPrevia(request.headers.get('user-agent')) && esRutaPublica(ruta) ? ('es' as const) : null);
+  /*
+   * 🔴 Nico, 27-10-2026: «solo debe haber una landing y es la nueva». `/pricing` (y `/pricing/empresas`) era la
+   * página de precios de la landing vieja, con precios viejos: los planes viven en la home, en `#planes`.
+   */
+  if (ruta === '/pricing' || ruta.startsWith('/pricing/')) {
+    const destino = request.nextUrl.clone();
+    destino.pathname = conIdioma(
+      '/',
+      idioma ?? idiomaParaLaVisita(request.cookies.get(COOKIE_DEL_IDIOMA)?.value, request.headers.get('accept-language')),
+    );
+    destino.search = '';
+    destino.hash = 'planes';
+    return NextResponse.redirect(destino);
+  }
   const publica = esRutaPublica(ruta);
   if (!idioma && publica) {
     const destino = request.nextUrl.clone();
@@ -149,3 +175,4 @@ export const config = {
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
   ],
 };
+

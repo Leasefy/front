@@ -317,7 +317,12 @@ export interface ConfiguracionDeReparaciones {
   prioridadesSugeridas: PrioridadDelBack[];
   slaHoras: Record<PrioridadDelBack, number>;
   slaSugerido: Record<PrioridadDelBack, number>;
-  disponible: { prioridades: boolean; sla: boolean; laHaceElPropietario: boolean };
+  /**
+   * Nico 28-10: el tope del mes de una reparación diferida, en % del canon (sugiere en cuántos meses diferirla). Un back
+   * anterior no lo manda.
+   */
+  topeDelMes?: { pct: number; sugeridoPct: number; configurado: boolean };
+  disponible: { prioridades: boolean; sla: boolean; laHaceElPropietario: boolean; topeDelMes?: boolean };
 }
 
 /** Una página del historial del portal (Nico, 12-10-2026: «ese historial puede ser muy grande»). */

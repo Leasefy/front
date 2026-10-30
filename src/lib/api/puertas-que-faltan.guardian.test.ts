@@ -230,7 +230,6 @@ const DECLARADOS: readonly string[] = [
   'pipelineApi.getStats',
   'postulacionesApi.revisarCierre',
   'propertiesApi.getAssigned',
-  'propertiesApi.removeAgent',
   // 06-10 · Es de develop (c14de11a): «Enviar ahora» del extracto mensual pasó al
   // centro de procesos (`enviarExtractosDelMesEnElCentro`, QA-PROP-95 r2, 3235ae78).
   // No se borra: develop todavía lo llama desde ConfigExtractoMensual.

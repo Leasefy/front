@@ -39,11 +39,15 @@ export const NAV_ITEMS = [
   // ACT-09 (Nico, 05-10-2026): el Piloto automático de cada inmobiliaria lo deja Leasefy en prueba, contratado o apagado.
   { href: '/admin/piloto', label: 'Piloto automático', hint: 'prueba · contratado · apagado', code: '37' },
   { href: '/admin/plans', label: 'Planes', hint: 'catálogo agency', code: '30' },
+  // Nico, 27-10-2026: los aliados regalan un mes (Fianly, La Lonja, Fenalco) y Leasefy gestiona propietarios sin inmobiliaria.
+  { href: '/admin/aliados', label: 'Aliados', hint: 'mes gratis · conversión', code: '39' },
+  { href: '/admin/gestiones', label: 'Gestiones de Leasefy', hint: 'propietarios sin inmobiliaria · 5 %', code: '40' },
   { href: '/admin/agency-targets', label: 'Targets', hint: 'metas mensuales', code: '27' },
   { href: '/admin/avaluos', label: 'Avalúos', hint: 'firma certificados', code: '28' },
   { href: '/admin/registration-profiles', label: 'Perfiles', hint: 'signup on/off', code: '29' },
   { href: '/admin/cotizador', label: 'Cotizador', hint: 'carriers · credenciales', code: '31' },
   { href: '/admin/inmuebles', label: 'Inmuebles', hint: 'riesgo · historial interno', code: '32' },
+  { href: '/admin/pedidos-del-marketplace', label: 'Pedidos del marketplace', hint: 'lo que piden a las inmobiliarias', code: '41' },
   { href: '/admin/chat-feedback', label: 'Chat feedback', hint: 'pulgares · dónde falla', code: '33' },
   // Prendida el 04-10-2026: Nico aprobó la cláusula de la política (v4.0 §13 y §16).
   { href: '/admin/chat-preguntas', label: 'Preguntas del chat', hint: 'qué preguntan · sugerencias', code: '36' },

@@ -38,6 +38,8 @@ import {
 } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
 import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
 import { useAgencyPlans } from '@/lib/hooks/useSubscription';
 import type { AgencyPlan } from '@/lib/types/subscription';
@@ -79,6 +81,12 @@ export function ConfigFacturacion({
    * Paginado de presentación: el histórico de facturas se acumula un renglón
    * por ciclo y no se depura nunca. Sin filtros en esta tabla ⇒ sin `resetKey`.
    */
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas».
+  const { ordenadas, orden, ordenarPor } = useOrdenDeLaTabla(
+    invoices,
+    { fecha: (x) => x.date, valor: (x) => x.amount, estado: (x) => x.status ?? null },
+    { primero: { fecha: 'desc', valor: 'desc' } },
+  );
   const {
     pageItems,
     total,
@@ -86,7 +94,7 @@ export function ConfigFacturacion({
     pageSize,
     setPage,
     setPageSize,
-  } = useTablePagination(invoices);
+  } = useTablePagination(ordenadas, { resetKey: `${orden?.campo ?? ''}|${orden?.sentido ?? ''}` });
 
   const { currentPlanId, state, isLoading: subLoading, error: subError, refetch: subRefetch } =
     useAgencySubscription();
@@ -565,15 +573,15 @@ export function ConfigFacturacion({
             <Table className="w-full">
               <TableHeader>
                 <TableRow className="border-b border-border">
-                  <TableHead className="text-left py-3 px-4">
+                  <EncabezadoOrdenable campo="fecha" orden={orden} onOrdenar={ordenarPor} className="text-left py-3 px-4">
                     {t('inmobiliaria.config.billing.invoiceDate')}
-                  </TableHead>
-                  <TableHead className="text-right py-3 px-4">
+                  </EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="valor" orden={orden} onOrdenar={ordenarPor} className="text-right py-3 px-4" alineacion="derecha">
                     {t('inmobiliaria.config.billing.invoiceAmount')}
-                  </TableHead>
-                  <TableHead className="text-left py-3 px-4">
+                  </EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="estado" orden={orden} onOrdenar={ordenarPor} className="text-left py-3 px-4">
                     {t('inmobiliaria.config.billing.invoiceStatus')}
-                  </TableHead>
+                  </EncabezadoOrdenable>
                   <TableHead className="text-right py-3 px-4">
                     {t('inmobiliaria.config.billing.invoiceActions')}
                   </TableHead>

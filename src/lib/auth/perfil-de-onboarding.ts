@@ -22,10 +22,19 @@ export const CLAVE_DE_PERFIL_ELEGIDO = 'intended_role'
 
 export const RUTA_DEL_SELECTOR_DE_PERFIL = '/onboarding/seleccionar-rol'
 
+/** El agente inmobiliario (Nico, 27-10-2026): su cuenta y después su registro corto, en el publicador. */
+export const DESTINO_DEL_AGENTE = '/publica?perfil=agente'
+
+/**
+ * 🔴 Nico, 27-10-2026: «aquí es para que publiquen y luego los llevamos a la plataforma con todo en demo menos
+ * Arrendamientos; si paga le aparecen esos pasos según lo que eligió». La inmobiliaria y el propietario que dejan el
+ * registro a medias vuelven al registro CORTO del publicador (nombre y WhatsApp), nunca al asistente largo (razón
+ * social, NIT…): esos datos se piden al pagar. El asistente (`/onboarding/inmobiliaria`) sigue para quien ya lo empezó.
+ */
 const RUTAS: Record<PerfilDeOnboarding, string> = {
   tenant: '/onboarding/inquilino',
-  landlord: '/onboarding/propietario',
-  agency: '/onboarding/inmobiliaria',
+  landlord: '/publica?perfil=landlord',
+  agency: '/publica?perfil=agency',
 }
 
 export function esPerfilDeOnboarding(valor: unknown): valor is PerfilDeOnboarding {
@@ -60,7 +69,8 @@ export function rutaDeOnboardingConRegreso(
 ): string {
   if (esDestinoQueRegistraSolo(destino)) return destino as string
   const ruta = rutaDeOnboarding(perfil)
-  if (!destino || destino === '/' || (perfil !== 'tenant' && perfil !== 'landlord')) return ruta
+  // Sólo el onboarding del inquilino sabe volver; el publicador lleva al panel al terminar.
+  if (!destino || destino === '/' || perfil !== 'tenant') return ruta
   return `${ruta}?returnUrl=${encodeURIComponent(destino)}`
 }
 

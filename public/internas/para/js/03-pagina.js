@@ -85,6 +85,7 @@
     } catch (e) {}
   })();
   function reloj(p) {
+    if (!horaEl) return; /* Nico 27-10: el reloj salió de la barra */
     var min = Math.round(422 + (1170 - 422) * p), h = Math.floor(min / 60), m = min % 60;
     horaEl.textContent = (h < 10 ? "0" : "") + h + ":" + (m < 10 ? "0" : "") + m;
     var n = Math.round(p * pista.length);

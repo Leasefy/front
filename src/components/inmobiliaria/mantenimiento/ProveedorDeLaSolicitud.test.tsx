@@ -22,27 +22,7 @@ const h = vi.hoisted(() => ({
 }));
 vi.mock('@/lib/api/proveedores-de-mantenimiento.service', () => ({ proveedoresDeMantenimientoApi: h.api }));
 vi.mock('@/components/ui/toast', () => ({ toast: h.toast }));
-// El Combobox y el Select son de Radix (popover): en happy-dom, nativos con lo mismo.
-vi.mock('@/components/ui/combobox', () => ({
-  Combobox: ({
-    value,
-    onChange,
-    options,
-  }: {
-    value?: string;
-    onChange: (v: string | undefined) => void;
-    options: Array<{ value: string; label: string }>;
-  }) => (
-    <select data-testid="lista" value={value ?? ''} onChange={(e) => onChange(e.target.value || undefined)}>
-      <option value="">—</option>
-      {options.map((o) => (
-        <option key={o.value} value={o.value}>
-          {o.label}
-        </option>
-      ))}
-    </select>
-  ),
-}));
+// El Select del tipo de documento es de Radix (popover): en happy-dom, nativo con lo mismo.
 vi.mock('./TipoDeDocumentoDelProveedor', () => ({
   TipoDeDocumentoDelProveedor: ({ id, valor, onCambiar }: { id: string; valor: string; onCambiar: (t: string) => void }) => (
     <select id={id} value={valor} onChange={(e) => onCambiar(e.target.value)}>
@@ -125,21 +105,48 @@ describe('ProveedorDeLaSolicitud', () => {
     await montar();
     expect(container.textContent).toContain('Todavía no tienes proveedores registrados.');
     expect(q('[data-testid="proveedor-registrar-primero"]')).not.toBeNull();
-    expect(q('[data-testid="lista"]')).toBeNull();
+    expect(q('#proveedor-de-la-solicitud-buscar')).toBeNull();
   });
 
   it('los del oficio de la solicitud salen primero, y al escoger se elige', async () => {
     h.api.listar.mockResolvedValue([PINTOR, PLOMERO]);
     await montar();
-    const opciones = Array.from(container.querySelectorAll('[data-testid="lista"] option')).map((o) => o.textContent);
-    expect(opciones[1]).toContain('Plomería El Rayo');
-    expect(opciones[1]).toContain('4,5 ★');
-    expect(opciones[opciones.length - 1]).toBe('+ Registrar un proveedor nuevo');
-    await elegir('[data-testid="lista"]', 'p-plomero');
+    expect(q('[data-testid="proveedor-registrar-primero"]')).toBeNull();
+    await act(async () => {
+      q<HTMLInputElement>('#proveedor-de-la-solicitud-buscar')!.focus();
+    });
+    const opciones = Array.from(container.querySelectorAll('[data-testid="proveedor-de-la-solicitud-buscar-opcion"]')).map(
+      (o) => o.textContent,
+    );
+    expect(opciones[0]).toContain('Plomería El Rayo');
+    expect(opciones[0]).toContain('4,5');
+    expect(q('[data-testid="proveedor-de-la-solicitud-buscar-registrar"]')?.textContent).toBe('Registrar un proveedor nuevo');
+    await clic(container.querySelector('[data-testid="proveedor-de-la-solicitud-buscar-opcion"]'));
     expect(onCambiar).toHaveBeenLastCalledWith('p-plomero');
+    expect(q('[data-testid="proveedor-de-la-solicitud-buscar-elegido"]')?.textContent).toContain('Plomería El Rayo');
     expect(q('[data-testid="proveedor-elegido-avisos"]')?.textContent).toContain('3001112233');
     await clic(q('[data-testid="proveedor-de-la-solicitud-quitar"]'));
     expect(onCambiar).toHaveBeenLastCalledWith(undefined);
+  });
+
+  it('Portofino 29-10: se busca por nombre sin tildes, por oficio y por documento con o sin puntos', async () => {
+    h.api.listar.mockResolvedValue([PINTOR, PLOMERO]);
+    await montar();
+    const resultados = async (texto: string) => {
+      await act(async () => {
+        q<HTMLInputElement>('#proveedor-de-la-solicitud-buscar')!.focus();
+      });
+      await escribir('proveedor-de-la-solicitud-buscar', texto);
+      return Array.from(container.querySelectorAll('[data-testid="proveedor-de-la-solicitud-buscar-opcion"]')).map(
+        (o) => o.querySelector('p')?.textContent,
+      );
+    };
+    expect(await resultados('plomeria el rayo')).toEqual(['Plomería El Rayo']);
+    expect(await resultados('pintura')).toEqual(['Pinturas Juan']);
+    expect(await resultados('900.123.456')).toEqual(['Plomería El Rayo']);
+    expect(await resultados('71234567')).toEqual(['Pinturas Juan']);
+    expect(await resultados('cerrajero ninguno')).toEqual([]);
+    expect(q('[data-testid="proveedor-de-la-solicitud-buscar-sin-resultados"]')).not.toBeNull();
   });
 
   it('registrar uno nuevo: revisa el documento, queda con el oficio y elegido', async () => {
@@ -191,7 +198,10 @@ describe('ProveedorDeLaSolicitud', () => {
     h.api.listar.mockResolvedValue([PLOMERO]);
     h.api.crear.mockRejectedValue(new ApiError(409, 'Ya tienes un proveedor con el documento 900123456-8', 'PROVEEDOR_DUPLICADO'));
     await montar();
-    await elegir('[data-testid="lista"]', '__nuevo__');
+    await act(async () => {
+      q<HTMLInputElement>('#proveedor-de-la-solicitud-buscar')!.focus();
+    });
+    await clic(q('[data-testid="proveedor-de-la-solicitud-buscar-registrar"]'));
     await escribir('proveedor-nuevo-nombre', 'Plomería El Rayo');
     await elegir('#proveedor-nuevo-tipoDocumento', 'NIT');
     await escribir('proveedor-nuevo-documento', '900123456-8');

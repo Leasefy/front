@@ -1,7 +1,7 @@
 'use client';
 
 import { Switch } from '@/components/ui/switch';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Stagger, StaggerItem } from '@leasefy/cadence';
 import {
   User,
@@ -26,6 +26,7 @@ import {
   Tree,
   WarningCircle,
   ImageSquare,
+  Megaphone,
 } from '@phosphor-icons/react';
 import type { Icon as IconoDePhosphor } from '@phosphor-icons/react';
 import { llevaHabitaciones, descripcionValida, DESCRIPCION_MINIMA, DESCRIPCION_MAXIMA } from '@/lib/inmuebles/reglas-del-paso-del-inmueble';
@@ -57,11 +58,29 @@ import { idDelCampoDelAsistente, topesDelPasoDelInmueble } from '@/lib/inmuebles
 import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
 
 import { ariaDelCampoDeDia, CampoDeDia } from '@/components/contabilidad/CampoDeDia';
+import { TraerDelEnlace } from './consignacion/TraerDelEnlace';
+import { soloLoVacio } from '@/lib/inmuebles/asistente-desde-enlace';
+import { PROPERTY_PHOTO_MAX_COUNT } from '@/lib/api/property-photos';
+import { PASO } from '@/lib/inmuebles/pasos-del-asistente';
+import { ilustracionDe } from '@/components/property/PortadaSinFotos';
+import { EmptyState } from '@/components/ui/empty-state';
 // ============================================================================
 // Shared Types
 // ============================================================================
 
 export interface WizardFormData extends ConsignacionFormData {
+  /**
+   * @deprecated 27-10-2026 (tarde): ya no hay interruptor. Sin propietario elegido, el inmueble se crea sin
+   * consignación (Juan: «propietario opcional»). Sólo puede venir en un borrador viejo; no se lee.
+   */
+  sinMandato?: boolean;
+  /**
+   * «Arriendo y venta» (Juan, 27-10-2026: «que deje seleccionar ambos»). Sólo con `listingType: 'rent'`: el
+   * inmueble se arrienda y además se vende; viaja como arriendo con `salePrice`.
+   */
+  tambienEnVenta?: boolean;
+  /** En qué orden de pasos se guardó el borrador (`lib/inmuebles/pasos-del-asistente.ts`). */
+  ordenDePasos?: number;
   newPropietarioData?: PropietarioFormData;
   inventoryItems: InventoryItem[];
   inventoryNotes: string;
@@ -117,6 +136,8 @@ export interface WizardFormData extends ConsignacionFormData {
   videoUrl?: string;
   /** Las características (ids de `lib/inmuebles/caracteristicas.ts`), 21-10-2026. Opcionales. */
   amenities?: string[];
+  /** Cuántos parqueaderos (28-10-2026): se pregunta al marcar «Parqueadero» en las características. */
+  parkingSpaces?: number;
   /**
    * 🔴 «Publicar en el marketplace» (Nico, 10-10-2026): ENCENDIDO por defecto
    * (ausente = sí). Apagado, el inmueble queda en el portafolio y no sale en
@@ -250,6 +271,21 @@ export function StepSelectPropietario({
         </p>
       </div>
 
+      {/* 🔴 Juan y Nico, 27-10-2026: «propietario opcional… en una captación nueva no tienen la cédula». Sin
+          interruptor: quien no lo tiene sigue con «Seguir sin propietario». */}
+      <p
+        className="flex items-start gap-2.5 rounded-lg border border-border bg-surface-muted p-3.5 text-sm text-fg-muted"
+        data-testid="propietario-opcional"
+      >
+        <Megaphone className="mt-0.5 h-4 w-4 shrink-0 text-primary" weight="duotone" aria-hidden="true" />
+        <span>
+          <span className="font-medium text-fg">Opcional.</span> Si todavía no lo tienes, sigue sin él: el inmueble se
+          publica igual y el propietario lo agregas cuando vayas a hacer el contrato. Para registrarlo ahora bastan el
+          nombre y el teléfono.
+        </span>
+      </p>
+
+      <>
       {/* Selección MÚLTIPLE: un inmueble puede tener más de un dueño. Antes
           aquí vivía `PropietarioSelector`, que era de uno solo —tocar otro
           reemplazaba— aunque el resto del circuito (tipos, payload y back) ya
@@ -292,6 +328,7 @@ export function StepSelectPropietario({
       <div data-testid="wizard-owner-error-slot">
         <ErrorDelCampo id="wizard-owner-error" mensaje={ownerServerError?.message} />
       </div>
+      </>
     </div>
   );
 }
@@ -313,6 +350,10 @@ export function StepPropertyData({ formData, updateFormData, erroresDelServidor 
   // display-only here — never sent as a literal default on the payload side.
   const listingType = formData.listingType ?? 'rent';
   const isSaleListing = listingType === 'sale';
+  // «Arriendo y venta» (Juan, 27-10-2026): un arriendo que además se vende pide los dos precios.
+  const arriendoYVenta = !isSaleListing && formData.tambienEnVenta === true;
+  const operacion: 'rent' | 'sale' | 'both' = isSaleListing ? 'sale' : arriendoYVenta ? 'both' : 'rent';
+  const conPrecioDeVenta = isSaleListing || arriendoYVenta;
 
   const errors: Record<string, string> = {};
   if (touched.propertyTitle && !formData.propertyTitle) errors.propertyTitle = t('inmobiliaria.consignaciones.wizard.step2.validation.titleRequired');
@@ -320,7 +361,7 @@ export function StepPropertyData({ formData, updateFormData, erroresDelServidor 
   if (touched.propertyCity && !formData.propertyCity) errors.propertyCity = t('inmobiliaria.consignaciones.wizard.step2.validation.cityRequired');
   // contract.md §3.2.1 — required in this UI (the wire keeps it optional).
   if (!isSaleListing && touched.monthlyRent && (!formData.monthlyRent || formData.monthlyRent <= 0)) errors.monthlyRent = t('inmobiliaria.consignaciones.wizard.step2.validation.rentRequired');
-  if (isSaleListing && touched.salePrice && (!formData.salePrice || formData.salePrice <= 0)) errors.salePrice = t('inmobiliaria.consignaciones.wizard.step2.validation.salePriceRequired');
+  if (conPrecioDeVenta && touched.salePrice && (!formData.salePrice || formData.salePrice <= 0)) errors.salePrice = t('inmobiliaria.consignaciones.wizard.step2.validation.salePriceRequired');
   // Thresholds mirror CreatePropertyDto (contract.md §3.2) — bedrooms 0-20,
   // bathrooms 1-10 (0 invalid), area 10-10000 m² (0 invalid), description 20-5000 chars.
   // IN-16 (QA 04-10): barrio, departamento, habitaciones, baños, área y
@@ -352,6 +393,18 @@ export function StepPropertyData({ formData, updateFormData, erroresDelServidor 
           {t('inmobiliaria.consignaciones.wizard.step2.subtitle')}
         </p>
       </div>
+
+      <TraerDelEnlace
+        fotosActuales={(formData.photos ?? []).length}
+        alTraer={(datos, fotos) => {
+          updateFormData({
+            ...soloLoVacio(formData, datos),
+            ...(fotos.length > 0 ? { photos: [...(formData.photos ?? []), ...fotos].slice(0, PROPERTY_PHOTO_MAX_COUNT) } : {}),
+          });
+          // Lo que trajo el aviso se revisa como si se hubiera escrito: sus errores se ven ya.
+          setTouched((prev) => ({ ...prev, propertyTitle: true, propertyAddress: true, propertyCity: true }));
+        }}
+      />
 
       <div className="space-y-4">
         {/* Property Type */}
@@ -496,19 +549,27 @@ export function StepPropertyData({ formData, updateFormData, erroresDelServidor 
           <RadioCardGroup
             aria-labelledby={idDeLaEtiqueta('listingType')}
             aria-required
-            className="grid grid-cols-2 gap-2"
-            value={listingType}
-            onValueChange={(v) => updateFormData({ listingType: v as 'rent' | 'sale' })}
+            className="grid grid-cols-3 gap-2"
+            value={operacion}
+            onValueChange={(v) =>
+              updateFormData(
+                v === 'both'
+                  ? { listingType: 'rent', tambienEnVenta: true }
+                  : { listingType: v as 'rent' | 'sale', tambienEnVenta: false },
+              )
+            }
+            data-testid="asistente-operacion"
           >
             <RadioCard value="rent" label={t('inmobiliaria.consignaciones.wizard.step2.listingTypeRent')} />
             <RadioCard value="sale" label={t('inmobiliaria.consignaciones.wizard.step2.listingTypeSale')} />
+            <RadioCard value="both" label="Arriendo y venta" />
           </RadioCardGroup>
         </div>
 
-        {/* Monthly Rent (RENT) or Sale Price (SALE), and Admin Fee */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {isSaleListing ? (
-            <div className="space-y-1.5">
+        {/* Monthly Rent (RENT) or Sale Price (SALE), and Admin Fee. «Arriendo y venta»: los dos. */}
+        <div className={cn('grid grid-cols-1 gap-4', arriendoYVenta ? 'sm:grid-cols-3' : 'sm:grid-cols-2')}>
+          {conPrecioDeVenta ? (
+            <div className={cn('space-y-1.5', arriendoYVenta && 'sm:order-2')}>
               <label htmlFor={idDelCampoDelAsistente('salePrice')} className="block text-sm font-medium text-fg">
                 {t('inmobiliaria.consignaciones.wizard.step2.salePriceLabel')} <span className="text-danger">*</span>
               </label>
@@ -529,7 +590,8 @@ export function StepPropertyData({ formData, updateFormData, erroresDelServidor 
               </div>
               <ErrorDelCampo id={`${idDelCampoDelAsistente('salePrice')}-error`} mensaje={errors.salePrice} />
             </div>
-          ) : (
+          ) : null}
+          {isSaleListing ? null : (
             <div className="space-y-1.5">
               <label htmlFor={idDelCampoDelAsistente('monthlyRent')} className="block text-sm font-medium text-fg">
                 {t('inmobiliaria.consignaciones.wizard.step2.monthlyRentLabel')} <span className="text-danger">*</span>
@@ -553,7 +615,7 @@ export function StepPropertyData({ formData, updateFormData, erroresDelServidor 
             </div>
           )}
 
-          <div className="space-y-1.5">
+          <div className={cn('space-y-1.5', arriendoYVenta && 'sm:order-3')}>
             <label htmlFor={idDelCampoDelAsistente('adminFee')} className="block text-sm font-medium text-fg">
               {t('inmobiliaria.consignaciones.wizard.step2.adminFeeLabel')}
             </label>
@@ -671,6 +733,7 @@ export function StepPropertyData({ formData, updateFormData, erroresDelServidor 
           <SelectorDeCaracteristicas
             value={formData.amenities ?? []}
             onChange={(amenities) => updateFormData({ amenities })}
+            parqueaderos={{ valor: formData.parkingSpaces, alCambiar: (parkingSpaces) => updateFormData({ parkingSpaces }) }}
             tituloId={`${idDelCampoDelAsistente('amenities')}-titulo`}
             ariaDelError={
               erroresDelServidor?.amenities
@@ -725,6 +788,9 @@ export function StepCommissionTerms({ formData, updateFormData, erroresDelServid
   // contract-addendum-2.md §A.8 step 3 — "Renders sale commission only. No
   // canon, no minimumTerm, no adminFee."
   const isSaleListing = formData.listingType === 'sale';
+  // «Arriendo y venta»: las dos comisiones.
+  const conVenta = isSaleListing || formData.tambienEnVenta === true;
+  const sinPropietario = !formData.propietarioId;
   const commissionPercent = formData.commissionPercent ?? 10;
   const saleCommissionPercent = formData.saleCommissionPercent ?? 3;
   const monthlyRent = formData.monthlyRent || 0;
@@ -742,7 +808,15 @@ export function StepCommissionTerms({ formData, updateFormData, erroresDelServid
         </p>
       </div>
 
-      {isSaleListing ? (
+      {/* Juan, 27-10-2026: «la comisión sí la dejamos: eso sí se negocia en una captación». Sin propietario
+          queda guardada con el inmueble y pasa a la consignación cuando se registre. */}
+      {sinPropietario ? (
+        <p className="rounded-lg border border-border bg-surface-muted p-3 text-sm text-fg-muted" data-testid="comision-sin-propietario">
+          Todavía no hay propietario: lo que pactes aquí queda guardado con el inmueble y pasa a la consignación cuando lo registres.
+        </p>
+      ) : null}
+
+      {conVenta ? (
         <div className="space-y-3">
           <label htmlFor={idDelCampoDelAsistente('saleCommissionPercent')} className="text-sm font-medium text-muted-foreground">
             {t('inmobiliaria.consignaciones.wizard.step3.saleCommissionLabel')}
@@ -774,7 +848,8 @@ export function StepCommissionTerms({ formData, updateFormData, erroresDelServid
             pista={t('inmobiliaria.consignaciones.wizard.step3.saleCommissionHelper')}
           />
         </div>
-      ) : (
+      ) : null}
+      {isSaleListing ? null : (
         <div className="space-y-6">
           {/* Commission Input */}
           <div className="space-y-3">
@@ -906,19 +981,71 @@ export function StepAssignAgent({ formData, updateFormData, agentes }: StepProps
 }
 
 // ============================================================================
-// Step 5: Acta de Entrega (Inventory)
+// Paso «Fotos» (27-10-2026: Juan, «separaría fotos y por allá otro que sea inventario»)
 // ============================================================================
 
-export function StepActaEntrega({ formData, updateFormData, erroresDelServidor }: StepProps) {
+export function StepFotos({ formData, updateFormData, erroresDelServidor }: StepProps) {
   const { t } = useI18n();
   const errorDelVideo = erroresDelServidor?.videoUrl ?? (videoInvalido(formData.videoUrl) ? MENSAJE_DEL_VIDEO : undefined);
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-h3 text-fg mb-1">Fotos y video</h2>
+        <p className="text-fg-muted">
+          Las fotos son lo primero que se mira en el marketplace. Sube las que tengas; el video es opcional.
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <h3 className="text-sm font-medium text-fg">
+          {t('inmobiliaria.consignaciones.wizard.step5.photosTitle')}
+        </h3>
+        <PropertyPhotoPicker
+          photos={formData.photos ?? []}
+          onChange={(photos) => updateFormData({ photos })}
+        />
+      </div>
+
+      {/* El video del inmueble (marketplace, 09-10-2026), el mismo campo de «Editar». */}
+      <div className="space-y-1.5">
+        <label htmlFor={idDelCampoDelAsistente('videoUrl')} className="block text-sm font-medium text-fg">
+          {t('inmobiliaria.consignaciones.editForm.videoUrl')}{' '}
+          <span className="font-normal text-fg-muted">{t('inmobiliaria.consignaciones.wizard.step5.optional')}</span>
+        </label>
+        <Input
+          id={idDelCampoDelAsistente('videoUrl')}
+          type="url"
+          inputMode="url"
+          value={formData.videoUrl ?? ''}
+          onChange={(e) => updateFormData({ videoUrl: e.target.value })}
+          placeholder="https://www.instagram.com/reel/…"
+          maxLength={LARGO_MAXIMO_DEL_ENLACE}
+          aria-invalid={errorDelVideo ? true : undefined}
+          aria-describedby={`${idDelCampoDelAsistente('videoUrl')}-${errorDelVideo ? 'error' : 'ayuda'}`}
+          className={cn('w-full', errorDelVideo && 'border-danger/30')}
+          data-testid="asistente-videoUrl"
+        />
+        {errorDelVideo ? (
+          <ErrorDelCampo id={`${idDelCampoDelAsistente('videoUrl')}-error`} mensaje={errorDelVideo} />
+        ) : (
+          <p id={`${idDelCampoDelAsistente("videoUrl")}-ayuda`} className="text-caption text-fg-muted">
+            {t('inmobiliaria.consignaciones.editForm.videoUrlHelper')}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// Paso «Inventario» — OPCIONAL (Juan, 27-10-2026: «el inventario no necesariamente lo tendría en ese momento»)
+// ============================================================================
+
+export function StepInventario({ formData, updateFormData }: StepProps) {
+  const { t } = useI18n();
   const inventoryItems = formData.inventoryItems || [];
-  // T-0042 (ledger.md §2/§3) — a sale listing has no acta de entrega: this
-  // step renders photos-only for it. The rent path is unchanged (inventory
-  // + photos + observaciones generales, all three).
-  const isSaleListing = formData.listingType === 'sale';
-  // Un renglón sin nombre no es un ítem (no se guarda): no cuenta como inventario.
-  const inventarioConNombre = inventoryItems.filter((item) => item.name.trim().length > 0);
+  const sinPropietario = !formData.propietarioId;
 
   const addItem = () => {
     const newItem: InventoryItem = {
@@ -950,45 +1077,37 @@ export function StepActaEntrega({ formData, updateFormData, erroresDelServidor }
     <div className="space-y-6">
       <div>
         <h2 className="text-h3 text-fg mb-1">
-          {t(isSaleListing ? 'inmobiliaria.consignaciones.wizard.step5.titleSale' : 'inmobiliaria.consignaciones.wizard.step5.title')}
+          Inventario <span className="align-middle text-sm font-normal text-fg-muted">(opcional)</span>
         </h2>
         <p className="text-fg-muted">
-          {t(isSaleListing ? 'inmobiliaria.consignaciones.wizard.step5.subtitleSale' : 'inmobiliaria.consignaciones.wizard.step5.subtitle')}
+          Si ya lo tienes, anótalo; si no, sigue: lo completas cuando vayas a hacer el contrato y la entrega.
         </p>
       </div>
 
-      {/* Inventory Items — no acta de entrega on the sale path (T-0042) */}
-      {!isSaleListing && (
+      {sinPropietario ? (
+        <p className="rounded-lg border border-border bg-surface-muted p-3 text-sm text-fg-muted" data-testid="inventario-sin-propietario">
+          Queda guardado con el inmueble y pasa a la consignación cuando registres al propietario.
+        </p>
+      ) : null}
+
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium text-fg">
             {t('inmobiliaria.consignaciones.wizard.step5.inventoryTitle')}
           </h3>
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            hideArrow
-            onClick={addItem}
-          >
-            <Plus className="w-4 h-4" />
-            {t('inmobiliaria.consignaciones.wizard.step5.addItem')}
-          </Button>
+          {inventoryItems.length > 0 ? (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              hideArrow
+              onClick={addItem}
+            >
+              <Plus className="w-4 h-4" />
+              {t('inmobiliaria.consignaciones.wizard.step5.addItem')}
+            </Button>
+          ) : null}
         </div>
-
-        {/* QA con avatares (04-10): se podía seguir sin inventario y después
-            el contrato no se podía crear («El inmueble no tiene inventario»).
-            Se dice AQUÍ, antes de salir del asistente; no frena. */}
-        {inventarioConNombre.length === 0 && (
-          <p
-            role="note"
-            className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning-soft/40 p-3 text-sm text-fg"
-            data-testid="aviso-sin-inventario"
-          >
-            <WarningCircle className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden />
-            {t('inmobiliaria.consignaciones.wizard.step5.sinInventarioAviso')}
-          </p>
-        )}
 
         {inventoryItems.length > 0 ? (
           // Agregar o quitar un ítem: entra bajando apenas y el que se quita
@@ -1075,89 +1194,17 @@ export function StepActaEntrega({ formData, updateFormData, erroresDelServidor }
             ))}
           </Stagger>
         ) : (
-          <div className="p-8 text-center rounded-lg border border-dashed border-border bg-surface-muted">
-            <Package className="w-12 h-12 mx-auto mb-3 text-fg-subtle" />
-            <p className="text-fg-muted mb-3">
-              {t('inmobiliaria.consignaciones.wizard.step5.emptyInventory')}
-            </p>
-            <Button
-              type="button"
-              hideArrow
-              onClick={addItem}
-            >
-              <Plus className="w-4 h-4" />
-              {t('inmobiliaria.consignaciones.wizard.step5.addFirstItem')}
-            </Button>
-          </div>
-        )}
-      </div>
-      )}
-
-      {/* Property Photos — kept for both listing types; the ONLY content on
-          the sale path (T-0042). */}
-      <div className="space-y-2">
-        <h3 className="text-sm font-medium text-fg">
-          {t('inmobiliaria.consignaciones.wizard.step5.photosTitle')}
-        </h3>
-        <PropertyPhotoPicker
-          photos={formData.photos ?? []}
-          onChange={(photos) => updateFormData({ photos })}
-        />
-      </div>
-
-      {/* El video del inmueble (marketplace, 09-10-2026), el mismo campo de «Editar». */}
-      <div className="space-y-1.5">
-        <label htmlFor={idDelCampoDelAsistente('videoUrl')} className="block text-sm font-medium text-fg">
-          {t('inmobiliaria.consignaciones.editForm.videoUrl')}{' '}
-          <span className="font-normal text-fg-muted">{t('inmobiliaria.consignaciones.wizard.step5.optional')}</span>
-        </label>
-        <Input
-          id={idDelCampoDelAsistente('videoUrl')}
-          type="url"
-          inputMode="url"
-          value={formData.videoUrl ?? ''}
-          onChange={(e) => updateFormData({ videoUrl: e.target.value })}
-          placeholder="https://www.instagram.com/reel/…"
-          maxLength={LARGO_MAXIMO_DEL_ENLACE}
-          aria-invalid={errorDelVideo ? true : undefined}
-          aria-describedby={`${idDelCampoDelAsistente('videoUrl')}-${errorDelVideo ? 'error' : 'ayuda'}`}
-          className={cn('w-full', errorDelVideo && 'border-danger/30')}
-          data-testid="asistente-videoUrl"
-        />
-        {errorDelVideo ? (
-          <ErrorDelCampo id={`${idDelCampoDelAsistente('videoUrl')}-error`} mensaje={errorDelVideo} />
-        ) : (
-          <p id={`${idDelCampoDelAsistente("videoUrl")}-ayuda`} className="text-caption text-fg-muted">
-            {t('inmobiliaria.consignaciones.editForm.videoUrlHelper')}
-          </p>
+          <EmptyState
+            icon={Package}
+            ilustracion="inventario"
+            title="Sin inventario por ahora"
+            description="Es opcional en la captación. Si ya lo tienes, agrega los muebles y electrodomésticos que se entregan."
+            action={{ label: t('inmobiliaria.consignaciones.wizard.step5.addFirstItem'), onClick: addItem }}
+            className="rounded-lg border border-dashed border-border bg-surface-muted py-8"
+          />
         )}
       </div>
 
-      {/* 🔴 «Publicar en el marketplace» (Nico, 10-10-2026): encendido por defecto. */}
-      <div
-        className="flex items-start justify-between gap-4 rounded-lg border border-border bg-surface p-3"
-        data-testid="asistente-publicar-en-el-marketplace"
-      >
-        <div className="space-y-0.5">
-          <label htmlFor={idDelCampoDelAsistente('publicarEnElMarketplace')} className="block text-sm font-medium text-fg">
-            Publicar en el marketplace
-          </label>
-          <p className="text-caption text-fg-muted">
-            {formData.publicarEnElMarketplace === false
-              ? 'Queda en tu portafolio sin salir en el marketplace. Lo publicas cuando quieras desde Inmuebles.'
-              : 'Sale en el marketplace de Leasefy cuando esté disponible.'}
-          </p>
-        </div>
-        <Switch
-          id={idDelCampoDelAsistente('publicarEnElMarketplace')}
-          checked={formData.publicarEnElMarketplace !== false}
-          onCheckedChange={(v) => updateFormData({ publicarEnElMarketplace: v })}
-          aria-label="Publicar en el marketplace"
-        />
-      </div>
-
-      {/* General Notes — no acta de entrega on the sale path (T-0042) */}
-      {!isSaleListing && (
       <div className="space-y-1.5">
         <label htmlFor={idDelCampoDelAsistente('inventoryNotes')} className="block text-sm font-medium text-fg">
           {t('inmobiliaria.consignaciones.wizard.step5.generalNotes')}
@@ -1171,7 +1218,94 @@ export function StepActaEntrega({ formData, updateFormData, erroresDelServidor }
           className="w-full resize-none"
         />
       </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// «Publicar en el marketplace», en grande (Juan, 27-10-2026: «yo lo pondría más grande… algo más chimba»)
+// ============================================================================
+
+export function PublicarEnElMarketplace({ formData, updateFormData }: Pick<StepProps, 'formData' | 'updateFormData'>) {
+  const publicar = formData.publicarEnElMarketplace !== false;
+  const foto = formData.photos?.[0];
+  const [urlDeLaFoto, setUrlDeLaFoto] = useState<string | null>(null);
+  useEffect(() => {
+    if (!foto) {
+      setUrlDeLaFoto(null);
+      return;
+    }
+    const url = URL.createObjectURL(foto);
+    setUrlDeLaFoto(url);
+    return () => URL.revokeObjectURL(url);
+  }, [foto]);
+  const precio =
+    formData.listingType === 'sale'
+      ? formData.salePrice
+        ? formatCurrency(formData.salePrice)
+        : null
+      : formData.monthlyRent
+        ? `${formatCurrency(formData.monthlyRent)}/mes`
+        : null;
+
+  return (
+    <div
+      className={cn(
+        'relative overflow-hidden rounded-xl border p-5 transition-colors duration-base sm:p-6',
+        publicar ? 'border-primary/40 bg-primary-soft/50' : 'border-border bg-surface',
       )}
+      data-testid="asistente-publicar-en-el-marketplace"
+    >
+      <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-center">
+        {/* El celular con la tarjeta tal como se verá en el marketplace. */}
+        <div
+          aria-hidden="true"
+          className={cn(
+            'relative w-[150px] shrink-0 rounded-[26px] border-[5px] border-ink bg-ink p-1.5 shadow-lg transition-[opacity,filter] duration-base',
+            !publicar && 'opacity-50 grayscale',
+          )}
+        >
+          <div className="mx-auto mb-1.5 h-1.5 w-10 rounded-full bg-fg-subtle/40" />
+          <div className="overflow-hidden rounded-[16px] bg-surface">
+            <div className="flex items-center gap-1 px-2 py-1.5 text-[8px] font-medium text-fg-muted">
+              <span className="size-1.5 rounded-full bg-success" />
+              Marketplace · Leasefy
+            </div>
+            <div className="mx-1.5 overflow-hidden rounded-md bg-gradient-to-b from-[#EEEBE5] to-[#E2DED6]">
+              {urlDeLaFoto ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={urlDeLaFoto} alt="" className="h-[84px] w-full object-cover" />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={ilustracionDe(formData.propertyType)} alt="" className="mx-auto h-[84px] w-auto object-contain p-2" />
+              )}
+            </div>
+            <div className="space-y-0.5 px-2 pb-2.5 pt-1.5">
+              <p className="truncate text-[9px] font-semibold text-fg">{formData.propertyTitle || 'Tu inmueble'}</p>
+              <p className="truncate text-[8px] text-fg-muted">{formData.propertyCity || 'Ciudad'}</p>
+              <p className="truncate text-[9px] font-semibold text-primary">{precio ?? '$ —'}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="min-w-0 flex-1 text-center sm:text-left">
+          <p className="text-h4 font-semibold text-fg">Publicar en el marketplace de Leasefy</p>
+          <p className="mt-1 text-sm text-fg-muted">
+            {publicar
+              ? 'Apenas lo confirmes sale en el marketplace con tu nombre, y los interesados te escriben directo.'
+              : 'Queda en tu portafolio sin salir en el marketplace. Lo publicas cuando quieras desde Inmuebles.'}
+          </p>
+          <label className="mt-4 inline-flex cursor-pointer items-center gap-3" htmlFor={idDelCampoDelAsistente('publicarEnElMarketplace')}>
+            <Switch
+              id={idDelCampoDelAsistente('publicarEnElMarketplace')}
+              checked={publicar}
+              onCheckedChange={(v) => updateFormData({ publicarEnElMarketplace: v })}
+              aria-label="Publicar en el marketplace"
+            />
+            <span className="text-sm font-medium text-fg">{publicar ? 'Sí, publicarlo' : 'No por ahora'}</span>
+          </label>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1182,6 +1316,7 @@ export function StepActaEntrega({ formData, updateFormData, erroresDelServidor }
 
 export function StepConfirmation({
   formData,
+  updateFormData,
   propietarios,
   agentes,
   onGoToStep,
@@ -1202,6 +1337,8 @@ export function StepConfirmation({
   // T-0038 §3.2.4 — a SALE listing has no canon and no commission (no
   // Consignacion mandate is created for one, see ConsignacionWizard.tsx).
   const isSaleListing = formData.listingType === 'sale';
+  const arriendoYVenta = !isSaleListing && formData.tambienEnVenta === true;
+  const sinPropietario = !formData.propietarioId;
   const monthlyRent = formData.monthlyRent || 0;
   const commissionPercent = formData.commissionPercent ?? 10;
   const agencyCommission = Math.round(monthlyRent * (commissionPercent / 100));
@@ -1237,10 +1374,21 @@ export function StepConfirmation({
         </p>
       </div>
 
+      <PublicarEnElMarketplace formData={formData} updateFormData={updateFormData} />
+
       <div className="space-y-4">
         {/* Propietario Section */}
+        {sinPropietario ? (
+          <div className="p-4 rounded-lg border border-border bg-surface" data-testid="confirmar-sin-propietario">
+            <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.ownerSection')} step={PASO.propietario} />
+            <p className="font-medium text-fg">Sin propietario por ahora</p>
+            <p className="text-sm text-fg-muted">
+              Lo agregas cuando vayas a hacer el contrato. La comisión y el inventario quedan guardados con el inmueble.
+            </p>
+          </div>
+        ) : (
         <div className="p-4 rounded-lg border border-border bg-surface">
-          <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.ownerSection')} step={1} />
+          <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.ownerSection')} step={PASO.propietario} />
           <div className="flex items-center gap-3">
             <div className={cn(
               'w-10 h-10 rounded-md flex items-center justify-center',
@@ -1269,10 +1417,11 @@ export function StepConfirmation({
             </div>
           </div>
         </div>
+        )}
 
         {/* Property Section */}
         <div className="p-4 rounded-lg border border-border bg-surface">
-          <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.propertySection')} step={2} />
+          <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.propertySection')} step={PASO.inmueble} />
           <div className="flex items-start gap-3">
             <div className="w-10 h-10 rounded-md bg-success-soft flex items-center justify-center">
               {(() => {
@@ -1307,6 +1456,11 @@ export function StepConfirmation({
                         + {formatCurrency(formData.adminFee)} {t('inmobiliaria.consignaciones.wizard.step6.admin')}
                       </span>
                     )}
+                    {arriendoYVenta && formData.salePrice ? (
+                      <span className="text-sm text-fg-muted" data-testid="confirmar-tambien-en-venta">
+                        · En venta por {formatCurrency(formData.salePrice)}
+                      </span>
+                    ) : null}
                   </>
                 )}
               </div>
@@ -1319,7 +1473,7 @@ export function StepConfirmation({
             commission). No canon, no minimumTerm, no adminFee. */}
         {isSaleListing ? (
           <div className="p-4 rounded-lg border border-border bg-surface">
-            <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.termsSection')} step={3} />
+            <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.termsSection')} step={PASO.comision} />
             <div>
               <p className="text-caption text-fg-muted mb-1">{t('inmobiliaria.consignaciones.wizard.step6.saleCommission')}</p>
               <p className="font-medium text-fg">{formData.saleCommissionPercent ?? 0}%</p>
@@ -1327,8 +1481,14 @@ export function StepConfirmation({
           </div>
         ) : (
         <div className="p-4 rounded-lg border border-border bg-surface">
-          <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.termsSection')} step={3} />
+          <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.termsSection')} step={PASO.comision} />
           <div className="grid grid-cols-2 gap-4">
+            {arriendoYVenta ? (
+              <div className="col-span-2">
+                <p className="text-caption text-fg-muted mb-1">{t('inmobiliaria.consignaciones.wizard.step6.saleCommission')}</p>
+                <p className="font-medium text-fg">{formData.saleCommissionPercent ?? 3}%</p>
+              </div>
+            ) : null}
             <div>
               <p className="text-caption text-fg-muted mb-1">{t('inmobiliaria.consignaciones.wizard.step6.commission')}</p>
               <p className="font-medium text-fg">{commissionPercent}%</p>
@@ -1357,7 +1517,7 @@ export function StepConfirmation({
 
         {/* Agent Section */}
         <div className="p-4 rounded-lg border border-border bg-surface">
-          <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.agentSection')} step={4} />
+          <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.agentSection')} step={PASO.agente} />
           {agente ? (
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-fg-muted flex items-center justify-center text-primary-fg font-medium text-sm">
@@ -1379,7 +1539,7 @@ export function StepConfirmation({
             (T-0042, ledger.md §3), so there is no inventory to confirm here. */}
         {!isSaleListing && (
         <div className="p-4 rounded-lg border border-border bg-surface">
-          <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.inventorySection')} step={5} />
+          <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.inventorySection')} step={PASO.inventario} />
           {inventoryItems.length > 0 ? (
             <div className="space-y-2">
               <p className="text-sm text-fg-muted">

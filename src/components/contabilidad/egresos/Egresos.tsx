@@ -76,6 +76,9 @@ import {
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
 import { MasDetalles } from '@/components/pantalla/MasDetalles';
 import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden';
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/toast';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -89,6 +92,7 @@ import {
   NOMBRE_DEL_BENEFICIARIO,
   NOMBRE_DEL_ESTADO_DEL_LOTE,
   NOMBRE_DEL_ESTADO_DE_EGRESO,
+  ESTADOS_DE_EGRESO,
   NOMBRE_DEL_FORMATO,
   gastosApi,
   type ComprobanteDeEgreso,
@@ -284,6 +288,21 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
   const marcados = useMemo(
     () => armables.filter((e) => elegidos.has(e.id)),
     [armables, elegidos],
+  );
+
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Antes de las salidas de
+  // carga y fallo (es un hook); vale también para las tarjetas del celular. El estado ordena en el orden del
+  // recorrido (pendiente → en un lote → pagado → anulado), no alfabético.
+  const listaDeEgresos = useMemo(() => egresos ?? [], [egresos]);
+  const ordenDeEgresos = useOrdenDeLaTabla(
+    listaDeEgresos,
+    {
+      beneficiario: (e) => e.beneficiarioNombre,
+      concepto: (e) => e.concepto,
+      sePaga: (e) => e.netoCop,
+      estado: (e) => ESTADOS_DE_EGRESO.indexOf(e.estado),
+    },
+    { primero: { sePaga: 'desc' } },
   );
 
   const alternar = (id: string) =>
@@ -626,15 +645,29 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
           className="overflow-x-clip rounded-lg border border-border bg-surface"
         >
           <div className={cn('space-y-2 border-b border-border p-4 empty:hidden', sinNada && 'hidden')}>
-            <PestanasDeEstado
-              etiqueta="Egresos o lotes"
-              valor={parte}
-              onCambio={setParte}
-              pestanas={[
-                { valor: 'egresos', etiqueta: 'Egresos', cuantos: egresos.length, fija: true, testid: 'parte-egresos', tono: enCamino.porArmar.length > 0 ? 'aviso' : undefined },
-                { valor: 'lotes', etiqueta: 'Lotes', cuantos: lotes.length, fija: true, testid: 'parte-lotes', tono: enCamino.porAprobar.length > 0 ? 'aviso' : undefined },
-              ]}
-            />
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <PestanasDeEstado
+                etiqueta="Egresos o lotes"
+                valor={parte}
+                onCambio={setParte}
+                pestanas={[
+                  { valor: 'egresos', etiqueta: 'Egresos', cuantos: egresos.length, fija: true, testid: 'parte-egresos', tono: enCamino.porArmar.length > 0 ? 'aviso' : undefined },
+                  { valor: 'lotes', etiqueta: 'Lotes', cuantos: lotes.length, fija: true, testid: 'parte-lotes', tono: enCamino.porAprobar.length > 0 ? 'aviso' : undefined },
+                ]}
+              />
+              {parte === 'egresos' && egresos.length > 1 ? (
+                <SelectorDeOrden
+                  orden={ordenDeEgresos.orden}
+                  onCambiar={ordenDeEgresos.setOrden}
+                  className="w-full sm:w-56"
+                  formas={[
+                    { campo: 'estado', sentido: 'asc', etiqueta: 'Pendientes primero' },
+                    { campo: 'sePaga', sentido: 'desc', etiqueta: 'Se le paga más' },
+                    { campo: 'beneficiario', sentido: 'asc', etiqueta: 'Beneficiario (A–Z)' },
+                  ]}
+                />
+              ) : null}
+            </div>
             {/* 🔴 LA MISMA FRASE NO SE DICE DOS VECES (la distinción con el giro al propietario
                 vive acá, pegada a la tabla). GLOW UP 3.ª vuelta: plegada, porque se consulta. */}
             <MasDetalles
@@ -675,7 +708,7 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                  beneficiario, concepto, valor, estado y sus acciones— que abre
                  el mismo cajón; la casilla marca para el lote. */
               <ul className="divide-y divide-border" data-testid="tarjetas-de-egresos">
-                {egresos.map((e) => (
+                {ordenDeEgresos.ordenadas.map((e) => (
                   <li
                     key={e.id}
                     data-testid={`egreso-${e.id}`}
@@ -738,17 +771,17 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-10" />
-                      <TableHead>Beneficiario</TableHead>
-                      <TableHead>Concepto</TableHead>
+                      <EncabezadoOrdenable campo="beneficiario" orden={ordenDeEgresos.orden} onOrdenar={ordenDeEgresos.ordenarPor}>Beneficiario</EncabezadoOrdenable>
+                      <EncabezadoOrdenable campo="concepto" orden={ordenDeEgresos.orden} onOrdenar={ordenDeEgresos.ordenarPor}>Concepto</EncabezadoOrdenable>
                       {/* CB-07: una columna (el neto, y el valor debajo si hay
                           retenciones): con dos, la tabla no cabía a 1440. */}
-                      <TableHead className="text-right">Se le paga</TableHead>
-                      <TableHead>Estado</TableHead>
+                      <EncabezadoOrdenable campo="sePaga" orden={ordenDeEgresos.orden} onOrdenar={ordenDeEgresos.ordenarPor} className="text-right" alineacion="derecha">Se le paga</EncabezadoOrdenable>
+                      <EncabezadoOrdenable campo="estado" orden={ordenDeEgresos.orden} onOrdenar={ordenDeEgresos.ordenarPor}>Estado</EncabezadoOrdenable>
                       <TableHead>Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBodyAnimado>
-                    {egresos.map((e) => {
+                    {ordenDeEgresos.ordenadas.map((e) => {
                       const falta = faltaParaGirar(e);
                       return (
                         <TableRowAnimada

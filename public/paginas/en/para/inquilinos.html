@@ -32,7 +32,6 @@
   --exito:#2B7549;--exito-suave:#E3F1E8;--aviso:#9A6410;--aviso-dot:#D9911C;--aviso-suave:#FBF0DC;--peligro:#B8372A;--peligro-suave:#F8E4E1;
   --sombra-flotante:0 50px 90px -40px rgba(18,17,16,.35),0 22px 40px -22px rgba(18,17,16,.18);
   --sombra-tarjeta:0 30px 60px -30px rgba(18,17,16,.32),0 12px 24px -16px rgba(18,17,16,.14);
-  --estria-fondo:#FBFAF8;--estria-tinta:#1A40FF;--estria-oscuro:0;
   --av1:#E9EDFF;--av1-tx:#1A40FF;--av2:#FBEFE6;--av2-tx:#A2531D;--av3:#E6F2EC;--av3-tx:#2B7549;--av4:#F1E9FB;--av4-tx:#6B3FB0;
   --marco:#1C1C1E;--marco-filo:#3A3A3C;
   --f:"Host Grotesk",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -186,17 +185,19 @@ ul,ol{list-style:none}
 .p-mini b{display:block;font-family:var(--m);font-weight:400;font-size:22px;line-height:1.15;margin-top:4px}
 .p-tres .p-mini{text-align:center;padding:12px 6px}
 
-/* ── fotos en estrías de voltaje (se revelan a color) ── */
-.foto-estrias{position:relative;overflow:hidden;background:var(--piedra)}
-.foto-estrias img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.foto-estrias canvas{position:absolute;inset:0;width:100%;height:100%;transition:opacity .7s ease}
-.foto-estrias.revela:hover canvas,.foto-estrias.ver canvas{opacity:0}
-.foto-estrias.ver canvas{transition-delay:.25s}
+/* ── el duotono que florece (Nico 30-10: las estrías «parecen un bug»; el mismo del home): la foto llega en
+   medianoche, voltaje y papel y, al llegar a la pantalla o al pasarle el mouse, toma su color real ── */
+.foto-duo{position:relative;overflow:hidden;background:var(--piedra)}
+.foto-duo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.foto-duo .duo-tinta{z-index:1;filter:url(#duotono);transition:opacity 1.3s cubic-bezier(.16,1,.3,1) .35s}
+.foto-duo.duo-listo > img:not(.duo-tinta){scale:1.04;transition:scale 1.6s cubic-bezier(.16,1,.3,1) .35s}
+.foto-duo.ver .duo-tinta,.foto-duo.revela:hover .duo-tinta{opacity:0}
+.foto-duo.ver > img:not(.duo-tinta),.foto-duo.revela:hover > img{scale:1}
 .rotulo{position:absolute;left:14px;bottom:14px;z-index:3;height:30px;display:inline-flex;align-items:center;gap:8px;padding:0 12px;border-radius:10px;background:#fff;color:#121110;font-family:var(--m);font-size:13px;letter-spacing:.08em;text-transform:uppercase;max-width:calc(100% - 28px);overflow:hidden;white-space:nowrap;corner-shape:superellipse(1.5)}
 .rotulo::before{content:"";width:6px;height:6px;border-radius:2px;background:#1A40FF;flex:none}
 
-/* ── la corriente (PIX) ── */
-.corriente{position:absolute;display:block;pointer-events:none}
+/* ── los fondos sin puntos (Nico 30-10): la ola en papel y las curvas de nivel del home (js/02-campos.js) ── */
+.campo{position:absolute;display:block;pointer-events:none}
 .ciudad{position:relative;height:clamp(240px,30vw,420px);margin:0}
 .ciudad .rotulo{left:max(var(--gutter),env(safe-area-inset-left,0px));bottom:18px}
 
@@ -206,12 +207,11 @@ section{position:relative;overflow-x:clip}
 .arena{background:var(--arena)}
 .vista[hidden]{display:none!important}
 
-/* ── héroe claro con la corriente que enmarca ── */
+/* ── héroe claro: la tinta sube desde abajo y el texto queda sobre papel limpio ── */
 .heroe{position:relative;overflow:hidden;padding-bottom:clamp(24px,3vw,40px)}
 .heroe-top{position:relative;padding-top:clamp(56px,7vw,104px);padding-bottom:clamp(8px,2vw,24px)}
-.heroe-pix{left:0;top:0;width:100%;height:100%;z-index:0;opacity:.95;-webkit-mask-image:radial-gradient(ellipse 40% 46% at 50% 47%,transparent 0%,transparent 62%,#000 100%),linear-gradient(to bottom,#000 0%,#000 60%,transparent 100%);-webkit-mask-composite:source-in;mask-image:radial-gradient(ellipse 40% 46% at 50% 47%,transparent 0%,transparent 62%,#000 100%),linear-gradient(to bottom,#000 0%,#000 60%,transparent 100%);mask-composite:intersect}
-@media (max-width:899px){.heroe-pix{-webkit-mask-image:radial-gradient(ellipse 96% 62% at 50% 44%,transparent 0%,transparent 70%,#000 100%),linear-gradient(to bottom,#000 0%,#000 50%,transparent 100%);mask-image:radial-gradient(ellipse 96% 62% at 50% 44%,transparent 0%,transparent 70%,#000 100%),linear-gradient(to bottom,#000 0%,#000 50%,transparent 100%)}}
-.mov .heroe-pix{opacity:0}
+.heroe-campo{left:0;top:0;width:100%;height:100%;z-index:0;opacity:.95;-webkit-mask-image:linear-gradient(to bottom,#000 76%,transparent);mask-image:linear-gradient(to bottom,#000 76%,transparent)}
+.mov .heroe-campo{opacity:0}
 .heroe-txt{position:relative;z-index:2;text-align:center;max-width:1180px;margin:0 auto}
 .heroe h1{margin-top:24px;font-size:clamp(44px,6.2vw,96px)}
 .heroe .ceja{display:inline-block;max-width:100%;text-wrap:balance}
@@ -224,10 +224,10 @@ section{position:relative;overflow-x:clip}
 .cifras b{font-family:var(--m);font-weight:400;font-size:clamp(26px,2.6vw,38px);letter-spacing:-.02em;line-height:1.05;font-variant-numeric:tabular-nums}
 .cifras span{font-size:13.5px;color:var(--ceniza)}
 
-/* la escena: la foto de prod en estrías y, encima, la pieza del producto */
+/* la escena: la foto de prod en duotono y, encima, la pieza del producto */
 .escena{position:relative;max-width:1180px;margin:clamp(44px,5vw,72px) auto 0;z-index:2}
 .banda{position:relative;height:clamp(440px,41vw,580px);border-radius:32px;overflow:hidden;background:var(--piedra);corner-shape:superellipse(1.5)}
-.banda > .foto-estrias{position:absolute;inset:0}
+.banda > .foto-duo{position:absolute;inset:0}
 .banda .disp.celular{position:absolute;left:50%;top:56px;width:300px;margin-left:-150px;z-index:2}
 .banda .disp.laptop{position:absolute;left:50%;top:60px;width:min(800px,70%);transform:translateX(-50%);z-index:2}
 .flota{position:absolute;z-index:4}
@@ -268,7 +268,7 @@ section{position:relative;overflow-x:clip}
 .cab h2{margin-top:22px}
 .cab .lead{justify-self:start}
 .prob3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:clamp(44px,5vw,76px)}
-.pf .foto-estrias{aspect-ratio:4/3;border-radius:28px;corner-shape:superellipse(1.5)}
+.pf .foto-duo{aspect-ratio:4/3;border-radius:28px;corner-shape:superellipse(1.5)}
 .pf h3{font-size:24px;font-weight:420;letter-spacing:-.02em;line-height:1.2;margin-top:20px}
 .pf p{font-size:15.5px;color:var(--grafito);margin-top:6px;max-width:400px}
 .pf .cifra{display:block;font-family:var(--m);font-weight:400;font-size:clamp(38px,3.7vw,54px);letter-spacing:-.04em;line-height:1;margin-top:24px;font-variant-numeric:tabular-nums}
@@ -322,7 +322,7 @@ section{position:relative;overflow-x:clip}
 /* agentes: el bento de los cuatro problemas */
 .bento-p{display:grid;grid-template-columns:repeat(12,1fr);gap:20px;margin-top:clamp(44px,5vw,76px)}
 .bento-p .c7{grid-column:span 7}.bento-p .c5{grid-column:span 5}
-.bento-p .pf .foto-estrias{aspect-ratio:16/8}
+.bento-p .pf .foto-duo{aspect-ratio:16/8}
 .bento-p .tp.col{justify-content:center;gap:32px}
 .sindatos{display:flex;flex-direction:column;gap:12px}
 .sindatos div{display:flex;align-items:center;gap:12px;font-size:13.5px}
@@ -351,7 +351,7 @@ section{position:relative;overflow-x:clip}
 .mov .rayas-noche div:nth-child(4){animation:respira 6s ease-in-out infinite}
 @keyframes deriva{to{background-position:90px 0}}
 @keyframes respira{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
-.noche-pix{left:0;right:0;bottom:0;width:100%;height:42%;z-index:0;opacity:.8;-webkit-mask-image:linear-gradient(to top,#000 0%,rgba(0,0,0,.6) 40%,transparent 95%);mask-image:linear-gradient(to top,#000 0%,rgba(0,0,0,.6) 40%,transparent 95%)}
+.noche-campo{left:0;right:0;bottom:0;width:100%;height:42%;z-index:0;opacity:.8;-webkit-mask-image:linear-gradient(to top,#000 0%,rgba(0,0,0,.6) 40%,transparent 95%);mask-image:linear-gradient(to top,#000 0%,rgba(0,0,0,.6) 40%,transparent 95%)}
 .bento{display:grid;grid-template-columns:repeat(12,1fr);gap:16px;margin-top:clamp(44px,5vw,76px)}
 .bento .c7{grid-column:span 7}.bento .c5{grid-column:span 5}.bento .c6{grid-column:span 6}
 .nc{position:relative;display:flex;gap:24px;padding:28px;background:var(--noche-sup);border-radius:30px;box-shadow:0 0 0 1px var(--noche-filete);corner-shape:superellipse(1.5);min-width:0}
@@ -417,10 +417,10 @@ section{position:relative;overflow-x:clip}
 .bento .c4{grid-column:span 4}.bento .c12{grid-column:span 12}
 .nc.con-foto{flex-direction:column;padding:12px 12px 28px}
 .nc.con-foto.horiz{flex-direction:row;align-items:stretch;padding:12px}
-.nc.con-foto.horiz .foto-estrias{flex:0 0 58%;aspect-ratio:auto;min-height:340px}
+.nc.con-foto.horiz .foto-duo{flex:0 0 58%;aspect-ratio:auto;min-height:340px}
 .nc.con-foto.horiz .tx{padding:28px 28px 20px 20px;justify-content:center}
 .nc.con-foto.horiz .tx .chips{margin-top:0;padding-top:22px}
-.nc.con-foto .foto-estrias{aspect-ratio:16/8;border-radius:22px;corner-shape:superellipse(1.5)}
+.nc.con-foto .foto-duo{aspect-ratio:16/8;border-radius:22px;corner-shape:superellipse(1.5)}
 .nc.con-foto .tx{padding:20px 16px 0}
 
 
@@ -454,7 +454,7 @@ section{position:relative;overflow-x:clip}
 .confia{display:flex;justify-content:center;flex-wrap:wrap;gap:12px 28px;margin-top:28px;font-size:15px;color:var(--grafito)}
 .confia li{display:inline-flex;align-items:center;gap:9px}
 .confia li i{width:7px;height:7px;border-radius:2px;background:var(--voltaje-dot)}
-.fin-pix{left:0;right:0;bottom:0;width:100%;height:42%;z-index:0;-webkit-mask-image:linear-gradient(to top,#000 0%,rgba(0,0,0,.8) 30%,transparent 92%);mask-image:linear-gradient(to top,#000 0%,rgba(0,0,0,.8) 30%,transparent 92%)}
+.fin-campo{left:0;right:0;bottom:0;width:100%;height:42%;z-index:0;-webkit-mask-image:linear-gradient(to top,#000 0%,rgba(0,0,0,.8) 30%,transparent 92%);mask-image:linear-gradient(to top,#000 0%,rgba(0,0,0,.8) 30%,transparent 92%)}
 
 /* ── pie (el de la landing) ── */
 .pie{border-top:1px solid var(--filete);padding:64px 0 28px;background:var(--bg)}
@@ -497,7 +497,7 @@ section{position:relative;overflow-x:clip}
 @media (max-width:1000px){
   .bento .c7,.bento .c5,.bento .c6,.bento .c4{grid-column:span 12}
   .nc.con-foto.horiz{flex-direction:column;padding:12px 12px 28px}
-  .nc.con-foto.horiz .foto-estrias{flex:none;aspect-ratio:16/9;min-height:0}
+  .nc.con-foto.horiz .foto-duo{flex:none;aspect-ratio:16/9;min-height:0}
   .nc.con-foto.horiz .tx{padding:20px 16px 0}
   .escena-cel .flota.lado{display:none}
 }
@@ -534,7 +534,7 @@ section{position:relative;overflow-x:clip}
   .faq-r p{padding-right:0}
 }
 @media (max-width:420px){.nota-f{white-space:normal}.escala b{font-size:26px}}
-.quieto .heroe-pix{opacity:.95}
+.quieto .heroe-campo{opacity:.95}
 
 /* ── Entre secciones de la landing (Nico 27-10: «NO QUIERO INTERACCIONES TOSCAS ENTRE SECCIONES»): la barra
    queda quieta (la misma en todas las páginas) y el contenido sale hacia arriba y entra subiendo. Las páginas
@@ -640,6 +640,11 @@ section{position:relative;overflow-x:clip}
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <defs>
+  <!-- el duotono que florece (el del home): medianoche, voltaje y papel -->
+  <filter id="duotono" color-interpolation-filters="sRGB">
+    <feColorMatrix type="matrix" values=".3 .59 .11 0 0  .3 .59 .11 0 0  .3 .59 .11 0 0  0 0 0 1 0"></feColorMatrix>
+    <feComponentTransfer><feFuncR type="table" tableValues="0.039 0.102 0.984"></feFuncR><feFuncG type="table" tableValues="0.059 0.251 0.980"></feFuncG><feFuncB type="table" tableValues="0.173 1 0.973"></feFuncB></feComponentTransfer>
+  </filter>
     <g id="lfLogo"><path d="M8.58904 186C1.58904 186 -2.41096 178 1.58904 171L55.589 83C60.589 75 68.589 71 78.589 71H117.589C129.589 71 137.589 76 143.589 87L162.589 124C165.589 129 169.589 131 176.589 131H203.589C212.589 131 218.589 135 222.589 143L237.589 171C241.589 179 236.589 186 227.589 186H190.589C182.589 186 176.589 182 172.589 174L143.589 123C140.589 118 135.589 115 129.589 115H109.589C103.589 115 98.589 118 95.589 123L66.589 175C62.589 182 56.589 186 48.589 186H8.58904Z"></path><path d="M276.62 65.3H315.04V77.54H276.62V65.3ZM307.73 157.95V65.3H322.18V156.42C322.18 162.54 323.37 166.847 325.75 169.34C328.243 171.833 332.267 173.193 337.82 173.42L356.35 174.61L355.5 187.19L335.27 186C328.47 185.547 323.03 184.413 318.95 182.6C314.983 180.787 312.093 177.897 310.28 173.93C308.58 169.963 307.73 164.637 307.73 157.95ZM423.204 175.29L439.524 175.8L439.014 187.19L418.954 186.85C403.654 186.623 392.547 183.11 385.634 176.31C378.72 169.51 375.264 159.99 375.264 147.75C375.264 139.363 377.02 131.94 380.534 125.48C384.16 118.907 389.034 113.75 395.154 110.01C401.387 106.27 408.47 104.4 416.404 104.4C424.11 104.4 430.797 105.987 436.464 109.16C442.13 112.22 446.494 116.81 449.554 122.93C452.727 128.937 454.314 136.473 454.314 145.54C454.314 146.787 454.257 147.92 454.144 148.94C454.03 149.96 453.917 150.867 453.804 151.66H382.574V140.78H445.984L440.034 144.86C440.034 134.66 437.88 127.293 433.574 122.76C429.267 118.227 423.544 115.96 416.404 115.96C411.417 115.96 406.884 117.207 402.804 119.7C398.837 122.08 395.607 125.593 393.114 130.24C390.734 134.887 389.544 140.553 389.544 147.24C389.544 153.473 390.677 158.63 392.944 162.71C395.21 166.79 398.837 169.85 403.824 171.89C408.81 173.93 415.27 175.063 423.204 175.29ZM497.028 175.8C500.088 175.8 503.091 175.403 506.038 174.61C509.098 173.703 512.498 172.23 516.238 170.19C519.978 168.037 524.284 165.09 529.158 161.35L527.798 174.78H526.268C521.281 178.86 516.124 181.977 510.798 184.13C505.584 186.17 499.918 187.19 493.798 187.19C486.771 187.19 480.991 185.263 476.458 181.41C472.038 177.557 469.828 172.003 469.828 164.75C469.828 159.65 470.678 155.457 472.378 152.17C474.191 148.883 477.138 146.333 481.218 144.52C485.298 142.593 490.851 141.233 497.878 140.44L531.198 136.53V146.05L500.428 150.13C496.008 150.697 492.608 151.603 490.228 152.85C487.848 154.097 486.261 155.627 485.468 157.44C484.674 159.253 484.278 161.35 484.278 163.73C484.278 167.583 485.298 170.587 487.338 172.74C489.491 174.78 492.721 175.8 497.028 175.8ZM541.568 166.11C541.568 169.51 542.021 171.777 542.928 172.91C543.834 174.043 545.704 174.723 548.538 174.95L556.188 175.46L555.168 186.68L547.178 186.34C541.398 186 536.978 184.98 533.918 183.28C530.971 181.467 528.931 178.633 527.798 174.78L527.288 170.87V131.09C527.288 127.69 526.721 125.027 525.588 123.1C524.454 121.173 522.358 119.757 519.298 118.85C516.351 117.943 512.101 117.49 506.548 117.49C503.374 117.49 499.294 117.773 494.308 118.34C489.434 118.793 484.164 119.473 478.498 120.38L476.968 108.65C482.974 107.63 488.584 106.893 493.798 106.44C499.011 105.873 503.431 105.59 507.058 105.59C515.898 105.59 522.811 106.497 527.798 108.31C532.784 110.123 536.298 112.9 538.338 116.64C540.491 120.38 541.568 125.31 541.568 131.43V166.11ZM643.101 163.9C643.101 168.433 641.741 172.513 639.021 176.14C636.301 179.767 631.995 182.713 626.101 184.98C620.321 187.133 612.841 188.21 603.661 188.21C598.675 188.21 593.518 187.927 588.191 187.36C582.865 186.907 576.915 186.057 570.341 184.81L572.551 172.4C578.558 173.647 584.338 174.61 589.891 175.29C595.558 175.857 600.205 176.14 603.831 176.14C613.238 176.14 619.641 175.12 623.041 173.08C626.555 170.927 628.311 168.207 628.311 164.92C628.311 162.2 627.348 159.99 625.421 158.29C623.495 156.477 619.415 154.833 613.181 153.36L598.391 149.96C591.138 148.147 585.641 146.22 581.901 144.18C578.161 142.14 575.611 139.76 574.251 137.04C573.005 134.207 572.381 130.977 572.381 127.35C572.381 120.777 575.328 115.393 581.221 111.2C587.115 106.893 596.861 104.74 610.461 104.74C614.201 104.74 618.735 105.023 624.061 105.59C629.501 106.157 634.771 106.893 639.871 107.8L637.831 120.21C632.505 118.963 627.405 118.057 622.531 117.49C617.771 116.923 613.691 116.64 610.291 116.64C604.285 116.64 599.581 117.093 596.181 118C592.895 118.793 590.571 119.927 589.211 121.4C587.965 122.76 587.341 124.347 587.341 126.16C587.341 127.86 587.681 129.39 588.361 130.75C589.155 131.997 590.628 133.13 592.781 134.15C594.935 135.17 598.108 136.247 602.301 137.38L616.921 140.78C624.175 142.48 629.671 144.407 633.411 146.56C637.151 148.6 639.701 151.037 641.061 153.87C642.421 156.703 643.101 160.047 643.101 163.9ZM710.975 175.29L727.295 175.8L726.785 187.19L706.725 186.85C691.425 186.623 680.318 183.11 673.405 176.31C666.492 169.51 663.035 159.99 663.035 147.75C663.035 139.363 664.792 131.94 668.305 125.48C671.932 118.907 676.805 113.75 682.925 110.01C689.158 106.27 696.242 104.4 704.175 104.4C711.882 104.4 718.568 105.987 724.235 109.16C729.902 112.22 734.265 116.81 737.325 122.93C740.498 128.937 742.085 136.473 742.085 145.54C742.085 146.787 742.028 147.92 741.915 148.94C741.802 149.96 741.688 150.867 741.575 151.66H670.345V140.78H733.755L727.805 144.86C727.805 134.66 725.652 127.293 721.345 122.76C717.038 118.227 711.315 115.96 704.175 115.96C699.188 115.96 694.655 117.207 690.575 119.7C686.608 122.08 683.378 125.593 680.885 130.24C678.505 134.887 677.315 140.553 677.315 147.24C677.315 153.473 678.448 158.63 680.715 162.71C682.982 166.79 686.608 169.85 691.595 171.89C696.582 173.93 703.042 175.063 710.975 175.29ZM758.959 120.04V107.8H833.079V120.04H758.959ZM785.649 96.92C785.649 89.5533 786.612 83.66 788.539 79.24C790.579 74.82 793.922 71.4767 798.569 69.21C803.216 66.9433 809.392 65.5833 817.099 65.13L838.859 63.77L839.879 76.18L818.629 77.71C811.376 78.1633 806.446 79.8633 803.839 82.81C801.232 85.6433 799.929 90.1767 799.929 96.41V113.41H800.099V186H785.649V113.41V96.92ZM851.823 106.95H868.143L898.233 180.9L895.683 194.33H889.053L851.823 106.95ZM895.003 206.91C893.076 211.557 890.866 215.127 888.373 217.62C885.993 220.113 883.159 221.87 879.873 222.89C876.699 223.91 873.016 224.59 868.823 224.93L850.123 225.78L849.783 213.37L865.763 212.52C868.936 212.407 871.486 212.01 873.413 211.33C875.453 210.763 877.039 209.857 878.173 208.61C879.419 207.363 880.553 205.663 881.573 203.51L891.433 181.58H892.113L921.863 106.95H937.333L895.003 206.91Z"></path></g>
     <pattern id="rayasPie" width="9" height="9" patternUnits="userSpaceOnUse"><rect width="3.5" height="9" fill="#1A40FF"></rect></pattern>
     <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11l8-6 8 6v8a1 1 0 0 1-1 1h-4v-5H9v5H5a1 1 0 0 1-1-1z"></path></symbol>
@@ -752,7 +757,7 @@ section{position:relative;overflow-x:clip}
 <div class="vista" data-vista="inquilinos">
   <section class="heroe">
     <div class="heroe-top">
-      <canvas class="corriente heroe-pix" data-corriente="papel" data-raton="" data-marco="" data-semilla="31" data-celda="3" data-fuerza=".95" aria-hidden="true"></canvas>
+      <canvas class="campo heroe-campo" data-campo="ola" data-interactivo="" aria-hidden="true"></canvas>
       <div class="wrap heroe-txt">
         <p class="ceja" data-r=""><i></i>Verified properties</p>
         <h1 class="t-xl" data-palabras="">Find your home <span class="acento">stress-free</span></h1>
@@ -765,7 +770,7 @@ section{position:relative;overflow-x:clip}
       <div class="escena escena-cel" data-r="">
         <div class="tres-d" data-px="-40"><img src="/internas/para/img/lupa_estudio-voltaje.webp" alt="" width="640" height="640" loading="lazy"></div>
         <div class="banda">
-          <figure class="foto-estrias revela" data-paso="8"><img src="/internas/para/img/fotos/hero-2.webp" alt="Interior of a modern apartment"><canvas aria-hidden="true"></canvas></figure>
+          <figure class="foto-duo revela"><img src="/internas/para/img/fotos/hero-2.webp" alt="Interior of a modern apartment"></figure>
           <div class="disp celular" role="img" aria-label="What the tenant sees in Leasefy: her 60-day Rental Pass, her applications and her favorites">
             <div class="marco"><span class="isla"></span>
               <div class="pantalla" data-w="390" data-h="844" aria-hidden="true">
@@ -793,9 +798,9 @@ section{position:relative;overflow-x:clip}
         <p class="lead" data-r="">Scams, unexplained rejections, endless processes. The current system isn't on your side.</p>
       </div>
       <div class="prob3">
-        <article class="pf" data-r=""><figure class="foto-estrias revela"><img src="/internas/para/img/fotos/hero-7.webp" alt="Modern interior" loading="lazy"><canvas aria-hidden="true"></canvas><figcaption class="rotulo">Scams</figcaption></figure><b class="cifra">8 in 10</b><p class="det"><i></i>have seen fake listings</p><p>Stolen photos, unrealistic prices, properties that don't exist</p></article>
-        <article class="pf" data-r=""><figure class="foto-estrias revela"><img src="/internas/para/img/fotos/hero-4.webp" alt="Modern space" loading="lazy"><canvas aria-hidden="true"></canvas><figcaption class="rotulo">Rejections</figcaption></figure><b class="cifra">3 times</b><p class="det"><i></i>rejected without explanation</p><p>Subjective criteria and biases nobody explains</p></article>
-        <article class="pf" data-r=""><figure class="foto-estrias revela"><img src="/internas/para/img/fotos/hero-6.webp" alt="Modern bedroom" loading="lazy"><canvas aria-hidden="true"></canvas><figcaption class="rotulo">Time</figcaption></figure><b class="cifra">47 days</b><p class="det"><i></i>average to find one</p><p>Documents, viewings, endless negotiations</p></article>
+        <article class="pf" data-r=""><figure class="foto-duo revela"><img src="/internas/para/img/fotos/hero-7.webp" alt="Modern interior" loading="lazy"><figcaption class="rotulo">Scams</figcaption></figure><b class="cifra">8 in 10</b><p class="det"><i></i>have seen fake listings</p><p>Stolen photos, unrealistic prices, properties that don't exist</p></article>
+        <article class="pf" data-r=""><figure class="foto-duo revela"><img src="/internas/para/img/fotos/hero-4.webp" alt="Modern space" loading="lazy"><figcaption class="rotulo">Rejections</figcaption></figure><b class="cifra">3 times</b><p class="det"><i></i>rejected without explanation</p><p>Subjective criteria and biases nobody explains</p></article>
+        <article class="pf" data-r=""><figure class="foto-duo revela"><img src="/internas/para/img/fotos/hero-6.webp" alt="Modern bedroom" loading="lazy"><figcaption class="rotulo">Time</figcaption></figure><b class="cifra">47 days</b><p class="det"><i></i>average to find one</p><p>Documents, viewings, endless negotiations</p></article>
       </div>
       <div class="prob2">
         <article class="tarjeta tp" data-r="">
@@ -819,7 +824,7 @@ section{position:relative;overflow-x:clip}
 
   <section class="sec noche">
     <div class="rayas-noche" aria-hidden="true" data-motivo="rings"></div>
-    <canvas class="corriente noche-pix" data-corriente="negro" data-forma="horizonte" data-semilla="37" data-celda="3" data-fuerza=".5" aria-hidden="true"></canvas>
+    <canvas class="campo noche-campo" data-campo="curvas" aria-hidden="true"></canvas>
     <div class="wrap">
       <div class="cab">
         <div><p class="ceja"><i></i>The platform</p><h2 class="t-l" data-palabras="">Everything designed to <span class="acento">find your home</span></h2></div>
@@ -830,7 +835,7 @@ section{position:relative;overflow-x:clip}
         <article class="nc c4" data-r=""><div class="tx"><span class="ico"><svg class="ic"><use href="#i-check"></use></svg></span><h3>Rental Pass</h3><p>Pay once, apply without limits for 60 days. No resubmitting documents.</p><ul class="chips"><li>Unlimited applications</li><li>60 days</li><li>No resubmitting docs</li></ul></div></article>
         <article class="nc c4" data-r=""><div class="tx"><span class="ico"><svg class="ic"><use href="#i-shield"></use></svg></span><h3>100% verified</h3><p>Every property verified. Real photos, real prices, zero scams.</p><ul class="chips"><li>Verified photos</li><li>Real viewings</li><li>Zero scams</li></ul></div></article>
         <article class="nc c12 con-foto horiz" data-r="">
-          <figure class="foto-estrias revela" data-tono="noche"><img src="/internas/para/img/fotos/hero-7.webp" alt="Modern space" loading="lazy"><canvas aria-hidden="true"></canvas><figcaption class="rotulo">Digital leases</figcaption></figure>
+          <figure class="foto-duo revela" data-tono="noche"><img src="/internas/para/img/fotos/hero-7.webp" alt="Modern space" loading="lazy"><figcaption class="rotulo">Digital leases</figcaption></figure>
           <div class="tx"><h3>Digital leases</h3><p>Sign from your phone, legally valid. You know exactly what you're signing, no fine print.</p><ul class="chips"><li>E-signature</li><li>Law 820</li><li>100% legal</li></ul></div>
         </article>
       </div>
@@ -861,10 +866,10 @@ section{position:relative;overflow-x:clip}
   </div>
 </section>
 
-<div id="ciudad"><figure class="ciudad foto-estrias revela" data-paso="8"><img src="/internas/para/img/fotos/medellin-valle.webp" alt="The Medellín valley by day" loading="lazy"><canvas aria-hidden="true"></canvas><figcaption class="rotulo">Medellín · Envigado · Sabaneta · Itagüí · Bello</figcaption></figure></div>
+<div id="ciudad"><figure class="ciudad foto-duo revela"><img src="/internas/para/img/fotos/medellin-valle.webp" alt="The Medellín valley by day" loading="lazy"><figcaption class="rotulo">Medellín · Envigado · Sabaneta · Itagüí · Bello</figcaption></figure></div>
 
 <section class="cierre" id="cierre">
-  <canvas class="corriente fin-pix" data-corriente="papel" data-forma="horizonte" data-semilla="11" data-celda="4" data-velocidad="1.6" data-fuerza=".72" aria-hidden="true"></canvas>
+  <canvas class="campo fin-campo" data-campo="ola" aria-hidden="true"></canvas>
   <div class="wrap">
     <p class="ceja" data-r=""><i></i>Start today</p>
     <h2 class="t-xl" data-palabras="">Manage more <span class="acento">with less effort</span></h2>
@@ -896,7 +901,7 @@ section{position:relative;overflow-x:clip}
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/motion@12.23.12/dist/motion.js"></script>
 <script src="/internas/para/js/01-piezas.js"></script>
-<script src="/internas/para/js/02-corriente.js"></script>
+<script src="/internas/para/js/02-campos.js"></script>
 <script src="/internas/para/js/03-pagina.js"></script>
 <script src="/internas/para/js/04-marca-del-pie.js"></script>
 <script src="/internas/para/js/05-botones.js"></script>

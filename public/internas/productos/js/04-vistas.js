@@ -44,7 +44,7 @@
     return '<div class="shead shead--' + tipo + '"><div><p class="ceja"><i aria-hidden="true"></i>' + ceja + '</p><h2 class="t-l" data-palabras>' + titulo + '</h2></div><p class="lead" data-r>' + lede + '</p></div>';
   }
   function cierre(prompt) {
-    return '<section class="contacto" id="demo"><canvas class="corriente fin-pix" data-corriente data-forma="horizonte" data-semilla="41" data-celda="4" data-velocidad="1.6" data-fuerza=".72" aria-hidden="true"></canvas>' +
+    return '<section class="contacto" id="demo"><canvas class="campo fin-campo" data-campo="ola" aria-hidden="true"></canvas>' +
       '<div class="wrap"><p class="ceja"><i aria-hidden="true"></i>Demo</p><h2 class="t-xl" data-palabras>Pon tu operación en <span class="acento">piloto automático</span> y dedícate a traer clientes.</h2>' +
       (prompt ? '<p class="lead" data-r>' + prompt + '</p>' : "") + '<div class="fin-cta" data-r>' + ctas(true) + '</div></div></section>';
   }
@@ -61,9 +61,8 @@
 
   /* ── la interna de un producto: portada → por qué importa → capacidades → ficha → puesta en marcha → noche → demo ── */
   function htmlProducto(p, slug) {
-    var semilla = ORDEN.indexOf(slug) * 7 + 3;
     var h = "";
-    h += '<section class="hero" id="arriba"><canvas class="corriente hero-pix" data-corriente data-marco data-claro=".37" data-semilla="' + semilla + '" data-celda="3" data-fuerza="1.1" aria-hidden="true"></canvas>' +
+    h += '<section class="hero" id="arriba"><canvas class="campo hero-campo" data-campo="ola" data-interactivo aria-hidden="true"></canvas>' +
       '<div class="wrap"><div class="hero-txt"><p class="boleto"><i aria-hidden="true"></i><span>' + p.eyebrow + '</span><b>' + p.badge + '</b></p>' +
       '<h1 class="t-xl" data-palabras>' + p.h1 + '</h1><p class="lead" data-r>' + p.lead + '</p><div class="hero-cta" data-r>' + ctas() + '</div></div>' +
       '<div class="hero-escena">' + laptop('<div class="capa" id="heroCapa"><img class="on" src="' + img(p.portada) + '" alt="' + ALT[p.portada] + '" width="2400" height="1500" fetchpriority="high"></div><span class="pin" id="pin" aria-hidden="true"></span><span class="nota-chip" id="notaChip" aria-hidden="true"></span>', "dispHero") +
@@ -112,7 +111,7 @@
   }
   function htmlIndice() {
     var sis = ORDEN.filter(function (s) { return PROD[s].grupo === "sistema"; }), ags = ORDEN.filter(function (s) { return PROD[s].grupo === "agentes"; });
-    return '<section class="hero hero-ind" id="arriba"><canvas class="corriente hero-pix" data-corriente data-marco data-claro=".44" data-radio="1.3" data-semilla="11" data-celda="3" data-fuerza="1" aria-hidden="true"></canvas>' +
+    return '<section class="hero hero-ind" id="arriba"><canvas class="campo hero-campo" data-campo="ola" data-interactivo aria-hidden="true"></canvas>' +
       '<div class="wrap"><div class="hero-txt"><p class="boleto"><i aria-hidden="true"></i><span>Producto</span><b>CRM · ERP · Agentes AI</b></p>' +
       '<h1 class="t-xl" data-palabras>El sistema operativo <span class="acento">inteligente</span> para inmobiliarias</h1>' +
       '<p class="lead" data-r>CRM, ERP y agentes AI para operar arriendos de punta a punta.</p><div class="hero-cta" data-r>' + ctas() + '</div></div></div></section>' +
@@ -269,7 +268,7 @@
   /* ── montar una vista ── */
   function montar() {
     $$("[data-motivo]", main).forEach(LF.motivo);
-    LF.corriente.montarEn(main);
+    LF.campos.montarEn(main);
     var titulos = $$("[data-palabras]", main).map(function (el) { var w = LF.partir(el); el.style.visibility = "visible"; return { el: el, w: w }; });
     gestos(main);
     videos();
@@ -287,7 +286,7 @@
     if (resto.length) ScrollTrigger.batch(resto, { start: "top 92%", once: true, onEnter: function (b) { gsap.to(b, { opacity: 1, y: 0, duration: .9, ease: "expo.out", stagger: .08, overwrite: "auto" }); } });
     gsap.to($$(".hero [data-r]", main), { opacity: 1, y: 0, duration: 1, ease: "expo.out", stagger: .1, delay: .55 });
     gsap.from($$(".hero .boleto", main), { opacity: 0, y: 14, duration: .8, ease: "expo.out", delay: .05 });
-    gsap.to($$(".hero-pix", main), { opacity: 1, duration: 2.2, ease: "power2.out", delay: .3 });
+    gsap.to($$(".hero-campo", main), { opacity: 1, duration: 2.2, ease: "power2.out", delay: .3 });
 
     /* la portada entra inclinada y se aplana al bajar, como quien pone la pantalla sobre la mesa */
     var dh = $("#dispHero");
@@ -311,7 +310,7 @@
           onUpdate: function (s) { lis.forEach(function (li, i) { li.classList.toggle("on", s.progress >= umbral[i]); }); } }
       }));
     }
-    var fp = $(".fin-pix", main);
+    var fp = $(".fin-campo", main);
     if (fp) gsap.to(fp, { opacity: 1, y: 0, ease: "none", scrollTrigger: { trigger: fp.closest("section"), start: "top 85%", end: "top 25%", scrub: .6 } });
 
     var t = 0, rehacer = function () { clearTimeout(t); t = setTimeout(function () { ScrollTrigger.refresh(); }, 220); };
@@ -322,7 +321,7 @@
     limpieza.forEach(function (f) { try { f(); } catch (e) {} }); limpieza = [];
     if (MOV) { ScrollTrigger.getAll().forEach(function (t) { t.kill(); }); gsap.killTweensOf(main.querySelectorAll("*")); }
     main.innerHTML = "";
-    LF.corriente.podar();
+    LF.campos.podar();
   }
 
   /* ── el enrutador (Ronda 30): la RUTA del front dice la vista — /productos es el índice y

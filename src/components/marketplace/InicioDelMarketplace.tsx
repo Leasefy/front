@@ -8,7 +8,7 @@ import { motionDuration, motionEase, motionStagger, Stagger, StaggerItem } from 
 import { Buildings, House, MagnifyingGlass, MapTrifold } from '@phosphor-icons/react';
 
 import { OrbeDeAgente } from '@/components/agentes/OrbeDeAgente';
-import { CorrienteDeVoltaje } from '@/components/landing-v2/CorrienteDeVoltaje';
+import { OlaEnPapel } from '@/components/landing-v2/CamposDeLaMarca';
 import { PropertyCard } from '@/components/property/PropertyCard';
 import { primeraFoto } from '@/components/property/PortadaDelInmueble';
 import { useProperties } from '@/lib/hooks/useProperties';
@@ -145,19 +145,16 @@ export function InicioDelMarketplace() {
           {/* «Conversación · Galería» también en la entrada (Nico, 09-10: «¿dónde está lo de galería y chat?»). */}
           <InterruptorDeVista vista="conversacion" hrefConversacion="/propiedades" hrefGaleria="/propiedades?vista=lista" />
           <div className="relative mx-auto w-full max-w-[1440px]">
-            {/* ── La llegada (Ronda 30, diseño nuevo): la corriente de voltaje llena toda la llegada y se
-                apaga arriba y abajo; la pregunta queda sobre papel limpio. Sólo en claro. ── */}
+            {/* ── La llegada: la ola en papel del home (Nico 30-10: «el marketplace todavía tiene cosas de dots»).
+                La tinta sube desde abajo y la pregunta queda sobre papel limpio; por donde pasa el cursor nacen
+                ondas finas. Se apaga abajo, sobre la página. Sólo en claro. ── */}
             <section
               className="llegada-grises relative px-4 pb-14 pt-[clamp(44px,7vw,92px)] text-center"
               aria-labelledby="titulo-de-la-llegada"
             >
-              <CorrienteDeVoltaje
-                className="absolute inset-0 h-full w-full [mask-image:linear-gradient(to_bottom,transparent_0%,#000_30%,#000_74%,transparent_100%)] dark:hidden"
-                forma="corrientes"
-                marco
-                celda={3}
-                fuerza={1.05}
-                semilla={11}
+              <OlaEnPapel
+                className="absolute inset-0 h-full w-full [mask-image:linear-gradient(to_bottom,#000_76%,transparent_100%)] dark:hidden"
+                interactivo
               />
               <div className="relative z-[1] mx-auto flex max-w-[900px] flex-col items-center">
                 <motion.div {...entrada(0)}>

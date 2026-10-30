@@ -4,7 +4,7 @@ import { useEffect, type ReactNode } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
-import { FotoEnEstrias, motionDuration, motionEase } from '@leasefy/cadence';
+import { motionDuration, motionEase } from '@leasefy/cadence';
 import {
   Check,
   ChatCircleDots,
@@ -21,6 +21,7 @@ import {
 } from '@phosphor-icons/react';
 
 import { iniciales } from '@/components/property/AdministradoPor';
+import { TintaDelDuotono } from '@/components/landing-v2/TintaDelDuotono';
 import { usePortadaDelVideo } from '@/lib/marketplace/use-portada-del-video';
 import {
   paginaDe,
@@ -469,8 +470,9 @@ export function TarjetaDeOpinion({ o }: { o: OpinionPublica }) {
 
 /** La tarjeta de «Inmobiliarias en Leasefy»: portada, logo, sello, zonas, Pregúntale y Seguir. */
 export function TarjetaDeInmobiliaria({ t }: { t: TarjetaDeInmobiliaria }) {
-  // Ronda 30 (diseño nuevo del marketplace): la tarjeta ancha. A la izquierda su portada —la de Leasefy se
-  // dibuja en estrías de voltaje (FotoEnEstrias) y al pasar el mouse se ve la foto—; a la derecha su logo,
+  // Ronda 30 (diseño nuevo del marketplace): la tarjeta ancha. A la izquierda su portada —la de Leasefy llega en
+  // el duotono del home y florece a su color al verla o al pasar el mouse (Nico 30-10: las estrías «parecen un
+  // bug»)—; a la derecha su logo,
   // nombre con el sello, zonas y cuántos publica, «% la recomienda» y Pregúntale · Seguir. Antes, una
   // tarjeta angosta con un degradado del color de su marca.
   const portada = portadaDe(t.portadaUrl);
@@ -488,16 +490,7 @@ export function TarjetaDeInmobiliaria({ t }: { t: TarjetaDeInmobiliaria }) {
         {portada && (
           <Image src={portada} alt="" fill sizes="(min-width: 768px) 40vw, 100vw" className="object-cover" />
         )}
-        {deLeasefy && (
-          <FotoEnEstrias
-            src={portada}
-            alt=""
-            paso={9}
-            proporcion={2}
-            className="!absolute inset-0 !h-full transition-opacity duration-[700ms] ease-enter group-hover:opacity-0 group-focus-visible:opacity-0"
-            style={{ aspectRatio: 'auto' }}
-          />
-        )}
+        {deLeasefy && <TintaDelDuotono src={portada} />}
       </Link>
       <div className="flex min-w-0 flex-col justify-center px-5 pb-[22px] md:px-7 md:py-[26px]">
         <LogoDeLaInmobiliaria

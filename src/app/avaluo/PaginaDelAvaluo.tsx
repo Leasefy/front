@@ -3,8 +3,8 @@
 /**
  * /avaluo con el diseño nuevo de la landing (ronda 30, Nico 24-10: «¿por qué no
  * le hiciste glow up a avalúos?»): la misma familia que la home, el marketplace,
- * la ficha y las internas de producto —la corriente de voltaje detrás de la
- * llegada, títulos livianos, sobretítulos en mono, los pasos unidos por una
+ * la ficha y las internas de producto —la ola en papel detrás de la
+ * llegada (sin puntos desde el 30-10), títulos livianos, sobretítulos en mono, los pasos unidos por una
  * línea, UN momento de medianoche y la ilustración 3D—.
  *
  * La tarea de quien llega: saber qué recibe (y qué no) ANTES de pagar, ver cómo
@@ -19,7 +19,7 @@ import type { ReactNode } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Info } from '@phosphor-icons/react';
 import { CampoDeMedianoche, Ilustracion, motionDuration, motionEase, motionStagger } from '@leasefy/cadence';
-import { CorrienteDeVoltaje } from '@/components/landing-v2/CorrienteDeVoltaje';
+import { OlaEnPapel } from '@/components/landing-v2/CamposDeLaMarca';
 import { Button } from '@/components/ui/button';
 import { useTx } from '@/lib/idioma/use-idioma';
 import { cn } from '@/lib/utils';
@@ -149,25 +149,17 @@ export function PaginaDelAvaluo({ solicitud }: PaginaDelAvaluoProps) {
 
   return (
     <main className="min-h-screen overflow-x-clip bg-bg">
-      {/* ── La llegada: la corriente de voltaje alrededor y el texto sobre papel limpio (modo «marco»). ── */}
+      {/* ── La llegada: la ola en papel del home (Nico 30-10: sin los puntos de antes); la tinta sube desde abajo, el
+          texto queda sobre papel limpio y por donde pasa el cursor nacen ondas finas. ── */}
       <section
         className="relative px-4 pb-[clamp(56px,7vw,96px)] pt-[clamp(128px,13vw,176px)] text-center"
         aria-labelledby="titulo-del-avaluo"
       >
-        {/* Se apaga arriba y abajo (la capa de afuera) y deja un claro del tamaño del texto (la de adentro). */}
-        <div
-          className="absolute inset-0 [mask-image:linear-gradient(to_bottom,transparent_0%,#000_22%,#000_70%,transparent_100%)] dark:hidden"
-          aria-hidden
-        >
-          <CorrienteDeVoltaje
-            className="h-full w-full [mask-image:radial-gradient(ellipse_85%_42%_at_50%_58%,transparent_62%,#000_100%)] sm:[mask-image:radial-gradient(ellipse_40%_42%_at_50%_57%,transparent_62%,#000_100%)]"
-            forma="corrientes"
-            marco
-            celda={3}
-            fuerza={0.95}
-            semilla={23}
-          />
-        </div>
+        {/* Se apaga abajo, sobre la página. */}
+        <OlaEnPapel
+          className="absolute inset-0 h-full w-full [mask-image:linear-gradient(to_bottom,#000_76%,transparent_100%)] dark:hidden"
+          interactivo
+        />
         <div className="relative z-[1] mx-auto flex max-w-[880px] flex-col items-center">
           <motion.div {...entrada(0, quieto)}>
             <Ilustracion nombre="casa" tamano={112} alt="" aria-hidden className="block" />
@@ -232,7 +224,7 @@ export function PaginaDelAvaluo({ solicitud }: PaginaDelAvaluoProps) {
       </section>
 
       {/* ── Antes de pagar: qué es y para qué NO sirve (la ficha, sin adornos). ── */}
-      {/* Sin línea arriba (Nico 24-10: «quita esa línea de separación tan fea»): la corriente ya se apaga sola al bajar. */}
+      {/* Sin línea arriba (Nico 24-10: «quita esa línea de separación tan fea»): la ola ya se apaga sola al bajar. */}
       <section className="px-4 py-[clamp(64px,8vw,120px)]" aria-labelledby="para-que-sirve">
         <div className="mx-auto grid max-w-[1180px] gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
           <Revela>

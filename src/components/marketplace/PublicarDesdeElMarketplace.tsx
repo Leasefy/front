@@ -6,7 +6,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { Ilustracion } from '@leasefy/cadence';
 import { ArrowRight, Browser, FileArrowUp, Info, Plus } from '@phosphor-icons/react';
 
-import { CorrienteDeVoltaje } from '@/components/landing-v2/CorrienteDeVoltaje';
+import { CurvasDeNivel } from '@/components/landing-v2/CamposDeLaMarca';
 
 import { useAuth } from '@/lib/auth/use-auth';
 import { useCuentaParaPublicar } from './CuentaParaPublicar';
@@ -124,8 +124,9 @@ export function PublicarDesdeElMarketplace() {
   const esInquilino = conSesion && user?.role === 'tenant' && !hasActiveAgencyMembership;
   const { alTocar, ventana } = useCuentaParaPublicar('/publica');
 
-  // Ronda 30 (diseño nuevo del marketplace): el momento de medianoche. Un bloque oscuro con la corriente de
-  // voltaje arriba, la casa y el edificio en 3D, y una oferta por quien mira (propietario · inmobiliaria).
+  // Ronda 30 (diseño nuevo del marketplace): el momento de medianoche. Un bloque oscuro con las curvas de nivel
+  // del home arriba (Nico 30-10: sin los puntos de antes), la casa y el edificio en 3D, y una oferta por quien mira
+  // (propietario · inmobiliaria).
   // Antes, dos tarjetas blancas con borde. Mismas rutas, mismos casos y mismos data-testid.
   return (
     <section
@@ -134,15 +135,7 @@ export function PublicarDesdeElMarketplace() {
       data-testid="publicar-desde-el-marketplace"
     >
       {ventana}
-      <CorrienteDeVoltaje
-        className="absolute inset-x-0 top-0 h-[170px] w-full [mask-image:linear-gradient(180deg,#000_0%,rgba(0,0,0,.55)_50%,transparent_100%)] min-[901px]:h-[190px]"
-        fondo="noche"
-        forma="corrientes"
-        celda={3}
-        fuerza={0.8}
-        semilla={23}
-        velocidad={1.3}
-      />
+      <CurvasDeNivel className="absolute inset-x-0 top-0 h-[170px] w-full [mask-image:linear-gradient(180deg,#000_0%,rgba(0,0,0,.55)_50%,transparent_100%)] min-[901px]:h-[190px]" />
       <div className={cn('relative z-[1] grid grid-cols-1', !esDeLaInmobiliaria && 'min-[901px]:grid-cols-2')}>
         {/* La inmobiliaria publica desde su panel: el asistente del propietario no es para ella. */}
         {!esDeLaInmobiliaria && (

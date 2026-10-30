@@ -4,10 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link, { useLinkStatus } from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { FotoEnEstrias, MessageBubble, motionDuration, motionEase } from '@leasefy/cadence';
+import { MessageBubble, motionDuration, motionEase } from '@leasefy/cadence';
 import { CircleNotch, MapTrifold, ShieldCheck, X } from '@phosphor-icons/react';
 
 import { OrbeDeAgente } from '@/components/agentes/OrbeDeAgente';
+import { TintaDelDuotono } from '@/components/landing-v2/TintaDelDuotono';
 import { PensamientoDelTurno } from '@/components/beta/PensamientoDelTurno';
 import { PropertyCard } from '@/components/property/PropertyCard';
 import { useProperties } from '@/lib/hooks/useProperties';
@@ -267,8 +268,8 @@ function PresentacionDeLaInmobiliaria({ t, suyos }: { t: TarjetaDeInmobiliaria; 
           )}
           .
         </p>
-        {/* Ronda 30 (diseño nuevo): la portada de Leasefy en estrías de voltaje (al pasar el mouse, la foto);
-            la portada propia de la inmobiliaria se ve tal cual. */}
+        {/* La portada de Leasefy llega en el duotono del home y florece a su color (Nico 30-10: las estrías
+            «parecen un bug»); la portada propia de la inmobiliaria se ve tal cual. */}
         <div className="overflow-hidden rounded-lg border border-border-faint bg-surface">
           <Link
             href={paginaDe(t)}
@@ -278,14 +279,7 @@ function PresentacionDeLaInmobiliaria({ t, suyos }: { t: TarjetaDeInmobiliaria; 
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={portadaDe(t.portadaUrl)} alt="" className="absolute inset-0 h-full w-full object-cover" />
             {(!t.portadaUrl || esPortadaDeLeasefy(t.portadaUrl)) && (
-              <FotoEnEstrias
-                src={portadaDe(t.portadaUrl)}
-                alt=""
-                paso={9}
-                proporcion={7}
-                className="!absolute inset-0 !h-full transition-opacity duration-[700ms] ease-enter group-hover:opacity-0"
-                style={{ aspectRatio: 'auto' }}
-              />
+              <TintaDelDuotono src={portadaDe(t.portadaUrl)} />
             )}
           </Link>
           <div className="flex flex-wrap items-end gap-4 px-5 pb-5">

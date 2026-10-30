@@ -40,48 +40,5 @@ window.LF = (function () {
     capas.forEach(function (c) { var d = document.createElement("div"); d.style.background = c[0]; if (c[1]) d.style.clipPath = c[1]; el.appendChild(d); });
   }
 
-  /* ── FotoEnEstrias: la foto en líneas de voltaje. Sobre papel, la línea es la sombra;
-        sobre medianoche (o en oscuro), la línea es la luz ── */
-  function pintarEstrias(cv, img, paso, fondo, tinta, invertir) {
-    var W = cv.width, H = cv.height, c = cv.getContext("2d");
-    var l = document.createElement("canvas"); l.width = W; l.height = H;
-    var lc = l.getContext("2d", { willReadFrequently: true });
-    var e = Math.max(W / img.naturalWidth, H / img.naturalHeight), w = img.naturalWidth * e, h = img.naturalHeight * e;
-    lc.drawImage(img, (W - w) / 2, (H - h) / 2, w, h);
-    var dat; try { dat = lc.getImageData(0, 0, W, H).data; } catch (er) { return false; }
-    c.fillStyle = fondo; c.fillRect(0, 0, W, H); c.fillStyle = tinta;
-    var m = paso / 2, xs = [], L = [], muestra = [];
-    for (var x = m; x < W; x += paso) xs.push(x);
-    var ny = Math.ceil(H / 2);
-    xs.forEach(function (x) {
-      for (var y = 0; y < H; y += 2) {
-        var s = 0, n = 0;
-        for (var dx = -m; dx < m; dx += 2) { var xi = Math.min(W - 1, Math.max(0, Math.round(x + dx))), i = (y * W + xi) * 4; s += 0.299 * dat[i] + 0.587 * dat[i + 1] + 0.114 * dat[i + 2]; n++; }
-        var v = s / n / 255; L.push(v); if ((L.length & 15) === 0) muestra.push(v);
-      }
-    });
-    /* fotos de interiores claros: se estira el contraste para que la foto se lea en las líneas */
-    muestra.sort(function (p, q) { return p - q; });
-    var lo = muestra[Math.floor(muestra.length * .03)] || 0, hi = muestra[Math.floor(muestra.length * .97)] || 1, rango = Math.max(.08, hi - lo);
-    var k = 0;
-    xs.forEach(function (x) {
-      for (var y = 0; y < H; y += 2) {
-        var crudo = L[k++], v = crudo * .45 + Math.min(1, Math.max(0, (crudo - lo) / rango)) * .55;
-        var base = invertir ? Math.pow(v, 1.3) * .8 : 1 - Math.pow(v, .7);
-        var a = Math.max(0.7, base * paso * 0.6);
-        c.fillRect(x - a / 2, y, a, 2);
-      }
-    });
-    return true;
-  }
-
-  /* un color de la paleta (#rrggbb) como [r,g,b] de 0 a 255 */
-  function rgb(hex) {
-    hex = (hex || "").trim();
-    if (/^#[0-9a-f]{6}$/i.test(hex)) { var n = parseInt(hex.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
-    var m = hex.match(/\d+(\.\d+)?/g); return m && m.length >= 3 ? [+m[0], +m[1], +m[2]] : [251, 250, 248];
-  }
-  function token(nombre) { return getComputedStyle(root).getPropertyValue(nombre).trim(); }
-
-  return { $: $, $$: $$, MOV: MOV, partir: partir, motivo: motivo, pintarEstrias: pintarEstrias, rgb: rgb, token: token };
+  return { $: $, $$: $$, MOV: MOV, partir: partir, motivo: motivo };
 })();

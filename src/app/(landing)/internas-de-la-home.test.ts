@@ -160,6 +160,29 @@ describe('las internas de la home se sirven estáticas (Ronda 30, Nico)', () => 
   })
 })
 
+describe('los fondos sin puntos y las fotos sin estrías, como el home (Nico 30-10)', () => {
+  it('las dos familias llevan el mismo motor de la ola y las curvas (cada una carga sólo sus scripts)', () => {
+    expect(DE.productos.js['03-campos.js']).toBeTruthy()
+    expect(DE.para.js['02-campos.js']).toBe(DE.productos.js['03-campos.js'])
+  })
+
+  it.each(PAGINAS)('%s: ningún lienzo de píxeles ni foto en estrías; los héroes con la ola que responde al cursor', (p) => {
+    expect(DE[p].todo).not.toMatch(/data-corriente|LF\.corriente|foto-estrias|pintarEstrias/)
+    const d = documento(DE[p].html)
+    const js = Object.values(DE[p].js).join('\n')
+    const lienzos = `${d.body.innerHTML}\n${js}`.match(/<canvas class="campo [^"]+" data-campo="(ola|curvas)"[^>]*>/g) ?? []
+    expect(lienzos.length).toBeGreaterThan(0)
+    for (const l of lienzos.filter((x) => /hero-campo|heroe-campo/.test(x))) expect(l).toContain('data-interactivo')
+  })
+
+  it('para: las fotos van en el duotono que florece, con el filtro del home', () => {
+    const d = documento(DE.para.html)
+    expect(d.querySelectorAll('figure.foto-duo img').length).toBeGreaterThan(10)
+    expect(d.querySelector('figure.foto-duo canvas')).toBeNull()
+    expect(d.querySelector('filter#duotono')).not.toBeNull()
+  })
+})
+
 describe('cada imagen y cada video que piden existen', () => {
   it.each(PAGINAS)('%s: las rutas absolutas existen y ninguna es relativa (la página se sirve en /es/…)', (p) => {
     const pedidas = new Set([...DE[p].todo.matchAll(/\/internas\/(?:productos|para)\/img\/[^"' )]+\.(?:webp|jpg|png|mp4)/g)].map((m) => m[0]))

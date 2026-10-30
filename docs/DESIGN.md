@@ -277,6 +277,13 @@ Blender (`archivos/identidad-v3/blender/escena.py` en la memoria del proyecto) y
 - **`EsferaDeGrano`** (quieta, con grano), **`FotoEnEstrias`** (fotos en estrías), **`BrandMotif`** (el monograma en
   estrías), **`CampoDeMedianoche`** (el momento de marca).
 - El grano (`--grano`) va sólo en esferas y campos de marca.
+- **Fondos y fotos de lo público, sin puntos ni estrías** (Nico 29-10 en el home; 30-10 «el marketplace todavía tiene
+  cosas de dots» y las estrías «parecen un bug»): sobre papel, **`OlaEnPapel`** (la tinta de voltaje sube desde abajo;
+  en el héroe, `interactivo`: ondas finas donde pasa el cursor); sobre medianoche, **`CurvasDeNivel`**; las fotos de
+  marca, **`TintaDelDuotono`** (llegan en medianoche, voltaje y papel y florecen a su color al verse o al pasar el
+  mouse). Piezas en `src/components/landing-v2/{CamposDeLaMarca,TintaDelDuotono}.tsx`; en la landing estática,
+  `09-campos.js` (home) y `js/0X-campos.js` de cada familia de internas. `CorrienteDeVoltaje` (píxeles) y
+  `FotoEnEstrias` ya no van en ninguna pantalla pública.
 
 ### 9.3 Imágenes del producto y de marca
 

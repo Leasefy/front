@@ -39,7 +39,7 @@ import type { Property } from '@/lib/types/property';
 import { cn } from '@/lib/utils';
 import { CajaDelMarketplace } from './CajaDelMarketplace';
 import { InterruptorDeVista } from './InterruptorDeVista';
-import { CorrienteDeVoltaje } from '@/components/landing-v2/CorrienteDeVoltaje';
+import { OlaEnPapel } from '@/components/landing-v2/CamposDeLaMarca';
 
 /**
  * ══ LA GALERÍA DEL MARKETPLACE (Nico, 09-10-2026) ══════════════════════════
@@ -464,15 +464,11 @@ export function GaleriaDelMarketplace() {
           «mejora eso del chat, quiero que sea más hermoso») ── */}
       {/* Sin `overflow-hidden`: recortaba el menú «Ideas para afinar» (Nico, 09-10). */}
       <header className="relative border-b border-border-faint bg-surface">
-        {/* Cadence 2 · PIX (Nico, 23-10): la corriente de voltaje abajo del encabezado, en vez del degradado azul
-            (Cadence no usa degradados). Sólo en claro. */}
-        <CorrienteDeVoltaje
-          className="absolute inset-x-0 bottom-0 h-[72%] w-full [mask-image:linear-gradient(to_top,#000_0%,rgba(0,0,0,.5)_45%,transparent_95%)] dark:hidden"
+        {/* La ola en papel del home abajo del encabezado (Nico 30-10: sin los puntos de antes); se apaga antes de la línea
+            de abajo para no cortarse contra ella. Sólo en claro. */}
+        <OlaEnPapel
+          className="absolute inset-x-0 bottom-0 h-[72%] w-full [mask-image:linear-gradient(to_top,transparent_0%,#000_28%,rgba(0,0,0,.55)_58%,transparent_95%)] dark:hidden"
           fondo="superficie"
-          forma="horizonte"
-          celda={3}
-          fuerza={0.42}
-          semilla={19}
         />
         <div className="llegada-grises relative z-[1] mx-auto flex max-w-[980px] flex-col items-center px-4 pb-8 pt-10 text-center">
           <motion.p

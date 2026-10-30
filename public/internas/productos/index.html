@@ -25,7 +25,7 @@
 <script src="/landing/js/conexion.js"></script>
 <style>
 /* Productos Leasefy · la identidad de la landing 2 (papel, tinta y voltaje) sobre la estructura de producción:
-   portada clara con la corriente PIX → por qué importa (pantalla fija) → capacidades → ficha → puesta en marcha → noche → demo */
+   portada clara con la ola en papel → por qué importa (pantalla fija) → capacidades → ficha → puesta en marcha → noche → demo */
 :root{
   --bg:#FBFAF8;--arena:#F3F1ED;--piedra:#E7E3DC;--filete:#ECE8E1;--sup:#FFFFFF;
   --tinta:#121110;--grafito:#5B5751;--ceniza:#706B64;
@@ -34,7 +34,6 @@
   --exito:#2B7549;--exito-suave:#E3F1E8;--aviso:#D9911C;--peligro:#B8372A;
   --btn-s:#F3F1ED;--btn-s-hover:#E7E3DC;
   --pantalla:#FBFAF8;--pantalla-sup:#FFFFFF;--pantalla-tinta:#121110;--pantalla-filete:rgba(18,17,16,.12);
-  --pix-fondo:251,250,248;
   --sombra-flotante:0 50px 90px -40px rgba(18,17,16,.35),0 22px 40px -22px rgba(18,17,16,.18);
   --marco:#1C1C1E;--marco-filo:#3A3A3C;
   --f:"Host Grotesk",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -164,10 +163,10 @@ ul,ol{list-style:none}
 .nota-pie i{display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--voltaje-dot);margin-right:8px;vertical-align:1px}
 @keyframes latido{50%{box-shadow:0 0 0 10px rgba(26,64,255,.06)}}
 
-/* ── la corriente: píxeles de voltaje que fluyen (Cadence 2 · PIX) ── */
-.corriente{position:absolute;display:block;pointer-events:none}
-.hero-pix{left:0;top:0;width:100%;height:min(100%,max(640px,100vh));z-index:0;opacity:1;-webkit-mask-image:linear-gradient(to bottom,#000 72%,transparent);mask-image:linear-gradient(to bottom,#000 72%,transparent)}
-.mov .hero-pix{opacity:0}
+/* ── los fondos sin puntos (Nico 30-10): la ola en papel del home (js/03-campos.js) ── */
+.campo{position:absolute;display:block;pointer-events:none}
+.hero-campo{left:0;top:0;width:100%;height:min(100%,max(640px,100vh));z-index:0;opacity:1;-webkit-mask-image:linear-gradient(to bottom,#000 72%,transparent);mask-image:linear-gradient(to bottom,#000 72%,transparent)}
+.mov .hero-campo{opacity:0}
 
 section{position:relative;overflow-x:clip}
 .sec{padding-block:clamp(88px,11vw,160px)}
@@ -321,8 +320,8 @@ section{position:relative;overflow-x:clip}
 .contacto h2{max-width:1180px;margin:24px auto 0}
 .contacto .lead{margin:24px auto 0}
 .fin-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:36px}
-.fin-pix{left:0;right:0;bottom:0;width:100%;height:46%;z-index:0;-webkit-mask-image:linear-gradient(to top,#000 0%,rgba(0,0,0,.8) 30%,transparent 92%);mask-image:linear-gradient(to top,#000 0%,rgba(0,0,0,.8) 30%,transparent 92%)}
-.mov .fin-pix{opacity:0;transform:translateY(60px)}
+.fin-campo{left:0;right:0;bottom:0;width:100%;height:46%;z-index:0;-webkit-mask-image:linear-gradient(to top,#000 0%,rgba(0,0,0,.8) 30%,transparent 92%);mask-image:linear-gradient(to top,#000 0%,rgba(0,0,0,.8) 30%,transparent 92%)}
+.mov .fin-campo{opacity:0;transform:translateY(60px)}
 
 /* ── índice: las ocho piezas ── */
 .hero-ind{padding-bottom:clamp(72px,9vw,130px)}
@@ -388,7 +387,7 @@ section{position:relative;overflow-x:clip}
 @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}.aviso,.capa,.capa img,.anillo,.pin,.nota-chip{transition:none!important}}
 
 /* sin movimiento: todo a la vista, quieto */
-.quieto .hero-pix,.quieto .fin-pix{opacity:1;transform:none}
+.quieto .hero-campo,.quieto .fin-campo{opacity:1;transform:none}
 
 @media (max-width:899px){
   .hero-escena{width:100%}
@@ -582,7 +581,7 @@ section{position:relative;overflow-x:clip}
 <script src="https://cdn.jsdelivr.net/npm/motion@12.23.12/dist/motion.js"></script>
 <script src="/internas/productos/js/01-datos.js"></script>
 <script src="/internas/productos/js/02-piezas.js"></script>
-<script src="/internas/productos/js/03-corriente.js"></script>
+<script src="/internas/productos/js/03-campos.js"></script>
 <script src="/internas/productos/js/04-vistas.js"></script>
 <script src="/internas/productos/js/05-marca-del-pie.js"></script>
 <script src="/internas/productos/js/99-mega-menu.js"></script>

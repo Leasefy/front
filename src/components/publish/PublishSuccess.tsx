@@ -19,7 +19,7 @@ import { AuthModal } from '@/components/auth/AuthModal';
 import { formatCurrency } from '@/lib/format';
 import { PLANS, AGENCY_PLANS } from '@/lib/constants/subscription-plans';
 import confetti from 'canvas-confetti';
-import { CorrienteDeVoltaje } from '@/components/landing-v2/CorrienteDeVoltaje';
+import { CurvasDeNivel } from '@/components/landing-v2/CamposDeLaMarca';
 
 /**
  * Las fotos que no subieron al publicar, cada una con su motivo (02-10-2026).
@@ -171,10 +171,10 @@ export function PublishSuccess() {
         <div className="bg-surface rounded-lg border border-border overflow-hidden">
           {/* Header */}
           <div className="relative px-8 pt-14 pb-10 text-center overflow-hidden">
-            {/* El momento de marca (Cadence 2, 23-10): medianoche con la corriente de voltaje, como la landing
-                nueva. Antes un bloque azul sólido con brillos (el azul es sólo para la acción). */}
-            <div className="absolute inset-0 bg-[#07080C]" />
-            <CorrienteDeVoltaje className="absolute inset-0 h-full w-full opacity-90" fondo="noche" forma="corrientes" fuerza={0.6} semilla={5} />
+            {/* El momento de marca (Cadence 2, 23-10): medianoche con las curvas de nivel del home (Nico 30-10: sin
+                los puntos de antes). Antes un bloque azul sólido con brillos (el azul es sólo para la acción). */}
+            <div className="absolute inset-0 bg-medianoche" />
+            <CurvasDeNivel className="absolute inset-0 h-full w-full opacity-90" />
             {/* Robottom fade into card */}
             <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-surface to-transparent" />
 
@@ -201,7 +201,7 @@ export function PublishSuccess() {
                   transition={{ ...motionSpring.bouncy, delay: 0.15 }}
                   className="relative w-24 h-24 rounded-full bg-white flex items-center justify-center"
                 >
-                  <Check className="w-10 h-10 text-[#1A40FF]" strokeWidth={2.5} />
+                  <Check className="w-10 h-10 text-primary" strokeWidth={2.5} />
                 </motion.div>
               </div>
 
@@ -260,8 +260,8 @@ export function PublishSuccess() {
                   {draft.bathrooms} {draft.bathrooms === 1 ? 'baño' : 'baños'}
                 </p>
               </div>
-              <div className="bg-[#EEF1FF] dark:bg-[#1A40FF]/15 p-3 rounded-lg text-center">
-                <Sparkle className="w-4 h-4 mx-auto text-[#1A40FF] dark:text-[#5570FF] mb-1" />
+              <div className="bg-primary-soft p-3 rounded-lg text-center">
+                <Sparkle className="w-4 h-4 mx-auto text-primary dark:text-primary-hover mb-1" />
                 <p className="text-caption font-medium text-fg">
                   {draft.selectedPlan ? planLabels[draft.selectedPlan] ?? 'Plan' : 'Plan'}
                 </p>
@@ -274,7 +274,7 @@ export function PublishSuccess() {
               {isAuthenticated ? (
                 <Link
                   href="/panel/propiedades"
-                  className="flex items-center justify-center gap-2 w-full px-6 py-3.5 bg-[#1A40FF] text-white text-sm font-medium rounded-lg hover:opacity-90 transition-colors"
+                  className="flex items-center justify-center gap-2 w-full px-6 py-3.5 bg-primary text-primary-fg text-sm font-medium rounded-lg hover:opacity-90 transition-colors"
                 >
                   <Eye className="w-4 h-4" />
                   Ver mi propiedad en el panel
@@ -283,7 +283,7 @@ export function PublishSuccess() {
                 <button
                   type="button"
                   onClick={() => setShowAuthModal(true)}
-                  className="flex items-center justify-center gap-2 w-full px-6 py-3.5 bg-[#1A40FF] text-white text-sm font-medium rounded-lg hover:opacity-90 transition-colors"
+                  className="flex items-center justify-center gap-2 w-full px-6 py-3.5 bg-primary text-primary-fg text-sm font-medium rounded-lg hover:opacity-90 transition-colors"
                 >
                   <UserPlus className="w-4 h-4" />
                   Ver mi propiedad en el panel

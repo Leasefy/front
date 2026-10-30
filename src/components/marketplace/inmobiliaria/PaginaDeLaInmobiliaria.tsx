@@ -42,7 +42,7 @@ import {
   Tira,
 } from './piezas';
 import { portadaDe } from '@/lib/marketplace/portadas';
-import { CorrienteDeVoltaje } from '@/components/landing-v2/CorrienteDeVoltaje';
+import { OlaEnPapel } from '@/components/landing-v2/CamposDeLaMarca';
 import { cn } from '@/lib/utils';
 
 // El mapa de MapLibre toca `window`: sólo en el navegador.
@@ -138,8 +138,8 @@ function Cabecera({ p }: { p: Pagina }) {
           <Image src={portadaDe(p.portadaUrl)} alt="" fill priority sizes="1280px" className="object-cover" />
         ) : (
           <>
-            {/* Sin portada (Nico, 23-10: «más dots»): la corriente de voltaje de Leasefy; en oscuro, el tono de la marca. */}
-            <CorrienteDeVoltaje className="absolute inset-0 h-full w-full dark:hidden" fondo="arena" forma="corrientes" fuerza={0.55} semilla={(p.nombre?.length ?? 7) + 3} />
+            {/* Sin portada: la ola en papel del home (Nico 30-10: sin los puntos de antes); en oscuro, el tono de la marca. */}
+            <OlaEnPapel className="absolute inset-0 h-full w-full dark:hidden" fondo="arena" />
             <span
               className="absolute inset-0 hidden dark:block"
               aria-hidden

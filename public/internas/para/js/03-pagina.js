@@ -23,36 +23,27 @@
   }
   if (window.ResizeObserver) { var ro = new ResizeObserver(escalar); $$(".pantalla[data-w]").forEach(function (p) { ro.observe(p); }); }
 
-  /* ── fotos en estrías (papel en claro; medianoche y oscuro, invertidas) ── */
-  var fotos = [];
-  function pintarFoto(box) {
-    var cv = box.querySelector("canvas"), im = box.querySelector("img");
-    var w = box.clientWidth, h = box.clientHeight;
-    if (!cv || !w || !h || !im.naturalWidth) return;
-    var dpr = Math.min(window.devicePixelRatio || 1, 2);
-    cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
-    var noche = box.dataset.tono === "noche", oscuro = LF.token("--estria-oscuro") === "1";
-    var ok = LF.pintarEstrias(cv, im, (+box.dataset.paso || 7) * dpr,
-      noche ? LF.token("--noche") : LF.token("--estria-fondo"),
-      noche ? "#4D6BFF" : LF.token("--estria-tinta"), noche || oscuro);
-    if (!ok) cv.style.display = "none";
-  }
+  /* ── el duotono que florece (Nico 30-10, el mismo del home, 09-campos.js): la foto llega en medianoche, voltaje
+        y papel y toma su color al llegar a la franja del centro (o al pasarle el mouse); se vuelve a teñir sólo si
+        sale por abajo. Con «reducir movimiento», la foto tal cual. ── */
+  var reducido = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   function prepararFotos(cont) {
-    $$(".foto-estrias", cont).forEach(function (box) {
-      if (box._lista) return; box._lista = true; fotos.push(box);
-      var im = box.querySelector("img"), ir = function () { pintarFoto(box); };
-      if (im.complete && im.naturalWidth) ir(); else im.addEventListener("load", ir);
-      /* en el celular no hay puntero: la foto se revela cuando llega al centro */
-      if (window.matchMedia("(hover: none)").matches && "IntersectionObserver" in window) {
-        new IntersectionObserver(function (e) { box.classList.toggle("ver", e[0].isIntersecting); }, { rootMargin: "-35% 0px -35% 0px" }).observe(box);
-      }
+    $$(".foto-duo", cont).forEach(function (box) {
+      var im = box.querySelector("img");
+      if (box._lista || !im || reducido) return; box._lista = true;
+      var tinta = im.cloneNode(false);
+      tinta.className = "duo-tinta"; tinta.alt = ""; tinta.setAttribute("aria-hidden", "true");
+      tinta.removeAttribute("width"); tinta.removeAttribute("height");
+      im.insertAdjacentElement("afterend", tinta);
+      box.classList.add("duo-listo");
+      if (!("IntersectionObserver" in window)) { box.classList.add("ver"); return; }
+      new IntersectionObserver(function (e) {
+        var x = e[0];
+        if (x.isIntersecting) box.classList.add("ver");
+        else if (x.boundingClientRect.top > 0) box.classList.remove("ver");
+      }, { rootMargin: "-18% 0px -18% 0px" }).observe(box);
     });
   }
-  function repintar() { fotos.forEach(function (b) { if (b.offsetParent) pintarFoto(b); }); }
-  var tr; window.addEventListener("resize", function () { clearTimeout(tr); tr = setTimeout(repintar, 160); });
-  function alCambiarTema() { setTimeout(function () { fotos.forEach(pintarFoto); LF.corriente.tema(); }, 30); }
-  if (window.matchMedia) window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", alCambiarTema);
-  new MutationObserver(alCambiarTema).observe(root, { attributes: true, attributeFilter: ["data-theme"] });
 
 
   /* ── preguntas frecuentes: una abierta a la vez, como en prod ── */
@@ -127,8 +118,8 @@
     if (enHeroe.length) gsap.to(enHeroe, { opacity: 1, y: 0, duration: 1, ease: "expo.out", stagger: .09, delay: .35 });
     var resto = $$("[data-r]", cont).filter(function (el) { return !el.closest(".heroe"); });
     if (resto.length) ScrollTrigger.batch(resto, { start: "top 90%", once: true, onEnter: function (b) { gsap.to(b, { opacity: 1, y: 0, duration: .9, ease: "expo.out", stagger: .08, overwrite: "auto" }); } });
-    var pix = $$(".heroe-pix", cont);
-    if (pix.length) gsap.to(pix, { opacity: .95, duration: 2.2, ease: "power2.out", delay: .25 });
+    var campo = $$(".heroe-campo", cont);
+    if (campo.length) gsap.to(campo, { opacity: .95, duration: 2.2, ease: "power2.out", delay: .25 });
     $$("[data-px]", cont).forEach(function (el) {
       gsap.to(el, { y: +el.dataset.px, ease: "none", scrollTrigger: { trigger: el.closest("section") || el, start: "top top", end: "bottom top", scrub: .6 } });
     });
@@ -138,7 +129,7 @@
   function iniciarVista(nombre) {
     if (iniciada[nombre]) return; iniciada[nombre] = true;
     var v = vistas[nombre];
-    escalar(); prepararFotos(v); LF.corriente.iniciar(v); animar(v, true);
+    escalar(); prepararFotos(v); LF.campos.montarEn(v); animar(v, true);
   }
   function mostrar(nombre, subir) {
     if (VISTAS.indexOf(nombre) < 0) nombre = "inmobiliarias";
@@ -155,7 +146,7 @@
     else document.title = LFT(TITULOS[nombre]) + " | Leasefy";
     if (subir) arriba(true);
     iniciarVista(nombre);
-    escalar(); repintar();
+    escalar();
     if (MOV) { ScrollTrigger.refresh(); }
     alScroll();
   }
@@ -188,7 +179,7 @@
 
   /* lo compartido (FAQ y cierre) se arma una vez */
   prepararFotos($("#ciudad"));
-  LF.corriente.iniciar($("#cierre"));
+  LF.campos.montarEn($("#cierre"));
   animar($("#faq")); animar($("#cierre"));
   /* los enlaces viejos con «#propietarios» llevan a su ruta */
   var h0 = location.hash.slice(1);

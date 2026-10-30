@@ -35,6 +35,7 @@ import {
   type TarjetaDeEjecucion,
 } from '@/lib/chat/tarjetas-de-ejecucion';
 import { leerTarjetaDePlan, type TarjetaDePlan } from '@/lib/chat/plan-del-chat';
+import { leerTarjetaDeLote, type TarjetaDeLote } from '@/lib/chat/lote-del-chat';
 import { leerPasoDelPensamiento, type PasoDelPensamiento } from '@/lib/chat/pensamiento';
 import { agentFetch } from './agent-fetch';
 import { ApiError, errorDeDemasiadasSolicitudes } from '@/lib/api/client';
@@ -371,6 +372,12 @@ export interface ChatStreamHandlers {
      */
     plan: TarjetaDePlan | null;
     /**
+     * (29-10) La tarjeta del LOTE: la misma acción para varios, con UNA
+     * confirmación y el avance en segundo plano. `null` si el turno no armó
+     * un lote o el micro es de antes.
+     */
+    lote: TarjetaDeLote | null;
+    /**
      * Por dónde lo contestó el micro. `directo:*` = el camino directo (la ficha,
      * sin el modelo): es un DATO, se muestra de una, sin teclearlo (23-09).
      */
@@ -558,6 +565,8 @@ export function handleSSEEvent(
         ensayo: obj.ensayo === true,
         // Aditivo (24-09, paquete H): un `done` sin plan (o de un micro viejo) → `null`.
         plan: leerTarjetaDePlan(obj.plan),
+        // Aditivo (29-10): un `done` sin lote (o de un micro viejo) → `null`.
+        lote: leerTarjetaDeLote(obj.lote),
         ...(typeof obj.camino === 'string' && obj.camino ? { camino: obj.camino } : {}),
         ...(obj.razonamiento !== undefined && obj.razonamiento !== null ? { razonamiento: obj.razonamiento } : {}),
       });
@@ -704,6 +713,26 @@ export async function fetchEjecucion(args: {
   const cuerpo: unknown = await res.json().catch(() => null);
   const tarjeta = cuerpo && typeof cuerpo === 'object' ? (cuerpo as Record<string, unknown>).tarjeta : null;
   return leerTarjetaDeEjecucion(tarjeta);
+}
+
+/**
+ * La tarjeta de HOY de un LOTE del chat (29-10):
+ * `GET /api/agency/:agencyId/ai-hub/chat/lotes/:loteId` → `{ tarjeta }`.
+ *
+ * La pide la tarjeta MIENTRAS el lote corre en segundo plano (el avance «N de
+ * M») y al volver a un hilo con un lote en pausa o programado: si ya se puede
+ * seguir, el micro lo retoma con la sesión de la persona (tomarlo es
+ * idempotente). `null` si el micro no lo tiene (404: no es tuyo, o es un micro
+ * de antes); un fallo de red o un 5xx lanza (`ApiError`).
+ */
+export async function fetchLote(args: { agencyId: string; loteId: string; signal?: AbortSignal }): Promise<TarjetaDeLote | null> {
+  const url = `${agentBaseUrl()}/api/agency/${args.agencyId}/ai-hub/chat/lotes/${encodeURIComponent(args.loteId)}`;
+  const res = await agentFetch(url, { method: 'GET', ...(args.signal ? { signal: args.signal } : {}) });
+  if (res.status === 404) return null;
+  if (!res.ok) throw await falloDelAgente(res);
+  const cuerpo: unknown = await res.json().catch(() => null);
+  const tarjeta = cuerpo && typeof cuerpo === 'object' ? (cuerpo as Record<string, unknown>).tarjeta : null;
+  return leerTarjetaDeLote(tarjeta);
 }
 
 /**

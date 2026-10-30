@@ -32,6 +32,7 @@ import { CajaDelChat } from './CajaDelChat';
 import { CamposEnElChat, datosDeLosCampos, valoresIniciales } from './CamposEnElChat';
 import { TarjetaDeEjecucion, useMandar } from './TarjetaDeEjecucion';
 import { TarjetaDePlan } from './TarjetaDePlan';
+import { TarjetaDeLote } from './TarjetaDeLote';
 
 /**
  * AccionesEnElHilo — la parte del hilo que ACTÚA (Nico, 23-09-2026, 22:51:
@@ -49,6 +50,8 @@ import { TarjetaDePlan } from './TarjetaDePlan';
  *   · Los datos que faltan, pedidos en el hilo.
  *   · Desde el 24-09, la tarjeta del PLAN (`TarjetaDePlan`): varias acciones
  *     pedidas en una frase, con un solo «Hacer todo» y el avance paso a paso.
+ *   · Desde el 29-10, la tarjeta del LOTE (`TarjetaDeLote`): la misma acción
+ *     para 1, 3 o 100, con un solo «Sí, hazlo» y el avance en segundo plano.
  *   · Desde el 24-09, la tarjeta del EJECUTOR (`TarjetaDeEjecucion`):
  *     propuesta con vista previa, en curso, resultado con la gracia de
  *     «Deshacer», programada y error explicado. Con ella a la vista, la
@@ -67,8 +70,8 @@ export function AccionesEnElHilo({ message, className }: { message: ChatMessage;
     return i < 0 ? [] : lista.slice(i + 1);
   }, [messages, message.id]);
 
-  const { acciones, confirmacion, resultado, formulario, ejecucion, plan } = message;
-  if (!acciones?.length && !confirmacion && !resultado && !formulario && !ejecucion && !plan) return null;
+  const { acciones, confirmacion, resultado, formulario, ejecucion, plan, lote } = message;
+  if (!acciones?.length && !confirmacion && !resultado && !formulario && !ejecucion && !plan && !lote) return null;
 
   return (
     <div className={cn('space-y-3', className)} data-testid="acciones-en-el-hilo">
@@ -77,6 +80,8 @@ export function AccionesEnElHilo({ message, className }: { message: ChatMessage;
       )}
       {/* (24-09, paquete H) Varias acciones pedidas en una frase: UNA tarjeta, un «Hacer todo». */}
       {plan && <TarjetaDePlan plan={plan} message={message} posteriores={posteriores} />}
+      {/* (29-10) La misma acción para varios: UNA tarjeta, un «Sí, hazlo», el avance en segundo plano. */}
+      {lote && <TarjetaDeLote lote={lote} message={message} posteriores={posteriores} />}
       {ejecucion ? (
         <TarjetaDeEjecucion tarjeta={ejecucion} message={message} posteriores={posteriores} />
       ) : (

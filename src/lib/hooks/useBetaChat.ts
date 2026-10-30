@@ -22,6 +22,7 @@ import {
   type TarjetaDeEjecucion,
 } from '@/lib/chat/tarjetas-de-ejecucion';
 import type { TarjetaDePlan } from '@/lib/chat/plan-del-chat';
+import type { TarjetaDeLote } from '@/lib/chat/lote-del-chat';
 import { invalidar } from '@/lib/api/refresco-de-datos';
 import { RECURSO_DE_PROCESOS } from '@/lib/api/procesos.service';
 import {
@@ -57,6 +58,7 @@ import {
   postChatTurn,
   streamChatTurn,
   fetchEjecucion,
+  fetchLote,
   leerReintentable,
   fetchBriefing,
   isAgentConfigured,
@@ -462,6 +464,12 @@ export interface UseBetaChatReturn {
    * montarse con la hora pasada y la tarjeta en curso cuando su proceso termina.
    */
   refrescarEjecucion: (messageId: string, ejecucionId: string) => Promise<TarjetaDeEjecucion | null>;
+  /**
+   * (29-10) La tarjeta de HOY de un lote (`GET …/lotes/{id}`) en SU mensaje:
+   * el avance mientras corre en segundo plano. Devuelve la tarjeta, o `null` si
+   * el micro no la tiene; lanza si no se pudo preguntar.
+   */
+  refrescarLote: (messageId: string, loteId: string) => Promise<TarjetaDeLote | null>;
 }
 
 // ============================================================================
@@ -844,6 +852,22 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
     },
     []
   );
+
+  /** (29-10) La tarjeta de hoy de un lote, en SU mensaje (sólo si sigue siendo el mismo lote). */
+  const refrescarLote = useCallback(async (messageId: string, loteId: string): Promise<TarjetaDeLote | null> => {
+    const agencia = agencyIdRef.current;
+    if (!agencia || !isAgentConfigured()) return null;
+    const tarjeta = await fetchLote({ agencyId: agencia, loteId });
+    if (!tarjeta || tarjeta.loteId !== loteId) return tarjeta;
+    setConversations((prev) =>
+      prev.map((c) =>
+        c.messages.some((m) => m.id === messageId && m.lote?.loteId === loteId)
+          ? { ...c, messages: c.messages.map((m) => (m.id === messageId && m.lote?.loteId === loteId ? { ...m, lote: tarjeta } : m)) }
+          : c
+      )
+    );
+    return tarjeta;
+  }, []);
 
   // Cerrar la pestaña, recargar o irse a otra página: `pagehide` es el último
   // evento fiable (y el abandono sale con `keepalive`). Salir del chat a otra
@@ -1311,6 +1335,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         ensayo?: boolean;
         /** La tarjeta del plan (24-09, paquete H, sólo por el stream). */
         plan?: TarjetaDePlan | null;
+        /** La tarjeta del lote (29-10, sólo por el stream). */
+        lote?: TarjetaDeLote | null;
         /** El proceso largo que anunció el stream antes del `done` (`proceso_iniciado`). */
         procesoIniciado?: EventoProcesoIniciado | null;
         /** `directo:*` = el micro contestó con la ficha, sin modelo: se muestra de una. */
@@ -1358,11 +1384,13 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       const ensayo = resp.ensayo === true;
       // La tarjeta del plan (24-09, paquete H): varias acciones, una confirmación.
       const plan = resp.plan ?? null;
+      // La tarjeta del lote (29-10): la misma acción para varios, en segundo plano.
+      const lote = resp.lote ?? null;
       // «Lo que pensó» (02-10): sólo si el micro lo mandó con la forma esperada.
       const razonamiento = leerRazonamiento(resp.razonamiento);
       // El pensamiento en vivo, plegado en «Cómo lo pensó» (02-10).
       const pensamientoDelTurno = resp.pensamiento ?? null;
-      const actua = acciones.length > 0 || confirmacion || resultado || formulario || ejecucion || ensayo || plan;
+      const actua = acciones.length > 0 || confirmacion || resultado || formulario || ejecucion || ensayo || plan || lote;
       if (
         snapshot ||
         bloques.length > 0 ||
@@ -1395,6 +1423,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
                           ...(ejecucion ? { ejecucion } : {}),
                           ...(ensayo ? { ensayo } : {}),
                           ...(plan ? { plan } : {}),
+                          ...(lote ? { lote } : {}),
                           ...(razonamiento ? { razonamiento } : {}),
                           ...(pensamientoDelTurno ? { pensamiento: pensamientoDelTurno } : {}),
                         }
@@ -1535,6 +1564,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       ejecucion: TarjetaDeEjecucion | null;
       ensayo: boolean;
       plan: TarjetaDePlan | null;
+      lote: TarjetaDeLote | null;
       procesoIniciado: EventoProcesoIniciado | null;
       camino?: string;
       razonamiento?: unknown;
@@ -1563,6 +1593,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
           ejecucion?: TarjetaDeEjecucion | null;
           ensayo?: boolean;
           plan?: TarjetaDePlan | null;
+          lote?: TarjetaDeLote | null;
           camino?: string;
           razonamiento?: unknown;
         } | null;
@@ -1846,6 +1877,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
               ejecucion: f.ejecucion,
               ensayo: f.ensayo,
               plan: f.plan,
+              lote: f.lote,
               ...(f.camino ? { camino: f.camino } : {}),
               ...(f.razonamiento !== undefined ? { razonamiento: f.razonamiento } : {}),
             };
@@ -1902,6 +1934,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         ensayo: final?.ensayo === true,
         // La tarjeta del plan (24-09, paquete H).
         plan: final?.plan ?? null,
+        // La tarjeta del lote (29-10).
+        lote: final?.lote ?? null,
         procesoIniciado: collected.procesoIniciado,
         ...(final?.camino ? { camino: final.camino } : {}),
         ...(final?.razonamiento !== undefined ? { razonamiento: final.razonamiento } : {}),
@@ -2822,5 +2856,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
 
     // Las tarjetas del ejecutor, al día (24-09)
     refrescarEjecucion,
+    // La tarjeta del lote, al día (29-10)
+    refrescarLote,
   };
 }

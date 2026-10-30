@@ -12889,6 +12889,67 @@
           "seguir": "Sigue desde el paso {{n}}",
           "noSeguir": "No sigas con el plan"
         }
+      },
+      "lote": {
+        "estado": {
+          "propuesto": "Espera tu respuesta",
+          "contestado": "Respondido",
+          "ejecutando": "Haciéndose",
+          "programado": "Programado",
+          "en_pausa": "En pausa",
+          "hecho": "Hecho",
+          "cancelado": "No se hizo",
+          "vencido": "Venció"
+        },
+        "item": {
+          "listo": "Va",
+          "quitado": "Quitado",
+          "pendiente": "En cola",
+          "en_curso": "Haciéndose",
+          "hecho": "Hecho",
+          "fallido": "No se pudo",
+          "omitido": "Se omitió"
+        },
+        "loQuePediste": "Lo que pediste: «{{cita}}»",
+        "lista": "A quiénes",
+        "elResto": "Los demás del lote",
+        "verTodos": "Ver los {{n}} que faltan",
+        "verMenos": "Ver menos",
+        "quitar": "Quitar a {{nombre}} del lote",
+        "volverAPoner": "Volver a poner a {{nombre}} en el lote",
+        "paraTodos": "Para todos",
+        "avance": "Avance",
+        "progreso": "{{hechos}} de {{total}}",
+        "noEntran": "No entran hoy ({{n}}): por qué",
+        "fallas": "Lo que no se pudo ({{n}})",
+        "porResolver": {
+          "titulo": "Nombres por resolver",
+          "ambiguo": "«{{nombre}}» tiene {{n}} coincidencias: escoge cuál.",
+          "noAparece": "«{{nombre}}» no aparece en tu inmobiliaria.",
+          "noSePudo": "No pude buscar a «{{nombre}}» en este momento.",
+          "ninguno": "Ninguno de éstos"
+        },
+        "revisarAlHacerlo": "A {{n}} les reviso la ficha justo antes de hacerlo; si alguno no se puede, te digo por qué.",
+        "quedan": "Son los primeros {{tope}}. Cuando termine, pídemelo otra vez para los {{n}} que siguen.",
+        "hacer": "Sí, hazlo con {{n}}",
+        "no": "No",
+        "llenaLoQueFalta": "Llena lo que falta para todos antes de hacerlo.",
+        "yaRespondiste": {
+          "hacer_lote": "Dijiste que sí: el avance va en la respuesta de abajo.",
+          "cancelar_lote": "Dijiste que no.",
+          "reintentar_lote": "Pediste reintentar: el avance va en la respuesta de abajo.",
+          "seguir_lote": "Pediste seguir: el avance va en la respuesta de abajo."
+        },
+        "vencido": "Este lote venció: pídemelo de nuevo y lo armo con los datos de ahora.",
+        "ensayo": "Ensayo: el lote está completo, pero nada se guarda ni se hace.",
+        "mensaje": {
+          "hacer": "Sí, hazlo con {{n}}",
+          "no": "No, no hagas el lote",
+          "detener": "Detén el lote",
+          "reintentar": "Reintenta los que fallaron",
+          "seguir": "Sigue con el lote",
+          "noSeguir": "No sigas con el lote"
+        }
       }
     },
     "turno": {

@@ -378,6 +378,12 @@ export interface ChatMessage {
    * `src/lib/chat/plan-del-chat.ts`.
    */
   plan?: import('@/lib/chat/plan-del-chat').TarjetaDePlan;
+  /**
+   * (29-10) La tarjeta del LOTE: la misma acción para varios con UNA
+   * confirmación, que corre en segundo plano. Se pone al día con
+   * `GET …/lotes/{id}` en su mismo mensaje. Ver `src/lib/chat/lote-del-chat.ts`.
+   */
+  lote?: import('@/lib/chat/lote-del-chat').TarjetaDeLote;
   /** El turno corrió en modo ensayo del servidor: nada se ejecutó ni se programó. */
   ensayo?: boolean;
   /**

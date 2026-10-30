@@ -1,7 +1,7 @@
 /**
  * Protege la regla que sostiene el paso más frágil del recorrido: crear la
  * cuenta y entrar. Ahí la aprobación cambia de fuente (localStorage →
- * pre-scoring del back principal) y es donde se puede perder sin que nadie
+ * estudio gratis de documentos del back principal) y es donde se puede perder sin que nadie
  * lo note.
  */
 
@@ -34,18 +34,23 @@ const APROBADO_LOCAL = {
   maxAfianzableCop: 2_800_000,
 }
 
-/** Raw `/pre-scoring/current` completo y aprobado. */
-const PRE_SCORING_APROBADO = {
-  order: { status: 'COMPLETED', paymentStatus: 'PAID', expiresAt: null },
-  evaluation: {
-    status: 'completed',
-    result: {
-      carriers: [{ name: 'Fianli', product_type: null, viable: true, prima_mensual_cop: 45_000 }],
-      fianly: { maxEntrenchmentValue: 3_200_000 },
-      bureau: { minimumScore: null, monthlyCapacity: null },
+/** Raw `/calificacion-leasefy/estudio/actual` with a finished study. */
+function estudioRaw(status: string, resultado: Record<string, unknown> | null = null) {
+  return {
+    estudio: {
+      id: '11111111-1111-4111-8111-111111111111',
+      status,
+      creadoEl: '2026-10-28T10:00:00.000Z',
+      terminadoEl: status === 'COMPLETED' ? '2026-10-28T10:02:00.000Z' : null,
+      venceEl: status === 'COMPLETED' ? '2099-04-28T10:02:00.000Z' : null,
+      documentos: [],
+      faltan: [],
+      resultado,
+      error: null,
     },
-  },
+  }
 }
+const ESTUDIO_APROBADO = estudioRaw('COMPLETED', { canonMaximoCop: 3_200_000, condiciones: [] })
 
 describe('de dónde sale la aprobación', () => {
   beforeEach(() => {
@@ -54,7 +59,7 @@ describe('de dónde sale la aprobación', () => {
     apiClientGet.mockReset()
   })
 
-  it('sin sesión usa el respaldo local (el pre-scoring necesita JWT)', async () => {
+  it('sin sesión usa el respaldo local (el estudio necesita JWT)', async () => {
     getAccessToken.mockReturnValue(null)
     guardarAprobacionLocal(APROBADO_LOCAL)
     const r = await renderHook(useAprobacion)
@@ -72,53 +77,48 @@ describe('de dónde sale la aprobación', () => {
     expect(r.vigente).toBe(true)
   })
 
-  it('CON sesión, un pre-scoring "sin_estudio" tampoco borra la aprobación local', async () => {
+  it('CON sesión, "sin estudio" tampoco borra la aprobación local', async () => {
     getAccessToken.mockReturnValue('token')
-    apiClientGet.mockResolvedValue({ order: null, evaluation: null })
+    apiClientGet.mockResolvedValue({ estudio: null })
     guardarAprobacionLocal(APROBADO_LOCAL)
     const r = await renderHook(useAprobacion)
     expect(r.aprobacion?.estado).toBe('aprobado')
   })
 
-  it('un estado REAL del pre-scoring (aprobado) sí manda sobre el local', async () => {
+  it('un estado REAL del estudio (aprobado) sí manda sobre el local', async () => {
     getAccessToken.mockReturnValue('token')
-    apiClientGet.mockResolvedValue(PRE_SCORING_APROBADO)
+    apiClientGet.mockResolvedValue(ESTUDIO_APROBADO)
     guardarAprobacionLocal(APROBADO_LOCAL)
     const r = await renderHook(useAprobacion)
     expect(r.aprobacion?.estado).toBe('aprobado')
     expect(r.aprobacion?.topeAprobadoCop).toBe(3_200_000)
   })
 
-  it('un rechazado del pre-scoring también manda sobre el local', async () => {
+  it('un estudio terminado sin ingreso verificado (rechazado) también manda sobre el local', async () => {
     getAccessToken.mockReturnValue('token')
-    apiClientGet.mockResolvedValue({
-      order: { status: 'COMPLETED', paymentStatus: 'PAID', expiresAt: null },
-      evaluation: {
-        status: 'completed',
-        result: {
-          carriers: [{ name: 'Sura', product_type: null, viable: false, prima_mensual_cop: null }],
-          fianly: { maxEntrenchmentValue: null },
-          bureau: { minimumScore: null, monthlyCapacity: null },
-        },
-      },
-    })
+    apiClientGet.mockResolvedValue(estudioRaw('COMPLETED', { canonMaximoCop: null, veredicto: 'REVISAR' }))
     guardarAprobacionLocal(APROBADO_LOCAL)
     const r = await renderHook(useAprobacion)
     expect(r.aprobacion?.estado).toBe('rechazado')
+    expect(r.aprobacion?.topeAprobadoCop).toBeNull()
   })
 
-  it('un expirado del pre-scoring cae a sin_estudio, y por lo tanto respeta el local', async () => {
+  it('un estudio en proceso se muestra como en_proceso', async () => {
     getAccessToken.mockReturnValue('token')
-    apiClientGet.mockResolvedValue({
-      order: { status: 'EXPIRED', paymentStatus: 'PAID', expiresAt: '2026-01-01T00:00:00.000Z' },
-      evaluation: null,
-    })
+    apiClientGet.mockResolvedValue(estudioRaw('PROCESSING'))
+    const r = await renderHook(useAprobacion)
+    expect(r.aprobacion?.estado).toBe('en_proceso')
+  })
+
+  it('un estudio fallido cae a sin_estudio, y por lo tanto respeta el local', async () => {
+    getAccessToken.mockReturnValue('token')
+    apiClientGet.mockResolvedValue(estudioRaw('FAILED'))
     guardarAprobacionLocal(APROBADO_LOCAL)
     const r = await renderHook(useAprobacion)
-    expect(r.aprobacion?.estado).toBe('aprobado') // el local, porque un vencido no personaliza
+    expect(r.aprobacion?.estado).toBe('aprobado') // el local, porque un fallido no personaliza
   })
 
-  it('sin local y sin pre-scoring queda en el estado que enseña el camino', async () => {
+  it('sin local y sin estudio queda en el estado que enseña el camino', async () => {
     getAccessToken.mockReturnValue('token')
     apiClientGet.mockRejectedValue(new ApiError(404, 'not found'))
     borrarAprobacionLocal()

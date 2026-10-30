@@ -36,6 +36,7 @@
   caja.addEventListener("pointermove", function (ev) { var r = cv.getBoundingClientRect(); raton.x = ev.clientX - r.left; raton.y = ev.clientY - r.top; });
   caja.addEventListener("pointerleave", function () { raton.x = raton.y = -9999; });
   new IntersectionObserver(function (en) { objetivo = en[0].isIntersecting ? 1 : objetivo; }, { threshold: .25 }).observe(caja);
-  var t; window.addEventListener("resize", function () { clearTimeout(t); t = setTimeout(armar, 200); });
+  var t, rearmar = function () { clearTimeout(t); t = setTimeout(armar, 200); };
+  if (window.LF && LF.alCambiarDeTamano) LF.alCambiarDeTamano(rearmar); else window.addEventListener("resize", rearmar);
   armar();
 })();

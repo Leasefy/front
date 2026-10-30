@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from 'react'
 import { ListChecks } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { Badge } from '@/components/ui/badge'
@@ -7,12 +8,13 @@ import {
   Table,
   TableHeader,
   TableBody,
-  TableHead,
   TableRow,
   TableCell,
 } from '@/components/ui/table'
 import { SinDatos } from '@/components/estado/SinDatos'
 import type { AssumptionRow } from '@/lib/hooks/cotizador/use-insights'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
 
 // ---------------------------------------------------------------------------
 // State pill semantic → Badge variant
@@ -60,7 +62,20 @@ export function InsightsAssumptionTable({
   const { t } = useI18n()
 
   const cargando = Boolean(isLoading) && assumptions === null
-  const rows = (assumptions ?? []).slice(0, 20)
+  const todas = useMemo(() => assumptions ?? [], [assumptions])
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Se ordena la lista
+  // entera y después se cortan las 20 que se muestran.
+  const { ordenadas, orden, ordenarPor } = useOrdenDeLaTabla(
+    todas,
+    {
+      nombre: (r) => r.statement || r.id,
+      descripcion: (r) => r.source,
+      estado: (r) => r.status,
+      actualizado: (r) => r.validatedAt ?? r.createdAt,
+    },
+    { primero: { actualizado: 'desc' } },
+  )
+  const rows = ordenadas.slice(0, 20)
 
   // La tabla de la casa: la carga y el vacío viven dentro del cuerpo, con la
   // cabecera siempre visible para que se sepa qué columnas van a llegar.
@@ -69,18 +84,18 @@ export function InsightsAssumptionTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="px-4 py-3">
+            <EncabezadoOrdenable campo="nombre" orden={orden} onOrdenar={ordenarPor} className="px-4 py-3">
               {t('inmobiliaria.ai.cotizador.insights.assumptions.columns.name')}
-            </TableHead>
-            <TableHead className="px-4 py-3 hidden md:table-cell">
+            </EncabezadoOrdenable>
+            <EncabezadoOrdenable campo="descripcion" orden={orden} onOrdenar={ordenarPor} className="px-4 py-3 hidden md:table-cell">
               {t('inmobiliaria.ai.cotizador.insights.assumptions.columns.description')}
-            </TableHead>
-            <TableHead className="px-4 py-3">
+            </EncabezadoOrdenable>
+            <EncabezadoOrdenable campo="estado" orden={orden} onOrdenar={ordenarPor} className="px-4 py-3">
               {t('inmobiliaria.ai.cotizador.insights.assumptions.columns.state')}
-            </TableHead>
-            <TableHead className="px-4 py-3 hidden sm:table-cell">
+            </EncabezadoOrdenable>
+            <EncabezadoOrdenable campo="actualizado" orden={orden} onOrdenar={ordenarPor} className="px-4 py-3 hidden sm:table-cell">
               {t('inmobiliaria.ai.cotizador.insights.assumptions.columns.updatedAt')}
-            </TableHead>
+            </EncabezadoOrdenable>
           </TableRow>
         </TableHeader>
         <TableBody>

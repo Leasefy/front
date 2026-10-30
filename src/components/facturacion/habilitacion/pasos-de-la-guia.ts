@@ -75,8 +75,8 @@ export const PASOS_DE_LA_GUIA: Record<ClaveDelPaso, TextoDelPaso> = {
     ojo: ['El token vence en unos 60 minutos: si se venció, pide otro con **Entrar**.'],
   },
   proveedor: {
-    titulo: 'Elige a Feel y copia el código del set de pruebas',
-    porque: 'Le dices a la DIAN que Feel es tu proveedor tecnológico. La DIAN te da un código para las pruebas.',
+    titulo: 'Conecta con el proveedor y copia el código del set de pruebas',
+    porque: 'Le dices a la DIAN que tu proveedor tecnológico es BPM Consulting, con su software Feel. La DIAN te da un código para las pruebas.',
     tiempo: '5 min',
     ilustracion: 'llaves',
     abre: 'habilitacion',
@@ -135,8 +135,8 @@ export const PASOS_DE_LA_GUIA: Record<ClaveDelPaso, TextoDelPaso> = {
     ],
   },
   asociar: {
-    titulo: 'Asocia tus prefijos a Feel en la DIAN',
-    porque: 'El último paso: la DIAN tiene que saber que cada prefijo lo transmite Feel.',
+    titulo: 'Asocia tus prefijos al proveedor en la DIAN',
+    porque: 'El último paso: la DIAN tiene que saber que cada prefijo lo transmite tu proveedor, BPM Consulting (Feel).',
     tiempo: '5 min',
     ilustracion: 'factura',
     abre: 'facturando',

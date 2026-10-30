@@ -40,6 +40,7 @@ import { ChatThread } from '@/components/messages/ChatThread';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { AprobacionDeLaInmobiliaria } from '@/components/inquilino/AprobacionDeLaInmobiliaria';
 
 /*
  * 🔴 Aquí vivía `generateTimelineFromStatus`, que INVENTABA el historial a
@@ -680,6 +681,8 @@ export default function ApplicationDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Nico 28-10-2026: la aprobación que cobra la inmobiliaria — cuánto, a qué cuenta y el comprobante. */}
+            <AprobacionDeLaInmobiliaria applicationId={applicationId} />
             {/* Timeline */}
             <section className="rounded-lg bg-surface-muted p-6">
               <h2 className="text-h3 text-fg mb-6">

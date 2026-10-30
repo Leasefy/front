@@ -54,7 +54,6 @@ import {
   type RejectReasonSlug,
 } from '@/lib/hooks/cobranza/use-payment-plan-approval'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
-import { usePaymentsFunnelRealtime } from '@/lib/hooks/cobranza/use-payments-funnel-realtime'
 import { VolverALaLista } from '@/components/inmobiliaria/ai/VolverALaLista'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 import { CampoDeDia } from '@/components/contabilidad/CampoDeDia'
@@ -139,11 +138,6 @@ export default function PaymentPlanApprovalClient({ planId, enCajon = false, onR
     modifyPlan,
     acceptPlan,
   } = usePaymentPlanApproval({ planId, canApprove })
-  // Realtime — single refetch on each cartera_payments event for this plan.
-  const onUpdate = useCallback(() => {
-    void refetch()
-  }, [refetch])
-  usePaymentsFunnelRealtime({ planId, onUpdate, onReconnect: onUpdate })
 
   // ── Inline-form state ─────────────────────────────────────────────────────
   const [rechazarOpen, setRechazarOpen] = useState<boolean>(false)

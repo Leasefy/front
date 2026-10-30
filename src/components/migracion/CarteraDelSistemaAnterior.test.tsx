@@ -142,6 +142,25 @@ async function click(el: Element | null | undefined) {
   await act(async () => {});
 }
 
+/**
+ * Espera a que la lectura del archivo haya llegado al lector (`parseSpreadsheetFile`) y
+ * deja que se asienten los estados que siguen. Un solo `setTimeout(0)` alcanzaba con la
+ * máquina libre y se quedaba corto en el CI cargado (la lectura pasa por imports
+ * dinámicos y promesas encadenadas): se espera la condición, no un número de turnos.
+ */
+async function esperarLaLectura() {
+  for (let i = 0; i < 200 && vi.mocked(parseSpreadsheetFile).mock.calls.length === 0; i++) {
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 10));
+    });
+  }
+  for (let i = 0; i < 3; i++) {
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+  }
+}
+
 async function subir(rows: Record<string, unknown>[], headers: string[] = [...ENCABEZADOS_DEL_INFORME_DE_CARTERA]) {
   vi.mocked(parseSpreadsheetFile).mockResolvedValue({ rows, headers, sheetNames: ['Hoja1'] } as never);
   const input = q('input-cartera') as HTMLInputElement;
@@ -149,8 +168,8 @@ async function subir(rows: Record<string, unknown>[], headers: string[] = [...EN
   Object.defineProperty(input, 'files', { value: [file], configurable: true });
   await act(async () => {
     input.dispatchEvent(new Event('change', { bubbles: true }));
-    await new Promise((r) => setTimeout(r, 0));
   });
+  await esperarLaLectura();
   await act(async () => {});
 }
 

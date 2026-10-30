@@ -73,6 +73,8 @@ export interface InmuebleRapido {
   banos: number | null;
   area: number | null;
   descripcion: string;
+  /** Nico 29-10-2026: «todas las características, opcionales, pero que se le muestren» (ids del catálogo). */
+  caracteristicas?: string[];
   /** El código de la inmobiliaria (columna «Código» del Excel): acomoda las carpetas de fotos. */
   codigo?: string;
   origen?: OrigenDelInmueble;
@@ -159,6 +161,7 @@ export function paraCrear(i: InmuebleRapido, lado?: 'rent' | 'sale') {
   return {
     title: tituloDe(i, cual),
     ...(i.descripcion.trim().length >= 20 ? { description: i.descripcion.trim() } : {}),
+    ...(i.caracteristicas && i.caracteristicas.length > 0 ? { amenities: [...i.caracteristicas] } : {}),
     type: i.tipo as string,
     city: i.ciudad.trim(),
     neighborhood: i.barrio.trim() || null,

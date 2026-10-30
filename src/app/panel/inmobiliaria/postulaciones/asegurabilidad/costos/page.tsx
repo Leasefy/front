@@ -33,6 +33,9 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { CrossFade } from '@leasefy/cadence'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden'
 
 const COLUMNAS = 3
 
@@ -71,19 +74,6 @@ export default function CostosPage() {
   const [pagina, setPagina] = useState(1)
   const [porPagina, setPorPagina] = useState<number>(PAGE_SIZE_OPTIONS[0])
 
-  // Phase 38-05b: page-level skeleton on initial load only (D-38-04: skeleton only;
-  // per-section table skeleton + inline empty prose preserved below; no EmptyState since
-  // costos uses Phase 35 SampleDataWatermark semantics — no "truly nothing" zero state).
-  // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
-  // contenido); lo que ya estaba al montarse no se anima.
-  if (isLoadingSummary && !summaryData) {
-    return (
-      <CrossFade swapKey="esqueleto">
-        <PageSkeleton variant="dashboard" />
-      </CrossFade>
-    )
-  }
-
   // Derive table rows by joining costSources registry labels with source totals
   const tableRows = (summaryData?.costSources ?? []).map(src => ({
     key: src.key,
@@ -104,9 +94,33 @@ export default function CostosPage() {
   const filasVisibles = busqueda.trim()
     ? tableRows.filter((r) => plano(r.label).includes(plano(busqueda.trim())))
     : tableRows
-  const ultimaPagina = Math.max(1, Math.ceil(filasVisibles.length / porPagina))
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas».
+  const { ordenadas, orden, ordenarPor: ordenarPorColumna, setOrden: elegirOrden } = useOrdenDeLaTabla(
+    filasVisibles,
+    { fuente: (r) => r.label, total: (r) => r.total, estado: (r) => r.populated },
+    { primero: { total: 'desc' } },
+  )
+  const ordenarPor = (campo: 'fuente' | 'total' | 'estado') => {
+    ordenarPorColumna(campo)
+    setPagina(1)
+  }
+  const ultimaPagina = Math.max(1, Math.ceil(ordenadas.length / porPagina))
   const paginaActual = Math.min(pagina, ultimaPagina)
-  const filasDeLaPagina = filasVisibles.slice((paginaActual - 1) * porPagina, paginaActual * porPagina)
+  const filasDeLaPagina = ordenadas.slice((paginaActual - 1) * porPagina, paginaActual * porPagina)
+
+  // (Va después de los cálculos: el orden de la tabla es un hook y no puede quedar detrás de una salida.)
+  // Phase 38-05b: page-level skeleton on initial load only (D-38-04: skeleton only;
+  // per-section table skeleton + inline empty prose preserved below; no EmptyState since
+  // costos uses Phase 35 SampleDataWatermark semantics — no "truly nothing" zero state).
+  // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
+  // contenido); lo que ya estaba al montarse no se anima.
+  if (isLoadingSummary && !summaryData) {
+    return (
+      <CrossFade swapKey="esqueleto">
+        <PageSkeleton variant="dashboard" />
+      </CrossFade>
+    )
+  }
 
   return (
     <CrossFade swapKey="costos">
@@ -190,19 +204,34 @@ export default function CostosPage() {
               />
             </div>
           ) : null}
+          {tableRows.length > 1 ? (
+            <SelectorDeOrden
+              orden={orden}
+              onCambiar={(o) => {
+                elegirOrden(o)
+                setPagina(1)
+              }}
+              className="w-full sm:w-56"
+              formas={[
+                { campo: 'total', sentido: 'desc', etiqueta: 'Más costo' },
+                { campo: 'fuente', sentido: 'asc', etiqueta: 'Fuente (A–Z)' },
+                { campo: 'estado', sentido: 'desc', etiqueta: 'Con datos primero' },
+              ]}
+            />
+          ) : null}
         </div>
         <Table className="min-w-full divide-y divide-border">
           <TableHeader className="bg-surface-muted/60">
             <TableRow>
-              <TableHead className="px-4 py-3 text-left">
+              <EncabezadoOrdenable campo="fuente" orden={orden} onOrdenar={ordenarPor} className="px-4 py-3 text-left" alineacion="izquierda">
                 {t('inmobiliaria.ai.cotizador.costos.sourceBreakdown.colSource')}
-              </TableHead>
-              <TableHead className="px-4 py-3 text-right">
+              </EncabezadoOrdenable>
+              <EncabezadoOrdenable campo="total" orden={orden} onOrdenar={ordenarPor} className="px-4 py-3 text-right" alineacion="derecha">
                 {t('inmobiliaria.ai.cotizador.costos.sourceBreakdown.colTotal')}
-              </TableHead>
-              <TableHead className="px-4 py-3 text-left">
+              </EncabezadoOrdenable>
+              <EncabezadoOrdenable campo="estado" orden={orden} onOrdenar={ordenarPor} className="px-4 py-3 text-left" alineacion="izquierda">
                 {t('inmobiliaria.ai.cotizador.costos.sourceBreakdown.colStatus')}
-              </TableHead>
+              </EncabezadoOrdenable>
             </TableRow>
           </TableHeader>
           <TableBody className="divide-y divide-border">

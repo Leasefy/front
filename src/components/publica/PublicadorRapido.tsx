@@ -172,7 +172,9 @@ export function PublicadorRapido({
   const [verQueFalta, setVerQueFalta] = useState(false);
   const [publicadosAhora, setPublicadosAhora] = useState(0);
   /** «¿Tienes muchos?» abierto (va arriba, donde dice «más abajo» con razón). */
-  const [verTraer, setVerTraer] = useState(false);
+  // Nico 29-10-2026: «deja esto como estaba, de entrada abierto sin pedir que lo abra»: «¿Son muchos? Tráelos de una»
+  // sale arriba desde el principio (la línea «¿Tienes muchos inmuebles? · Traerlos» ya no hace falta).
+  const [verTraer, setVerTraer] = useState(true);
 
   // Lo último, para lo que corre por fuera del render (fotos que llegan, publicar).
   const inmueblesRef = useRef(inmuebles);

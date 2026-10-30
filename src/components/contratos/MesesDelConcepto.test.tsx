@@ -61,6 +61,29 @@ const q = (sel: string) => container.querySelector<HTMLElement>(sel)
 const clic = async (sel: string) => act(async () => q(sel)!.dispatchEvent(new MouseEvent('click', { bubbles: true })))
 
 describe('MesesDelConcepto', () => {
+  it('Nico 28-10: con el canon y el tope (las reparaciones) sugiere en cuántos meses y lo aplica con un toque', async () => {
+    h.meses.mockResolvedValue({ disponible: true, meses: MESES, canonCop: 2_000_000, topeDelMesPct: 30 })
+    await montar(1_500_000)
+    // Tope: 30 % de $2.000.000 = $600.000 → $1.500.000 en 3 meses de $500.000.
+    expect(q('[data-testid="sugerencia-de-meses"]')?.textContent).toMatch(/Sugerido: 3 meses de hasta \$\s?500\.000, para no pasar del 30 % del canon/)
+    await clic('[data-testid="usar-la-sugerencia"]')
+    expect(valor).toEqual(['2026-11', '2026-12', '2027-01'].map((mes) => ({ mes, valorCop: 500_000 })))
+    expect((q('[data-testid="diferir-en"]') as HTMLInputElement).value).toBe('3')
+  })
+
+  it('si el contrato no tiene tantos meses por delante, lo dice y sugiere los que quedan', async () => {
+    h.meses.mockResolvedValue({ disponible: true, meses: MESES, canonCop: 2_000_000, topeDelMesPct: 30 })
+    await montar(6_000_000)
+    const texto = q('[data-testid="sugerencia-de-meses"]')?.textContent ?? ''
+    expect(texto).toContain('harían falta 10 meses, y el contrato tiene 5 por delante')
+    expect(texto).toContain('Diferir en 5 meses')
+  })
+
+  it('sin el canon o el tope (un concepto cualquiera, o un back anterior) no sugiere nada', async () => {
+    await montar(2_000_000)
+    expect(q('[data-testid="sugerencia-de-meses"]')).toBeNull()
+  })
+
   it('diferir $2.000.000 en 5 meses desde la próxima sin pagar: $400.000 cada uno', async () => {
     await montar(2_000_000)
     const n = q('[data-testid="diferir-en"]') as HTMLInputElement

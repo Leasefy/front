@@ -135,7 +135,7 @@ export function GuiaDeHabilitacion() {
       <EncabezadoDePantalla
         seccion="Facturación"
         titulo="Activa tu facturación electrónica"
-        descripcion="Paso a paso para dejar a Feel como tu proveedor ante la DIAN. Lo haces tú, a tu ritmo; Leasefy te dice qué sigue."
+        descripcion="Paso a paso para dejar a BPM Consulting, con su software Feel, como tu proveedor ante la DIAN. Lo haces tú, a tu ritmo; Leasefy te dice qué sigue."
         junto={
           <StatusBadge tone={vista.termino ? 'success' : 'info'} data-testid="guia-avance">
             {vista.termino ? 'Lista' : `${vista.avance.hechos} de ${vista.avance.total}`}
@@ -167,7 +167,7 @@ export function GuiaDeHabilitacion() {
           <Ilustracion nombre="pago_confirmado" tamano={160} />
           <p className="mt-4 text-h2 text-fg">¡Listo, ya facturas electrónicamente!</p>
           <p className="mt-1 max-w-lg text-body-sm text-fg-muted">
-            Feel es tu proveedor ante la DIAN y Leasefy ve tu numeración. Tus facturas salen solas y validadas.
+            BPM Consulting (Feel) es tu proveedor ante la DIAN y Leasefy ve tu numeración. Tus facturas salen solas y validadas.
           </p>
           <Button asChild hideArrow className="mt-6">
             <Link href="/panel/inmobiliaria/facturacion">Ir a Facturación</Link>

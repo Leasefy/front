@@ -250,19 +250,19 @@ describe('arquitectura del panel — sidebar', () => {
     expect(modulos).toHaveLength(30);
   });
 
-  it('Agenda vive en «Captación y arriendo», detrás de Pipeline', () => {
-    // Nico, 2026-09-12: «Agenda interna: la sección de agenda la debemos llevar
-    // para la sección de captación y arriendo». Estaba en Operación. Va detrás
-    // de Pipeline porque lo que llena la agenda son las visitas del prospecto.
+  it('Agenda vive en «Operación», detrás de Contratos', () => {
+    // Nico, 2026-10-28: «pasa la sección agenda dentro de operación y el calendario quede como predeterminado y no
+    // lista». Del 12-09 al 28-10 estuvo en Captación y arriendo, detrás de Pipeline.
     const captacion = ARQUITECTURA_DEL_PANEL.find((g) => g.key === 'captacion');
     const operacion = ARQUITECTURA_DEL_PANEL.find((g) => g.key === 'operacion');
-    const claves = captacion!.modulos.map((m) => m.key);
+    const claves = operacion!.modulos.map((m) => m.key);
     expect(claves).toContain('agenda');
-    expect(claves.indexOf('agenda')).toBe(claves.indexOf('pipeline') + 1);
-    expect(operacion!.modulos.map((m) => m.key)).not.toContain('agenda');
-    // Cambiar de grupo no cambia quién la ve: mismo gate, mismo encuadre.
-    const agenda = captacion!.modulos.find((m) => m.key === 'agenda');
+    expect(claves.indexOf('agenda')).toBe(claves.indexOf('contratos') + 1);
+    expect(captacion!.modulos.map((m) => m.key)).not.toContain('agenda');
+    // Cambiar de grupo no cambia quién la ve: mismo gate, mismo encuadre (también el asesor, por `pipeline`).
+    const agenda = operacion!.modulos.find((m) => m.key === 'agenda');
     expect(agenda!.module).toBe('operaciones');
+    expect(agenda!.modulos).toEqual(['operaciones', 'pipeline']);
     expect(agenda!.scope).toBe('administracion');
   });
 

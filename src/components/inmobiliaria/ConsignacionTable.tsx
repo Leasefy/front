@@ -1,5 +1,6 @@
 'use client';
 
+import { OpcionesDelInmueble, accionesDelInmueble } from '@/components/inmobiliaria/inmuebles/OpcionesDelInmueble';
 import { SituacionComercialCorta } from '@/components/comercial/SituacionComercial';
 import type { VacanciaYMandato } from '@/lib/comercial/comercial';
 import { useState, useMemo } from 'react';
@@ -742,64 +743,25 @@ export function ConsignacionTable({
                             <span className="text-sm">{t('inmobiliaria.consignaciones.table.edit')}</span>
                           </DropdownListItem>
                           )}
-                          {onAgendarCita && puedePedirCita && !estaArrendado && (
-                            <DropdownListItem
-                              className="gap-3"
-                              onClick={() => onAgendarCita(row)}
-                            >
-                              <CalendarPlus className="w-4 h-4" />
-                              <span className="text-sm">{t('inmobiliaria.agenda.pedirCita')}</span>
-                            </DropdownListItem>
-                          )}
-                          {onCandidatos && (
-                            <DropdownListItem
-                              className="gap-3"
-                              onClick={() => onCandidatos(row)}
-                            >
-                              <Users className="w-4 h-4" />
-                              <span className="text-sm">
-                                {t('inmobiliaria.inmuebles.acciones.candidatos')}
-                              </span>
-                            </DropdownListItem>
-                          )}
-                          {/* El aviso público sólo existe si hay inmueble: un
-                              mandato de la migración de cartera puede no tenerlo
-                              todavía, y un enlace a la nada no es una acción. */}
-                          {onVerAviso && row.propertyId && (
-                            <DropdownListItem
-                              className="gap-3"
-                              onClick={() => onVerAviso(row)}
-                            >
-                              <ArrowSquareOut className="w-4 h-4" />
-                              <span className="text-sm">
-                                {t('inmobiliaria.inmuebles.acciones.verAviso')}
-                              </span>
-                            </DropdownListItem>
-                          )}
-                          {opcionDeCopiarFicha}
-                          {opcionDelMarketplace}
-                          {onPrepararSinSenal && puedeVerPortafolio && (
-                            <DropdownListItem
-                              className="gap-3"
-                              onClick={() => onPrepararSinSenal(row)}
-                            >
-                              <CloudArrowDown className="w-4 h-4" />
-                              <span className="text-sm">
-                                {t('inmobiliaria.sinSenal.preparar')}
-                              </span>
-                            </DropdownListItem>
-                          )}
-                          {onEliminar && puedeRetirar && (
-                            <DropdownListItem
-                              className="gap-3 text-danger focus:text-danger"
-                              onClick={() => onEliminar(row)}
-                            >
-                              <Trash className="w-4 h-4" />
-                              <span className="text-sm">
-                                {t('inmobiliaria.inmuebles.acciones.eliminar')}
-                              </span>
-                            </DropdownListItem>
-                          )}
+                          {/* Las acciones del inmueble salen de UNA definición, la misma del menú de su ficha (29-10). */}
+                          <OpcionesDelInmueble
+                            acciones={accionesDelInmueble(
+                              {
+                                onAgendarVisita: onAgendarCita && !estaArrendado ? () => onAgendarCita(row) : undefined,
+                                onCandidatos: onCandidatos ? () => onCandidatos(row) : undefined,
+                                // El aviso público sólo existe si hay inmueble.
+                                onVerAviso: onVerAviso && row.propertyId ? () => onVerAviso(row) : undefined,
+                                onCopiarFicha: onCopiarFicha && row.propertyId ? () => onCopiarFicha(row.propertyId as string) : undefined,
+                                publicado: row.propertyId ? publicado : undefined,
+                                onCambiarPublicacion: onCambiarPublicacion
+                                  ? (publicar) => onCambiarPublicacion([row.propertyId as string], publicar)
+                                  : undefined,
+                                onPrepararSinSenal: onPrepararSinSenal ? () => onPrepararSinSenal(row) : undefined,
+                                onEliminar: onEliminar ? () => onEliminar(row) : undefined,
+                              },
+                              { puedePedirCita, puedeVerPortafolio, puedeEditar, puedeRetirar },
+                            )}
+                          />
                         </>
                       ) : (
                         // Sin mandato: nada consignación-keyed — no hay `id`

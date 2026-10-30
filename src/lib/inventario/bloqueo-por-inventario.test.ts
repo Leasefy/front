@@ -48,12 +48,12 @@ describe('bloqueo por inventario', () => {
   });
 
   it('el enlace va a la sección del inventario de la ficha', () => {
-    expect(enlaceAlInventario('cons-1')).toBe('/panel/inmobiliaria/inmuebles/cons-1#inventario');
+    expect(enlaceAlInventario('cons-1')).toBe('/panel/inmobiliaria/inmuebles/cons-1?pestana=arrendarlo#inventario');
   });
 
   it('con a dónde volver, el `?volver=` va ANTES del ancla (después del # no se lee)', () => {
     expect(enlaceAlInventario('cons-1', '/panel/inmobiliaria/contratos/nuevo?inmueble=p 1')).toBe(
-      '/panel/inmobiliaria/inmuebles/cons-1?volver=%2Fpanel%2Finmobiliaria%2Fcontratos%2Fnuevo%3Finmueble%3Dp%201#inventario',
+      '/panel/inmobiliaria/inmuebles/cons-1?pestana=arrendarlo&volver=%2Fpanel%2Finmobiliaria%2Fcontratos%2Fnuevo%3Finmueble%3Dp%201#inventario',
     );
   });
 

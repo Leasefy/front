@@ -316,7 +316,9 @@ describe('PrefacturasDelRango', () => {
   });
 
   it('🔴 y NO tiene ningún botón de emitir: aquí sólo se mira', () => {
-    expect(host.querySelector('button')).toBeNull();
+    // Los únicos botones son los de ordenar las columnas (Nico 28-10); ninguno emite.
+    const botones = Array.from(host.querySelectorAll('button')).filter((b) => !b.dataset.testid?.startsWith('ordenar-'));
+    expect(botones).toHaveLength(0);
     expect(host.querySelector('input[type="checkbox"]')).toBeNull();
   });
 

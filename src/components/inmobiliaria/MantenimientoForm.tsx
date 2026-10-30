@@ -17,9 +17,21 @@ import {
   MagnifyingGlass,
   Wallet,
   Truck,
+  Plus,
+  UserCircle,
 } from '@phosphor-icons/react';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { useTr, type Tr } from '@/lib/i18n/use-tr';
+import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
+import { conRegreso } from '@/lib/nav/ruta-de-regreso';
+import {
+  buscarElInmueble,
+  contratosParaBuscar,
+  propietariosDelInmueble,
+  type ContratoParaBuscar,
+} from '@/lib/mantenimiento/buscar-el-inmueble';
 import { Button, Input, Textarea } from '@/components/ui';
 import { Collapse, Presence, RadioCardGroup, RadioCard } from '@leasefy/cadence';
 import { CajonCuerpo, CajonPie } from '@/components/ui/cajon';
@@ -33,8 +45,10 @@ import {
 } from '@/lib/mantenimiento/limites-del-mantenimiento';
 import { SelectorDeFotosDelMantenimiento } from '@/components/inmobiliaria/mantenimiento/SelectorDeFotosDelMantenimiento';
 import { ProveedorDeLaSolicitud } from '@/components/inmobiliaria/mantenimiento/ProveedorDeLaSolicitud';
+import { SeccionQuienGestiona } from '@/components/inmobiliaria/mantenimiento/QuienGestiona';
 import type {
   Consignacion,
+  GestionadoPor,
   MantenimientoType,
   MantenimientoPriority,
   MantenimientoPaidBy,
@@ -61,6 +75,8 @@ export interface MantenimientoFormData {
   paidBy: MantenimientoPaidBy;
   /** Portofino 22-10: el proveedor con el que se va a trabajar. Opcional. */
   proveedorId?: string;
+  /** Portofino 29-10: quién gestiona la reparación. Ausente = la inmobiliaria. */
+  gestionadoPor?: GestionadoPor;
 }
 
 /**
@@ -74,6 +90,7 @@ export type CampoDelMantenimiento =
   | 'title'
   | 'description'
   | 'photoUrls'
+  | 'gestionadoPor'
   | 'paidBy'
   | 'proveedorId';
 
@@ -85,6 +102,7 @@ export const CAMPOS_DEL_MANTENIMIENTO: readonly CampoDelMantenimiento[] = [
   'title',
   'description',
   'photoUrls',
+  'gestionadoPor',
   'paidBy',
   'proveedorId',
 ];
@@ -161,11 +179,48 @@ interface PropertySelectorProps {
   t: (key: string, params?: Record<string, string | number>) => string;
 }
 
+/** Portofino 29-10: si el inmueble no está, se crea primero en el portafolio y se vuelve acá. */
+const CREAR_EL_INMUEBLE = conRegreso('/panel/inmobiliaria/inmuebles/nuevo', '/panel/inmobiliaria/mantenimientos');
+
+/** «Crear el inmueble»: la salida cuando el inmueble todavía no está en Leasefy. */
+function CrearElInmueble({ tr }: { tr: Tr }) {
+  return (
+    <Button asChild variant="outline" size="sm" hideArrow className="shrink-0" data-testid="mantenimiento-crear-inmueble">
+      <Link href={CREAR_EL_INMUEBLE}>
+        <Plus className="h-4 w-4" aria-hidden="true" />
+        {tr('Crear el inmueble')}
+      </Link>
+    </Button>
+  );
+}
+
 function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertySelectorProps) {
+  const tr = useTr();
   const [searchQuery, setSearchQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   /** Envuelve AL BUSCADOR Y A LA LISTA: un clic acá adentro no cierra nada. */
   const contenedorRef = useRef<HTMLDivElement>(null);
+  /*
+    Portofino 29-10: también por el número del contrato. Los contratos se leen
+    UNA vez, al abrir el buscador, y sólo si la persona puede verlos (si no, el
+    back respondería 403): sin ellos se busca igual por todo lo demás.
+  */
+  const permisos = usePermissionsContextSafe();
+  const puedeVerContratos = permisos ? permisos.canAccess('contratos', 'view') : true;
+  const [contratos, setContratos] = useState<ContratoParaBuscar[]>([]);
+  const contratosPedidos = useRef(false);
+
+  useEffect(() => {
+    if (!isOpen || contratosPedidos.current || !puedeVerContratos) return;
+    contratosPedidos.current = true;
+    let vivo = true;
+    void contratosParaBuscar().then((lista) => {
+      if (vivo) setContratos(lista);
+    });
+    return () => {
+      vivo = false;
+    };
+  }, [isOpen, puedeVerContratos]);
 
   /*
     🔴 Antes el cierre lo hacía un `<div className="fixed inset-0">` invisible
@@ -199,72 +254,67 @@ function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertyS
     };
   }, [isOpen]);
 
-  const filteredConsignaciones = useMemo(() => {
-    if (!searchQuery.trim()) return consignaciones;
-    const query = searchQuery.toLowerCase();
-    return consignaciones.filter(
-      (c) =>
-        c.propertyTitle.toLowerCase().includes(query) ||
-        c.propertyAddress.toLowerCase().includes(query) ||
-        c.propertyZone?.toLowerCase().includes(query)
-    );
-  }, [consignaciones, searchQuery]);
+  // Las mismas reglas del buscador del panel (Ctrl K): código, contrato,
+  // propietario, inquilino, dirección, celular, sin tildes.
+  const encontrados = useMemo(
+    () => buscarElInmueble(consignaciones, searchQuery, contratos),
+    [consignaciones, searchQuery, contratos],
+  );
 
   const selectedConsignacion = consignaciones.find((c) => c.id === selectedId);
 
-  // Sin inmuebles arrendados no hay nada que buscar: el buscador abría un
-  // desplegable con «No se encontraron propiedades» encima de la sección
-  // siguiente (Nico, 2026-09-03). Se dice de frente y sin desplegable.
+  // Sin inmuebles no hay nada que buscar: el buscador abría un desplegable con
+  // «No se encontraron propiedades» encima de la sección siguiente (Nico,
+  // 2026-09-03). Se dice de frente, sin desplegable y con la salida de crearlo.
   if (consignaciones.length === 0) {
     return (
       <div className="space-y-2">
         <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
           {t('inmobiliaria.mantenimiento.property')} <span className="text-danger">*</span>
         </label>
-        <p
-          className="rounded-lg border border-dashed border-border bg-surface-muted px-4 py-3 text-sm text-fg-muted"
+        <div
+          className="flex flex-col gap-3 rounded-lg border border-dashed border-border bg-surface-muted px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
           data-testid="mantenimiento-sin-inmuebles"
         >
-          {t('inmobiliaria.mantenimiento.noRentedProperties')}
-        </p>
+          <p className="text-sm text-fg-muted">{t('inmobiliaria.mantenimiento.noRentedProperties')}</p>
+          <CrearElInmueble tr={tr} />
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+      <label htmlFor="mantenimiento-buscar-inmueble" className="block text-sm font-medium text-fg dark:text-fg-subtle">
         {t('inmobiliaria.mantenimiento.property')} <span className="text-danger">*</span>
       </label>
 
       {selectedConsignacion ? (
-        <div className="p-4 rounded-lg border border-primary/30 bg-primary-soft">
-          <div className="flex items-start justify-between">
-            <div className="flex items-start gap-3">
+        <div className="p-4 rounded-lg border border-primary/30 bg-primary-soft" data-testid="mantenimiento-inmueble-elegido">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex min-w-0 items-start gap-3">
               {selectedConsignacion.propertyThumbnail ? (
                 <img
                   src={selectedConsignacion.propertyThumbnail}
                   alt={selectedConsignacion.propertyTitle}
-                  className="w-16 h-12 rounded-md object-cover"
+                  className="w-16 h-12 rounded-md object-cover shrink-0"
                 />
               ) : (
-                <div className="w-16 h-12 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center">
+                <div className="w-16 h-12 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center shrink-0">
                   <HouseLine className="w-6 h-6 text-fg-subtle" />
                 </div>
               )}
-              <div>
+              <div className="min-w-0">
                 <p className="font-medium text-fg">
                   {selectedConsignacion.propertyTitle}
                 </p>
-                <p className="text-sm text-fg-muted dark:text-fg-subtle">
-                  {selectedConsignacion.propertyAddress}
-                </p>
-                {selectedConsignacion.currentTenantName && (
-                  <div className="flex items-center gap-1 mt-1 text-sm text-fg-muted dark:text-fg-subtle">
-                    <User className="w-3 h-3" />
-                    <span>{selectedConsignacion.currentTenantName}</span>
-                  </div>
-                )}
+                {selectedConsignacion.propertyAddress?.trim() &&
+                selectedConsignacion.propertyAddress.trim() !== selectedConsignacion.propertyTitle?.trim() ? (
+                  <p className="text-sm text-fg-muted dark:text-fg-subtle">
+                    {selectedConsignacion.propertyAddress}
+                  </p>
+                ) : null}
+                <DatosDelInmueble consignacion={selectedConsignacion} tr={tr} />
               </div>
             </div>
             <Button
@@ -287,24 +337,34 @@ function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertyS
           <div className="relative">
             <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle z-10" />
             <Input
+              id="mantenimiento-buscar-inmueble"
               type="text"
-              placeholder={t('inmobiliaria.mantenimiento.searchProperty')}
+              aria-required="true"
+              data-testid="mantenimiento-buscar-inmueble"
+              placeholder={tr('Código, contrato, propietario o dirección')}
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setIsOpen(true);
+              }}
               onFocus={() => setIsOpen(true)}
+              autoComplete="off"
               className="w-full pl-10"
             />
           </div>
+          <p className="mt-1.5 text-caption text-fg-muted">
+            {tr('Búscalo por el código del inmueble, el número del contrato, el propietario, el inquilino o la dirección.')}
+          </p>
 
           {/* Los resultados bajan apenas desde el buscador y se van rápido. */}
           <Presence
             show={isOpen}
             direction="down"
             distance="xs"
-            className="absolute z-10 w-full mt-2 max-h-64 overflow-y-auto rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg"
+            className="absolute z-10 w-full mt-2 max-h-72 overflow-y-auto rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg shadow-flotante"
           >
-                {filteredConsignaciones.length > 0 ? (
-                  filteredConsignaciones.map((consignacion) => (
+                {encontrados.length > 0 ? (
+                  encontrados.map(({ consignacion, contrato }) => (
                     // allowlist: search-result list-row (property thumbnail + 2-line text as ONE
                     // click target) — rich list-row; Button can't host the fill-image row (list-row precedent).
                     <button
@@ -332,15 +392,26 @@ function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertyS
                         <p className="font-medium text-fg truncate">
                           {consignacion.propertyTitle}
                         </p>
-                        <p className="text-sm text-fg-muted dark:text-fg-subtle truncate">
-                          {consignacion.propertyAddress}
-                        </p>
+                        {/* 29-10 (datos de Portofino): el título suele ser la dirección; no se dice dos veces. */}
+                        {consignacion.propertyAddress?.trim() &&
+                        consignacion.propertyAddress.trim() !== consignacion.propertyTitle?.trim() ? (
+                          <p className="text-sm text-fg-muted dark:text-fg-subtle truncate">
+                            {consignacion.propertyAddress}
+                          </p>
+                        ) : null}
+                        <DatosDelInmueble consignacion={consignacion} contrato={contrato} tr={tr} />
                       </div>
                     </button>
                   ))
                 ) : (
-                  <div className="p-4 text-center text-fg-muted dark:text-fg-subtle">
-                    {t('inmobiliaria.mantenimiento.noPropertiesFound')}
+                  <div className="space-y-3 p-4" data-testid="mantenimiento-inmueble-no-encontrado">
+                    <div className="space-y-1">
+                      <p className="text-sm text-fg">{tr('No encontramos ese inmueble.')}</p>
+                      <p className="text-caption text-fg-muted">
+                        {tr('La solicitud se hace sobre un inmueble que ya está en Leasefy. Prueba con su código, el número del contrato o el nombre del propietario; si todavía no está, créalo primero.')}
+                      </p>
+                    </div>
+                    <CrearElInmueble tr={tr} />
                   </div>
                 )}
           </Presence>
@@ -348,6 +419,37 @@ function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertyS
       )}
     </div>
   );
+}
+
+/**
+ * La línea que deja reconocer el inmueble sin abrirlo: su código, el contrato
+ * que coincidió con lo buscado, el propietario y quién vive ahí.
+ */
+function DatosDelInmueble({ consignacion, contrato = null, tr }: { consignacion: Consignacion; contrato?: string | null; tr: Tr }) {
+  const propietario = propietariosDelInmueble(consignacion)[0]?.nombre ?? null;
+  const inquilino = consignacion.inquilino?.nombre ?? consignacion.currentTenantName ?? null;
+  const partes = [
+    consignacion.propertyCode != null ? <span key="codigo" className="font-mono">#{consignacion.propertyCode}</span> : null,
+    contrato ? (
+      <span key="contrato" className="font-mono text-fg" data-testid="mantenimiento-inmueble-contrato">
+        {tr('Contrato {n}', { n: contrato })}
+      </span>
+    ) : null,
+    propietario ? (
+      <span key="propietario" className="inline-flex min-w-0 items-center gap-1">
+        <UserCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+        <span className="truncate">{tr('Propietario: {nombre}', { nombre: propietario })}</span>
+      </span>
+    ) : null,
+    inquilino ? (
+      <span key="inquilino" className="inline-flex min-w-0 items-center gap-1">
+        <User className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+        <span className="truncate">{tr('Inquilino: {nombre}', { nombre: inquilino })}</span>
+      </span>
+    ) : null,
+  ].filter(Boolean);
+  if (partes.length === 0) return null;
+  return <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-fg-muted">{partes}</p>;
 }
 
 // ============================================================================
@@ -373,18 +475,22 @@ function TypeSelector({ selected, onSelect, t }: TypeSelectorProps) {
         value={selected}
         onValueChange={(v) => onSelect(v as MantenimientoType)}
       >
-        {MANTENIMIENTO_TYPES.map((type) => (
-          <RadioCard
-            key={type.type}
-            value={type.type}
-            label={
-              <span className="flex items-center gap-2 text-sm font-medium">
-                <span className="text-base leading-none">{type.icon}</span>
-                {type.labelEs}
-              </span>
-            }
-          />
-        ))}
+        {MANTENIMIENTO_TYPES.map((type) => {
+          // 29-10 (revisión en pantalla): el ícono de la familia de Leasefy, no un emoji (vara: nada de emojis).
+          const Icono = TYPE_ICONS[type.type];
+          return (
+            <RadioCard
+              key={type.type}
+              value={type.type}
+              label={
+                <span className="flex items-center gap-2 text-sm font-medium">
+                  <Icono className="h-4 w-4 shrink-0 text-fg-muted" aria-hidden="true" />
+                  {type.labelEs}
+                </span>
+              }
+            />
+          );
+        })}
       </RadioCardGroup>
     </div>
   );
@@ -426,7 +532,8 @@ function PrioritySelector({ selected, onSelect, t }: PrioritySelectorProps) {
                   'font-medium',
                   priority.value === 'emergency' && 'text-danger',
                   priority.value === 'high' && 'text-warning',
-                  priority.value === 'medium' && 'text-primary',
+                  // 29-10: el azul es de la acción; la prioridad media va en tinta (como en el tablero).
+                  priority.value === 'medium' && 'text-fg',
                   priority.value === 'low' && 'text-fg-muted dark:text-fg-muted'
                 )}
               >
@@ -508,6 +615,7 @@ export function MantenimientoForm({
     fotos: File[];
     paidBy: MantenimientoPaidBy;
     proveedorId: string | undefined;
+    gestionadoPor: GestionadoPor;
   }>({
     consignacionId: preselectedConsignacionId || '',
     type: '',
@@ -517,6 +625,8 @@ export function MantenimientoForm({
     fotos: [],
     paidBy: 'owner',
     proveedorId: undefined,
+    // Portofino 29-10: por defecto la gestiona la inmobiliaria (el flujo de siempre).
+    gestionadoPor: 'inmobiliaria',
   });
   // El aviso de prioridad alta se cierra con su altura: mientras se va, sigue
   // diciendo lo que decía (no salta al texto de la otra prioridad).
@@ -629,7 +739,9 @@ export function MantenimientoForm({
       description: formData.description,
       fotos: formData.fotos.length > 0 ? formData.fotos : undefined,
       paidBy: formData.paidBy,
-      ...(formData.proveedorId ? { proveedorId: formData.proveedorId } : {}),
+      ...(formData.proveedorId && formData.gestionadoPor === 'inmobiliaria' ? { proveedorId: formData.proveedorId } : {}),
+      // Sólo si no es la inmobiliaria: un back anterior sigue recibiendo lo de siempre.
+      ...(formData.gestionadoPor !== 'inmobiliaria' ? { gestionadoPor: formData.gestionadoPor } : {}),
     });
   };
 
@@ -791,7 +903,16 @@ export function MantenimientoForm({
         </div>
       </div>
 
+      {/* Portofino 29-10: quién gestiona la reparación. Con otro que la inmobiliaria no hay
+          cotizaciones, descuentos ni cobros: «quién paga» deja de aplicar y se pliega. */}
+      <SeccionQuienGestiona
+        valor={formData.gestionadoPor}
+        onCambiar={(g) => updateField('gestionadoPor', g)}
+        error={errors.gestionadoPor}
+      />
+
       {/* Section 3: Responsibility */}
+      <Collapse open={formData.gestionadoPor === 'inmobiliaria'}>
       <div className="space-y-6 pt-6 border-t border-border-faint dark:border-border-strong">
         <h3 className="flex items-center gap-2 text-sm font-medium text-fg">
           <Wallet className="h-4 w-4 text-fg-muted" />
@@ -807,11 +928,14 @@ export function MantenimientoForm({
           <ErrorDelCampo id="mantenimiento-paidBy-error" mensaje={errors.paidBy} />
         </div>
       </div>
+      </Collapse>
 
       {/* Section 4: Proveedor (opcional). Portofino 22-10: «al hacer la
-          solicitud, elegir con qué proveedor vamos a trabajar». */}
+          solicitud, elegir con qué proveedor vamos a trabajar». Portofino 29-10:
+          sólo cuando la gestiona la inmobiliaria (si no, no hay cotización suya). */}
+      <Collapse open={formData.gestionadoPor === 'inmobiliaria'}>
       <div className="space-y-4 pt-6 border-t border-border-faint dark:border-border-strong" data-campo="proveedorId">
-        <h3 className="flex items-center gap-2 text-sm font-semibold text-fg">
+        <h3 className="flex items-center gap-2 text-sm font-medium text-fg">
           <Truck className="h-4 w-4 text-fg-muted" />
           Proveedor <span className="font-normal text-fg-muted">(opcional)</span>
         </h3>
@@ -822,6 +946,7 @@ export function MantenimientoForm({
           error={errors.proveedorId}
         />
       </div>
+      </Collapse>
 
       </div>
       </CajonCuerpo>

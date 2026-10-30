@@ -74,6 +74,36 @@ describe('POST /api/inmuebles/desde-enlace', () => {
     expect(res.status).toBe(200);
     expect((await res.json()).ok).toBe(true);
   });
+
+  it('una búsqueda con varios avisos no se lee como un inmueble: dice que se copie el enlace del aviso', async () => {
+    const busqueda = `<html><head><script type="application/ld+json">${JSON.stringify({
+      '@type': 'CollectionPage',
+      name: 'Apartamentos en Arriendo en Medellín',
+      mainEntity: {
+        '@type': 'ItemList',
+        itemListElement: [
+          { '@type': 'RealEstateListing', name: 'A', offers: { price: 6_700_000 } },
+          { '@type': 'RealEstateListing', name: 'B', offers: { price: 2_100_000 } },
+        ],
+      },
+    })}</script></head></html>`;
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: new Headers({ 'content-type': 'text/html; charset=utf-8' }),
+      body: new ReadableStream({
+        start(c) {
+          c.enqueue(new TextEncoder().encode(busqueda));
+          c.close();
+        },
+      }),
+    }) as unknown as typeof fetch;
+    const res = await pedir('https://example.com/arriendo/apartamentos/medellin', TOKEN_VALIDO);
+    const cuerpo = await res.json();
+    expect(cuerpo.ok).toBe(false);
+    expect(cuerpo.motivo).toBe('es_una_busqueda');
+    expect(cuerpo.mensaje).toContain('copia el enlace');
+  });
 });
 
 /*

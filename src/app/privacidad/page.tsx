@@ -4,7 +4,7 @@ import { LandingFooterV2 } from "@/components/landing-v2/LandingFooterV2";
 import { SectionLabel } from "@/components/ui/section-label";
 import { TextoLegal } from "@/components/legal/TextoLegal";
 import { IndiceDeLosTerminos } from "../terminos/IndiceDeLosTerminos";
-import { POLITICA_V6 } from "@/lib/legal/politica-v6";
+import { POLITICA_V7 } from "@/lib/legal/politica-v7";
 import {
   VERSION_POLITICA_DE_TRATAMIENTO,
   VIGENCIA_POLITICA_DE_TRATAMIENTO,
@@ -100,7 +100,7 @@ export default function PrivacidadPage() {
               <dd className="text-muted-foreground">Colombia, únicamente</dd>
               <dt className="font-medium text-foreground">Versión</dt>
               {/* Revisora r25 (R7): la versión como la dice Términos («v6.0»); el
-                  identificador «politica-tratamiento-v6.0» queda para la base. */}
+                  identificador «politica-tratamiento-v7.0» queda para la base. */}
               <dd className="text-muted-foreground font-mono">{VERSION_POLITICA_DE_TRATAMIENTO.replace(/^.*-(v[\d.]+)$/, '$1')}</dd>
               <dt className="font-medium text-foreground">Vigente desde</dt>
               <dd className="text-muted-foreground">{fechaDeVigencia(VIGENCIA_POLITICA_DE_TRATAMIENTO)}</dd>
@@ -111,7 +111,7 @@ export default function PrivacidadPage() {
             </dl>
 
             <IndiceDeLosTerminos etiqueta="Contenido de la política">
-              <TextoLegal secciones={POLITICA_V6} />
+              <TextoLegal secciones={POLITICA_V7} />
             </IndiceDeLosTerminos>
           </div></div>
         </section>

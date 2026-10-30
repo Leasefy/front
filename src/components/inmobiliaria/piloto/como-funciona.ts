@@ -50,6 +50,8 @@ export const AGENTES_DEL_PILOTO = [
   'chat',
   // MANOS-1 (04-10-2026): Vidi agenda las inspecciones y compara entrega y devolución.
   'inspeccion',
+  // Nico 29-10-2026: Servi revisa las facturas de servicios públicos.
+  'servicios',
 ] as const
 
 export type AgenteDelPiloto = (typeof AGENTES_DEL_PILOTO)[number]

@@ -82,7 +82,7 @@ export default function DirectorioDeInmobiliarias() {
             onChange={(e) => setQ(e.target.value)}
             placeholder="Busca una inmobiliaria por su nombre"
             aria-label="Buscar inmobiliaria"
-            className="h-full w-full bg-transparent text-[15px] text-fg outline-none placeholder:text-fg-subtle"
+            className="h-full w-full bg-transparent text-[15px] text-fg outline-none placeholder:text-fg-placeholder"
             data-testid="buscar-inmobiliaria"
           />
         </label>

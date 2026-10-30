@@ -18,6 +18,8 @@
 
 import Link from 'next/link';
 import { useMemo } from 'react';
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
 
 import {
   Table,
@@ -60,6 +62,20 @@ export function PeriodoDeNominaDetalle({ periodoId }: { periodoId: string }) {
 }
 
 function Contenido({ datos }: { datos: PeriodoConLiquidaciones }) {
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas».
+  const { ordenadas, orden, ordenarPor } = useOrdenDeLaTabla(
+    datos.liquidaciones,
+    {
+      persona: (l) => l.nombre,
+      dias: (l) => l.diasLiquidados,
+      devengado: (l) => l.devengadoCop,
+      deducciones: (l) => l.deduccionesCop,
+      neto: (l) => l.netoCop,
+      ibc: (l) => l.ibcCop,
+      retencion: (l) => l.retencionCop,
+    },
+    { primero: { dias: 'desc', devengado: 'desc', deducciones: 'desc', neto: 'desc', ibc: 'desc', retencion: 'desc' } },
+  );
   const marcadas = useMemo(
     () => datos.liquidaciones.filter((l) => l.requiereValidacionContador),
     [datos.liquidaciones],
@@ -142,18 +158,18 @@ function Contenido({ datos }: { datos: PeriodoConLiquidaciones }) {
           <Table data-testid="tabla-de-liquidaciones" className="max-md:block">
             <TableHeader className="max-md:hidden">
               <TableRow>
-                <TableHead>Persona</TableHead>
-                <TableHead className="text-right">Días</TableHead>
-                <TableHead className="text-right">Devengado</TableHead>
-                <TableHead className="text-right">Deducciones</TableHead>
-                <TableHead className="text-right">Neto</TableHead>
-                <TableHead className="text-right">IBC</TableHead>
-                <TableHead className="text-right">Retención</TableHead>
+                <EncabezadoOrdenable campo="persona" orden={orden} onOrdenar={ordenarPor}>Persona</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="dias" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Días</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="devengado" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Devengado</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="deducciones" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Deducciones</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="neto" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Neto</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="ibc" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">IBC</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="retencion" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Retención</EncabezadoOrdenable>
                 <TableHead />
               </TableRow>
             </TableHeader>
             <TableBody className="max-md:block">
-              {datos.liquidaciones.map((l) => (
+              {ordenadas.map((l) => (
                 <TableRow
                   key={l.id}
                   data-testid={`liquidacion-${l.id}`}

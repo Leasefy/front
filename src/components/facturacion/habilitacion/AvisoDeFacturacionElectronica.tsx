@@ -34,7 +34,7 @@ export function AvisoDeFacturacionElectronica() {
         <p className="text-body text-fg">Activa tu facturación electrónica</p>
         <p className="text-body-sm text-fg-muted">
           Paso {vista.avance.hechos + 1 > vista.avance.total ? vista.avance.total : vista.avance.hechos + 1} de {vista.avance.total}
-          {sigue ? ` · ${sigue.titulo}` : ''}. Te llevamos con la DIAN hasta dejar a Feel como tu proveedor.
+          {sigue ? ` · ${sigue.titulo}` : ''}. Te llevamos con la DIAN hasta dejar listo a tu proveedor, BPM Consulting (Feel).
         </p>
       </div>
       <Button asChild variant="outline" size="sm" hideArrow className="shrink-0">

@@ -172,6 +172,25 @@ async function tocar(testid: string) {
   await act(async () => {});
 }
 
+/**
+ * Espera a que la lectura del archivo haya llegado al lector (`parseSpreadsheetFile`) y
+ * deja que se asienten los estados que siguen. Un solo `setTimeout(0)` alcanzaba con la
+ * máquina libre y se quedaba corto en el CI cargado (la lectura pasa por imports
+ * dinámicos y promesas encadenadas): se espera la condición, no un número de turnos.
+ */
+async function esperarLaLectura() {
+  for (let i = 0; i < 200 && vi.mocked(parseSpreadsheetFile).mock.calls.length === 0; i++) {
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 10));
+    });
+  }
+  for (let i = 0; i < 3; i++) {
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+  }
+}
+
 async function subirBalance(filas: Fila[]) {
   vi.mocked(parseSpreadsheetFile).mockResolvedValue({
     rows: balance(filas),
@@ -183,8 +202,8 @@ async function subirBalance(filas: Fila[]) {
   Object.defineProperty(input, 'files', { value: [file], configurable: true });
   await act(async () => {
     input.dispatchEvent(new Event('change', { bubbles: true }));
-    await new Promise((r) => setTimeout(r, 0));
   });
+  await esperarLaLectura();
   await act(async () => {});
   await act(async () => {});
 }
@@ -326,10 +345,7 @@ describe('🔴 Portofino (14-10) · «Subir el balance» en los saldos iniciales
       sheetNames: ['Hoja1'],
     } as never);
     await pintar({ archivoInicial: new File(['x'], 'balance-2025.xlsx') });
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 0));
-    });
-    await act(async () => {});
+    await esperarLaLectura();
 
     expect(q('archivo-del-balance')!.textContent).toContain('balance-2025.xlsx');
     expect(q('balance-resumen')).not.toBeNull();

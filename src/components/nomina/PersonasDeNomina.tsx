@@ -26,6 +26,9 @@
 import { SinDatos } from '@/components/estado/SinDatos';
 import { MagnifyingGlass, UsersThree } from '@phosphor-icons/react';
 import { useState } from 'react';
+import type { PersonaDeNomina } from '@/lib/api/nomina.types';
+import { ordenarFilas, type OrdenDeLaTabla, type ValorParaOrdenar } from '@/lib/hooks/use-orden-de-la-tabla';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -95,8 +98,28 @@ const CONTRATO_POR_TIPO: Record<TipoDePersona, string> = {
   APRENDIZ: 'APRENDIZAJE',
 };
 
+type CampoDePersona = 'nombre' | 'tipo' | 'cargo' | 'salario' | 'periodicidad' | 'arl' | 'estado';
+const ORDEN_DE_PERSONAS: Record<CampoDePersona, (p: PersonaDeNomina) => ValorParaOrdenar> = {
+  nombre: (p) => p.nombre,
+  tipo: (p) => p.tipo,
+  cargo: (p) => p.cargo,
+  salario: (p) => p.salarioCop,
+  periodicidad: (p) => p.periodicidad,
+  arl: (p) => p.claseRiesgoArl,
+  estado: (p) => (p.activo ? 'Activo' : 'Retirado'),
+};
+
 export function PersonasDeNominaPanel() {
   const [busqueda, setBusqueda] = useState('');
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». La lista se arma dentro del
+  // render (sin hooks ahí): el orden vive aquí y se aplica con `ordenarFilas`.
+  const [orden, setOrden] = useState<OrdenDeLaTabla<CampoDePersona> | null>(null);
+  const ordenarPor = (campo: CampoDePersona) =>
+    setOrden((actual) =>
+      actual?.campo === campo
+        ? { campo, sentido: actual.sentido === 'asc' ? 'desc' : 'asc' }
+        : { campo, sentido: campo === 'salario' ? 'desc' : 'asc' },
+    );
   const estado = useCargaDeNomina<{
     personas: Personas;
     catalogo: CatalogoDePersonas;
@@ -230,17 +253,17 @@ export function PersonasDeNominaPanel() {
                   <Table data-testid="tabla-de-personas" className="max-md:block">
                     <TableHeader className="max-md:hidden">
                       <TableRow>
-                        <TableHead>Nombre</TableHead>
-                        <TableHead>Tipo</TableHead>
-                        <TableHead>Cargo</TableHead>
-                        <TableHead className="text-right">Salario</TableHead>
-                        <TableHead>Periodicidad</TableHead>
-                        <TableHead>ARL</TableHead>
-                        <TableHead>Estado</TableHead>
+                        <EncabezadoOrdenable campo="nombre" orden={orden} onOrdenar={ordenarPor}>Nombre</EncabezadoOrdenable>
+                        <EncabezadoOrdenable campo="tipo" orden={orden} onOrdenar={ordenarPor}>Tipo</EncabezadoOrdenable>
+                        <EncabezadoOrdenable campo="cargo" orden={orden} onOrdenar={ordenarPor}>Cargo</EncabezadoOrdenable>
+                        <EncabezadoOrdenable campo="salario" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Salario</EncabezadoOrdenable>
+                        <EncabezadoOrdenable campo="periodicidad" orden={orden} onOrdenar={ordenarPor}>Periodicidad</EncabezadoOrdenable>
+                        <EncabezadoOrdenable campo="arl" orden={orden} onOrdenar={ordenarPor}>ARL</EncabezadoOrdenable>
+                        <EncabezadoOrdenable campo="estado" orden={orden} onOrdenar={ordenarPor}>Estado</EncabezadoOrdenable>
                       </TableRow>
                     </TableHeader>
                     <TableBodyAnimado className="max-md:block">
-                      {visibles.map((p) => (
+                      {ordenarFilas(visibles, orden, ORDEN_DE_PERSONAS).map((p) => (
                         <TableRowAnimada
                           key={p.id}
                           data-testid={`persona-${p.id}`}

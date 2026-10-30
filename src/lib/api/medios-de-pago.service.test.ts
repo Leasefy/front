@@ -13,6 +13,11 @@ vi.mock('@/lib/api/client', () => ({
   },
 }));
 
+const enviarFormulario = vi.fn();
+vi.mock('@/lib/api/consignacion-firma.service', () => ({
+  enviarFormulario: (...a: unknown[]) => enviarFormulario(...a),
+}));
+
 import { cuerpoDeMedio, mediosDePagoApi, ordenarMedios } from './medios-de-pago.service';
 import type { MedioDePago } from './medios-de-pago.types';
 
@@ -104,6 +109,18 @@ describe('mediosDePagoApi — rutas y verbos', () => {
     put.mockResolvedValueOnce([medio()]);
     await mediosDePagoApi.reordenar([{ id: 'm1', orden: 2 }]);
     expect(put).toHaveBeenCalledWith('/inmobiliaria/medios-de-pago/orden', { items: [{ id: 'm1', orden: 2 }] });
+  });
+
+  it('el QR del banco: sube la imagen como «file» a POST /:id/qr y lo quita con DELETE /:id/qr', async () => {
+    enviarFormulario.mockResolvedValueOnce(medio({ qrUrl: 'https://almacen.example/qr.png?firmada' }));
+    const imagen = new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], 'qr.png', { type: 'image/png' });
+    expect((await mediosDePagoApi.subirQr('m1', imagen)).qrUrl).toContain('firmada');
+    const [ruta, formulario] = enviarFormulario.mock.calls[0] as [string, FormData];
+    expect(ruta).toBe('/inmobiliaria/medios-de-pago/m1/qr');
+    expect(formulario.get('file')).toBeInstanceOf(File);
+    del.mockResolvedValueOnce(medio({ qrUrl: null }));
+    await mediosDePagoApi.quitarQr('m1');
+    expect(del).toHaveBeenCalledWith('/inmobiliaria/medios-de-pago/m1/qr');
   });
 
   it('catalogo y para-inquilino pegan a sus rutas y toleran {data}', async () => {

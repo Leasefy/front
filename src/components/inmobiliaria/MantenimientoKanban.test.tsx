@@ -63,7 +63,7 @@ vi.mock('@dnd-kit/core', async (importOriginal) => {
   };
 });
 
-import { MantenimientoKanban } from './MantenimientoKanban';
+import { MantenimientoKanban, cabenEnUnaFila } from './MantenimientoKanban';
 import { detectarColumnaDelPuntero } from './mantenimiento-kanban-colisiones';
 
 function hacerSolicitud(
@@ -172,11 +172,16 @@ describe('<MantenimientoKanban> — las tarjetas se pueden arrastrar', () => {
     });
     expect(container.querySelector('[data-testid="columna-reported"]')!.getAttribute('data-plegada')).toBeNull();
     expect(container.querySelector('[data-testid="columna-quoted"]')!.getAttribute('data-plegada')).toBe('si');
-    const plantilla = (container.querySelector('[data-testid="tablero-de-mantenimientos"]') as HTMLElement).style.getPropertyValue(
-      '--columnas-del-tablero',
-    );
-    // Seis pistas: «Canceladas» (Portofino 21-10) también, vacía y angosta.
-    expect(plantilla).toBe('minmax(0,1fr) minmax(0,11rem) minmax(0,11rem) minmax(0,1fr) minmax(0,11rem) minmax(0,11rem)');
+    // Nico (Portofino, 29-10): la vacía es una franja vertical angosta con su título de lado; la que
+    // tiene solicitudes, abierta y ancha (nunca menos de 15rem: la tarjeta se lee entera).
+    const plegada = container.querySelector('[data-testid="columna-quoted"]') as HTMLElement;
+    expect(plegada.className).toContain('sm:w-12');
+    expect(plegada.textContent).toContain('0');
+    const abierta = container.querySelector('[data-testid="columna-reported"]') as HTMLElement;
+    expect(abierta.className).toContain('grow');
+    expect(abierta.className).toContain('sm:min-w-[15rem]');
+    // Seis columnas: «Canceladas» (Portofino 21-10) también, vacía y cerrada.
+    expect(container.querySelectorAll('[data-plegada="si"]').length).toBe(4);
   });
 
   it('cada solicitud cae en la columna de su estado', () => {
@@ -218,11 +223,19 @@ describe('soltar la tarjeta en otra columna', () => {
     montar();
     const columna = document.body.querySelector('[data-testid="columna-completed"]')!;
     const grilla = columna.parentElement!;
-    // Revisora r25: las seis pistas (con «Canceladas», Portofino 21-10) siguen en la grilla de xl; las vacías, angostas (ver la prueba de plegadas).
-    expect(grilla.className).toContain('xl:[grid-template-columns:var(--columnas-del-tablero)]');
-    expect((grilla as HTMLElement).style.getPropertyValue('--columnas-del-tablero').split(' ').length).toBe(6);
+    // Nico (Portofino, 29-10): las seis columnas bajan de fila si no caben; nunca hay barra de lado.
+    expect(grilla.className).toContain('flex-wrap');
+    expect(grilla.children.length).toBe(6);
     expect(grilla.className).not.toContain('overflow-x-auto');
     expect(columna.className).not.toContain('min-w-[280px]');
+  });
+
+  it('29-10: sin barras de scroll dentro de la columna, y la que baja sola de fila no se estira a todo el tablero', () => {
+    montar({ data: Array.from({ length: 8 }, (_, i) => hacerSolicitud({ id: `s-${i}` })) });
+    const abierta = container.querySelector<HTMLElement>('[data-testid="columna-reported"]')!;
+    const contenido = abierta.querySelector<HTMLElement>('[data-testid^="mantenimiento-tarjeta-"]')!.closest('.rounded-b-\\[18px\\]')!;
+    expect(contenido.className).not.toMatch(/overflow-(y|x)-(auto|scroll|hidden)|max-h-/);
+    expect(abierta.className).toContain('sm:max-w-[21rem]');
   });
 
   it('pide el cambio de estado con la columna donde se soltó', async () => {
@@ -315,5 +328,133 @@ describe('MantenimientoKanban — el tablero vacío (M6)', () => {
     });
     expect(container.querySelector('[data-caso="filtros"]')).not.toBeNull();
     expect(container.querySelector('[data-testid="crear-el-primero"]')).toBeNull();
+  });
+});
+
+describe('MantenimientoKanban — quién gestiona la reparación (Portofino, 29-10-2026)', () => {
+  const marca = (id: string) =>
+    tarjeta(id).querySelector<HTMLElement>('[data-testid="marca-de-la-gestion"]');
+
+  it('la que gestiona otro lleva su marca discreta; la de la inmobiliaria, ninguna', () => {
+    montar({
+      data: [
+        hacerSolicitud({ id: 'inmo' }),
+        hacerSolicitud({ id: 'prop', gestionadoPor: 'propietario' }),
+        hacerSolicitud({ id: 'admin', gestionadoPor: 'administracion' }),
+        hacerSolicitud({ id: 'inq', gestionadoPor: 'inquilino' }),
+      ],
+    });
+    expect(marca('inmo')).toBeNull();
+    expect(marca('prop')!.textContent).toBe('Gestiona: el propietario');
+    expect(marca('admin')!.textContent).toBe('Gestiona: la administración');
+    expect(marca('inq')!.textContent).toBe('Gestiona: el inquilino');
+  });
+
+  it('un back anterior sin el campo: todas son de la inmobiliaria', () => {
+    montar({ data: [hacerSolicitud({ id: 'vieja', gestionadoPor: undefined, seguimientoExterno: undefined })] });
+    expect(marca('vieja')).toBeNull();
+  });
+
+  it('«la hace el propietario» (22-10) lleva UNA sola marca, la misma, también con un back anterior', () => {
+    const laHace = {
+      loDecidio: 'PROPIETARIO' as const,
+      nota: null,
+      desde: '2026-10-27T10:00:00.000Z',
+      terminadaAt: null,
+      terminadaNota: null,
+    };
+    montar({
+      data: [
+        hacerSolicitud({ id: 'nuevo', gestionadoPor: 'propietario', laHaceElPropietario: laHace }),
+        hacerSolicitud({ id: 'viejo', laHaceElPropietario: laHace }),
+      ],
+    });
+    for (const id of ['nuevo', 'viejo']) {
+      expect(tarjeta(id).querySelectorAll('[data-testid="marca-de-la-gestion"]')).toHaveLength(1);
+      expect(marca(id)!.textContent).toBe('Gestiona: el propietario');
+      expect(tarjeta(id).textContent).not.toContain('La hace el propietario');
+    }
+  });
+
+  it('soltarla en «Aprobada» pasa primero por la página: si ella se encarga, no se mueve', async () => {
+    const alSoltar = vi.fn(() => true);
+    const { onStatusChange } = montar({
+      data: [hacerSolicitud({ gestionadoPor: 'propietario' })],
+      alSoltar,
+    });
+    await act(async () => {
+      await manejadores.onDragEnd?.({ active: { id: 'sol-1' }, over: { id: 'approved' } });
+    });
+    expect(alSoltar).toHaveBeenCalledWith(expect.objectContaining({ gestionadoPor: 'propietario' }), 'approved');
+    expect(onStatusChange).not.toHaveBeenCalled();
+  });
+});
+
+
+describe('29-10 (datos de Portofino): cuando las columnas no caben en una fila', () => {
+  const ResizeObserverOriginal = globalThis.ResizeObserver;
+  afterEach(() => {
+    globalThis.ResizeObserver = ResizeObserverOriginal;
+  });
+
+  /** Un ResizeObserver que mide el tablero con el ancho que se le diga (happy-dom no mide). */
+  function medirCon(ancho: number) {
+    globalThis.ResizeObserver = class {
+      private cb: ResizeObserverCallback;
+      constructor(cb: ResizeObserverCallback) {
+        this.cb = cb;
+      }
+      observe() {
+        this.cb([{ contentRect: { width: ancho } } as unknown as ResizeObserverEntry], this as unknown as ResizeObserver);
+      }
+      unobserve() {}
+      disconnect() {}
+    } as unknown as typeof ResizeObserver;
+  }
+
+  it('la cuenta: a 1024 px (≈678 de tablero) tres abiertas y tres plegadas no caben; a 1440 (≈1092) sí', () => {
+    // 3 × 240 + 3 × 48 + 5 × 12 = 924
+    expect(cabenEnUnaFila(678, 3, 3)).toBe(false);
+    expect(cabenEnUnaFila(1092, 3, 3)).toBe(true);
+    // 2 × 240 + 4 × 48 + 5 × 12 = 732
+    expect(cabenEnUnaFila(678, 2, 4)).toBe(false);
+    // 4 × 240 + 2 × 48 + 5 × 12 = 1116: a 1440 bajan las vacías a la línea de fichas
+    expect(cabenEnUnaFila(1092, 4, 2)).toBe(false);
+  });
+
+  it('las vacías suben a una línea de fichas (siguen siendo zonas donde soltar) y no queda una plegada sola abajo', () => {
+    medirCon(678);
+    montar({
+      data: [
+        hacerSolicitud({ id: 'a', status: 'reported' }),
+        hacerSolicitud({ id: 'b', status: 'quoted' }),
+        hacerSolicitud({ id: 'c', status: 'in_progress' }),
+      ],
+    });
+    const fichas = container.querySelector('[data-testid="columnas-sin-solicitudes"]')!;
+    expect(fichas).not.toBeNull();
+    expect(fichas.textContent).toContain('Sin solicitudes');
+    const plegadas = Array.from(fichas.querySelectorAll('[data-plegada="si"]')).map((n) => n.getAttribute('data-testid'));
+    expect(plegadas).toEqual(['columna-approved', 'columna-completed', 'columna-cancelled']);
+    // Las abiertas, juntas y en su orden.
+    const abiertas = Array.from(
+      container.querySelectorAll('[data-testid^="columna-"]:not([data-plegada])'),
+    ).map((n) => n.getAttribute('data-testid'));
+    expect(abiertas).toEqual(['columna-reported', 'columna-quoted', 'columna-in_progress']);
+  });
+
+  it('si caben, todo en una fila con las vacías en vertical (lo que eligió Nico)', () => {
+    medirCon(1096);
+    montar({
+      data: [
+        hacerSolicitud({ id: 'a', status: 'reported' }),
+        hacerSolicitud({ id: 'b', status: 'quoted' }),
+        hacerSolicitud({ id: 'c', status: 'in_progress' }),
+      ],
+    });
+    expect(container.querySelector('[data-testid="columnas-sin-solicitudes"]')).toBeNull();
+    const plegada = container.querySelector('[data-testid="columna-approved"]') as HTMLElement;
+    expect(plegada.getAttribute('data-plegada')).toBe('si');
+    expect(plegada.className).toContain('sm:w-12');
   });
 });

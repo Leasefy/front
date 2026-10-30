@@ -199,4 +199,13 @@ describe('el pensamiento que llega en inglés', () => {
     );
     expect(conNombreDelEquipo("The collections specialist couldn't finish", 'cobranza', t)).toBe("Mori couldn't finish");
   });
+
+  it('Servi: «servicios públicos» y «utilities» llevan el nombre del equipo', () => {
+    expect(conNombreDelEquipo('Le pido al especialista de servicios públicos: “la factura”…', 'servicios', t)).toBe(
+      'Le pido a Servi: “la factura”…'
+    );
+    expect(conNombreDelEquipo("I'm asking the utilities specialist: “the bill”…", 'servicios', t)).toBe(
+      "I'm asking Servi: “the bill”…"
+    );
+  });
 });

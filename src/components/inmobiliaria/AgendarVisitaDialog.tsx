@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { DatePicker, SegmentedControl, TimePicker } from '@leasefy/cadence';
+import { SegmentedControl, TimePicker } from '@leasefy/cadence';
+// Nico, 29-10-2026: el calendario con el mes y el año a la mano (el de Cadence sólo tenía flechas).
+import { SelectorDeFecha as DatePicker } from '@/components/ui/SelectorDeFecha';
 import { toast } from '@/components/ui/toast';
 import { Button } from '@/components/ui';
 import { Combobox } from '@/components/ui/combobox';

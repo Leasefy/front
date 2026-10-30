@@ -25,9 +25,9 @@ export function FichaDeLosTerminos() {
                 <dt className="font-medium text-foreground">Ámbito</dt>
                 <dd className="text-muted-foreground">Colombia, únicamente</dd>
                 <dt className="font-medium text-foreground">Vigente desde</dt>
-                <dd className="text-muted-foreground">15 de octubre de 2026</dd>
+                <dd className="text-muted-foreground">29 de octubre de 2026</dd>
                 <dt className="font-medium text-foreground">Versión</dt>
-                <dd className="text-muted-foreground font-mono">v2.2</dd>
+                <dd className="text-muted-foreground font-mono">v2.3</dd>
               </dl>
   );
 }
@@ -148,6 +148,20 @@ export function TerminosContenido({ conFicha = true }: { conFicha?: boolean } = 
                 <p>
                   Al cancelar, mantenemos tu información disponible para descarga
                   durante <strong className="text-foreground/90">sesenta (60) días</strong>.
+                </p>
+                {/* v2.3 (29-10-2026, Nico, reunión con Juan): el CRM gratis — «hay que agregar en términos que nos vamos a
+                    quedar con esa información, la vamos a usufructuar»; «también en la Política» (v7.0, §4 y §16, el mismo
+                    texto). Para que lo revise un abogado antes de llevarlo a producción. */}
+                <p className="mt-3" data-testid="terminos-plan-gratis">
+                  <strong className="text-foreground/90">El plan gratis.</strong> Quien usa Leasefy sin pagar (el
+                  marketplace, Arrendamientos e Inquilinos) autoriza a Leasefy a conservar y usar la información que
+                  carga —inmuebles, propietarios, inquilinos, postulaciones y pedidos— para prestar y mejorar sus
+                  servicios, para el análisis del mercado inmobiliario y para ofrecer a esas personas inmuebles y
+                  servicios de Leasefy y de sus aliados. Al cargar los datos de otras personas, declara que cuenta con su
+                  autorización para hacerlo. Leasefy es quien contacta a esas personas: no le entrega sus datos personales a
+                  los aliados, y lo que se comparte con terceros o se publica va siempre sin datos que identifiquen a
+                  alguien. Los datos personales se tratan según la{" "}
+                  <a href="/privacidad" className="underline underline-offset-4">Política de tratamiento de datos</a>.
                 </p>
               </section>
 

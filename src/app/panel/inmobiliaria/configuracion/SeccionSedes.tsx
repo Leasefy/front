@@ -17,7 +17,7 @@
  */
 
 import { Ilustracion } from '@leasefy/cadence';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Storefront } from '@phosphor-icons/react';
 
@@ -53,6 +53,9 @@ import { EsqueletoDeSeccion, VacioDeSeccion } from './piezas';
 import { cifrasDeLaPantalla } from '@/lib/i18n/idioma-de-las-cifras';
 import { TablePagination } from '@/components/ui/pagination';
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden';
 
 const NUMERO = cifrasDeLaPantalla();
 
@@ -79,9 +82,15 @@ export function SeccionSedes() {
   }, [cargar]);
 
   const disponible = datos?.disponible !== false;
-  const sedes = datos?.sedes ?? [];
+  const sedes = useMemo(() => datos?.sedes ?? [], [datos]);
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas».
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(
+    sedes,
+    { sede: (x) => x.nombre, codigo: (x) => x.codigo, ciudad: (x) => x.ciudad, inmuebles: (x) => x.inmuebles, contratos: (x) => x.contratos },
+    { primero: { inmuebles: 'desc', contratos: 'desc' } },
+  );
   // Ronda 30 (regla de Nico: tablas con paginación).
-  const pag = useTablePagination(sedes, {});
+  const pag = useTablePagination(ordenadas, { resetKey: `${orden?.campo ?? ''}|${orden?.sentido ?? ''}` });
   const sinAsignar = datos?.sinAsignar ?? { inmuebles: 0, contratos: 0 };
 
   async function marcarPorDefecto(sede: Sede) {
@@ -150,17 +159,32 @@ export function SeccionSedes() {
             </p>
           ) : null}
 
+          {sedes.length > 1 ? (
+            <div className="flex justify-end">
+              <SelectorDeOrden
+                orden={orden}
+                onCambiar={setOrden}
+                className="w-full sm:w-56"
+                formas={[
+                  { campo: 'inmuebles', sentido: 'desc', etiqueta: 'Más inmuebles' },
+                  { campo: 'contratos', sentido: 'desc', etiqueta: 'Más contratos' },
+                  { campo: 'sede', sentido: 'asc', etiqueta: 'Sede (A–Z)' },
+                  { campo: 'ciudad', sentido: 'asc', etiqueta: 'Ciudad (A–Z)' },
+                ]}
+              />
+            </div>
+          ) : null}
           <div className="overflow-hidden rounded-lg border border-border bg-surface">
             <div className="md:overflow-x-auto">
               {/* En el celular cada sede es una tarjeta. */}
               <Table className="max-md:block">
                 <TableHeader className="max-md:hidden">
                   <TableRow>
-                    <TableHead>Sede</TableHead>
-                    <TableHead>Código</TableHead>
-                    <TableHead>Ciudad</TableHead>
-                    <TableHead className="text-right">Inmuebles</TableHead>
-                    <TableHead className="text-right">Contratos</TableHead>
+                    <EncabezadoOrdenable campo="sede" orden={orden} onOrdenar={ordenarPor}>Sede</EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="codigo" orden={orden} onOrdenar={ordenarPor}>Código</EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="ciudad" orden={orden} onOrdenar={ordenarPor}>Ciudad</EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="inmuebles" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Inmuebles</EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="contratos" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Contratos</EncabezadoOrdenable>
                     <TableHead>&nbsp;</TableHead>
                   </TableRow>
                 </TableHeader>

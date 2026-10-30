@@ -12,12 +12,13 @@ import {
   Table,
   TableHeader,
   TableBody,
-  TableHead,
   TableRow,
   TableCell,
 } from '@/components/ui/table'
 import { TablePagination } from '@/components/ui/pagination'
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
 
 // =============================================================================
 // Types
@@ -75,12 +76,25 @@ export function CarrierSlaBreachWindows({
 
   // Cada incumplimiento de SLA agrega una ventana: la lista crece con el
   // tiempo y no tiene tope, así que se pagina.
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Antes de paginar.
+  const { ordenadas, orden, ordenarPor } = useOrdenDeLaTabla(
+    breachWindows ?? SIN_VENTANAS,
+    {
+      inicio: (w) => w.startedAt,
+      // La que sigue en curso es la más reciente: al ordenar por fin va con las últimas.
+      fin: (w) => w.endedAt ?? '9999-12-31',
+      duracion: (w) => w.durationMinutes,
+      p95: (w) => w.maxP95LatencyMs,
+      errores: (w) => w.maxErrorRate,
+    },
+    { primero: { inicio: 'desc', fin: 'desc', duracion: 'desc', p95: 'desc', errores: 'desc' } },
+  )
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
-    useTablePagination(breachWindows ?? SIN_VENTANAS)
+    useTablePagination(ordenadas, { resetKey: `${orden?.campo ?? ''}|${orden?.sentido ?? ''}` })
 
   return (
     <div className="rounded-lg border border-border bg-card p-5">
-      <p className="text-caption font-medium uppercase tracking-wide text-fg-muted mb-3">
+      <p className="mb-3 font-mono text-label uppercase tracking-mono-label text-fg-muted">
         {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.sla.breachWindows.title')}
       </p>
 
@@ -104,21 +118,21 @@ export function CarrierSlaBreachWindows({
             <Table className="min-w-full divide-y divide-border">
               <TableHeader className="bg-surface-muted/60">
                 <TableRow>
-                  <TableHead className="px-3 py-2 text-left">
+                  <EncabezadoOrdenable campo="inicio" orden={orden} onOrdenar={ordenarPor} className="px-3 py-2 text-left">
                     {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.sla.breachWindows.cols.start')}
-                  </TableHead>
-                  <TableHead className="px-3 py-2 text-left">
+                  </EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="fin" orden={orden} onOrdenar={ordenarPor} className="px-3 py-2 text-left">
                     {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.sla.breachWindows.cols.end')}
-                  </TableHead>
-                  <TableHead className="px-3 py-2 text-right">
+                  </EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="duracion" orden={orden} onOrdenar={ordenarPor} className="px-3 py-2 text-right" alineacion="derecha">
                     {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.sla.breachWindows.cols.duration')}
-                  </TableHead>
-                  <TableHead className="px-3 py-2 text-right">
+                  </EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="p95" orden={orden} onOrdenar={ordenarPor} className="px-3 py-2 text-right" alineacion="derecha">
                     {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.sla.breachWindows.cols.maxP95')}
-                  </TableHead>
-                  <TableHead className="px-3 py-2 text-right">
+                  </EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="errores" orden={orden} onOrdenar={ordenarPor} className="px-3 py-2 text-right" alineacion="derecha">
                     {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.sla.breachWindows.cols.maxErrorRate')}
-                  </TableHead>
+                  </EncabezadoOrdenable>
                 </TableRow>
               </TableHeader>
               <TableBody className="divide-y divide-border">

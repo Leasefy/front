@@ -37,6 +37,11 @@ vi.mock('@/lib/hooks/usePermissions', () => ({
   usePermissions: () => permisos,
 }))
 
+// El marco lee `agency.cuentaDeAgente` de la sesión (cuenta de agente: «Tu negocio»).
+vi.mock('@/lib/auth/use-auth', () => ({
+  useAuth: () => ({ agency: { cuentaDeAgente: false } }),
+}))
+
 import ConfiguracionLayout from './layout'
 import { SECCIONES_DE_CONFIGURACION } from './secciones'
 

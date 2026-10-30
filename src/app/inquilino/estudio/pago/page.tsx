@@ -12,8 +12,8 @@
  *
  * Esa pantalla intermedia apuntaba a un cobro que el backend nunca expuso
  * (`/tenant/estudio/pago*`) y se eliminó (T-0010). El pago vivo está adentro
- * del mismo formulario que pide la aprobación, así que ahora se redirige
- * directo ahí.
+ * del mismo formulario que pide la aprobación, y desde T-0193 el estudio es
+ * gratis y no hay pago: se redirige al resultado.
  *
  * Se conserva la redirección porque la ruta pudo quedar en un correo o en una
  * pestaña abierta, y un 404 no explica a dónde se fue.

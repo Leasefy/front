@@ -747,7 +747,6 @@ window.LF_EN = {
 "Matching ¦ Opciones el mismo día": "Matching ¦ Options the same day",
 "Matching ¦ · L-AG-05": "Matching ¦ · L-AG-05",
 "Matching, Estudio del inquilino, ERP": "Matching, Tenant screening, ERP",
-"Medellín en estrías de voltaje": "Medellín in voltage stripes",
 "Medellín · Envigado · Sabaneta · Itagüí · Bello": "Medellín · Envigado · Sabaneta · Itagüí · Bello",
 "Medellín, Colombia": "Medellín, Colombia",
 "Medellín, Colombia · CRM · ERP · Agentes AI": "Medellín, Colombia · CRM · ERP · AI agents",

@@ -25,6 +25,16 @@
  * - la nota, el motivo de no renovar y el contrato firmado son formularios de
  *   un solo campo: lo suyo, sea lo que sea, va bajo ese campo.
  * La página sólo canta el éxito; el error lo dice el cajón, una vez.
+ *
+ * ── Vivienda urbana: «Renovar contrato» (Nico, 29-10-2026) ────────────────
+ *
+ * Los tres pasos (propuesta, aceptación, firma) son SÓLO de los locales
+ * comerciales. En vivienda la renovación se da (Ley 820): el cajón muestra un
+ * solo paso (`PasoRenovarVivienda`) con la vigencia nueva (editable), el
+ * incremento (IPC del año anterior sólo si cumple un año de contrato; se
+ * negocia hacia abajo) y «Renovar contrato», que renueva y avisa a las dos
+ * partes. Lo decide `reglaDeLaRenovacion` del back; sin ella (un back
+ * anterior) el cajón queda como antes.
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -37,6 +47,12 @@ import {
   PaperPlaneTilt,
   PenNib,
 } from '@phosphor-icons/react';
+import {
+  PasoRenovarVivienda,
+  datosParaRenovar,
+  errorDelCanonDeVivienda,
+  fechasDeLaRenovacion,
+} from './RenovacionDeVivienda';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -85,6 +101,17 @@ export interface BorradorDeRenovacion {
   proposedRent: number;
   negotiatedAdminFee: number;
   ipcRate: number | null;
+  /** Vivienda: la fecha de la renovación puesta a mano (`YYYY-MM-DD`). */
+  newLeaseStartDate?: string;
+  newLeaseEndDate?: string;
+}
+
+/** «Renovar contrato» (vivienda): lo que va al back; las fechas sólo si alguien las cambió. */
+export interface DatosParaRenovar {
+  canon: number;
+  negotiatedAdminFee?: number;
+  newLeaseStartDate?: string;
+  newLeaseEndDate?: string;
 }
 
 export interface RenovacionWorkflowProps {
@@ -100,6 +127,8 @@ export interface RenovacionWorkflowProps {
   ) => Promise<void>;
   /** Guarda precio, IPC y administración sin enviar nada. */
   onSaveDraft?: (borrador: BorradorDeRenovacion) => Promise<void>;
+  /** Vivienda: renueva, genera el incremento y avisa a las dos partes. Debe rechazar si falló. */
+  onRenovar?: (datos: DatosParaRenovar) => Promise<void>;
   onStepComplete?: (
     step: RenovacionStatus,
     negotiatedRent?: number,
@@ -117,7 +146,16 @@ export interface RenovacionWorkflowProps {
   hoy?: Date;
 }
 
-type Ocupado = 'enviar' | 'guardar' | 'aceptar' | 'continuar' | 'firmar' | 'terminar' | 'nota';
+type Ocupado = 'enviar' | 'guardar' | 'aceptar' | 'continuar' | 'firmar' | 'terminar' | 'nota' | 'renovar';
+
+/** Los nombres del back → el campo de la renovación de vivienda. */
+const CAMPOS_DE_VIVIENDA: Readonly<Record<string, CampoDelCajon>> = {
+  canon: 'canon',
+  negotiatedAdminFee: 'admin',
+  proposedRent: 'canon',
+  newLeaseStartDate: 'desde',
+  newLeaseEndDate: 'hasta',
+};
 
 /**
  * Los nombres de `UpdateRenovacionStageDto` → el campo de la propuesta. Lo que
@@ -176,6 +214,7 @@ export function CuerpoDeRenovacion({
   onClose,
   onSendNotification,
   onSaveDraft,
+  onRenovar,
   onStepComplete,
   onUploadDocument,
   onTerminate,
@@ -197,10 +236,30 @@ export function CuerpoDeRenovacion({
     setDireccionDelPaso(paso > pasoVisto ? 'forward' : 'backward');
   }
 
+  // Vivienda (Nico, 29-10-2026): sin propuesta ni firma; lo dice la regla del back.
+  const regla = renovacion.reglaDeLaRenovacion ?? null;
+  const reglaDeVivienda = Boolean(regla && !regla.esComercial);
+  /*
+   * 🔴 Revisión con datos de Portofino (29-10-2026): al renovar, la página
+   * vuelve a leer la lista y la renovación ya completada llega SIN su regla;
+   * el cajón dejaba de saber que era de vivienda y caía en «Propuesta ·
+   * Aceptación · Firma» de un local, con «Marcar como enviada». Una vez de
+   * vivienda, de vivienda hasta cerrar el cajón.
+   */
+  const [fueDeVivienda, setFueDeVivienda] = useState(reglaDeVivienda);
+  if (reglaDeVivienda && !fueDeVivienda) setFueDeVivienda(true);
+  const esVivienda = reglaDeVivienda || fueDeVivienda;
+  const [renovado, setRenovado] = useState(false);
+  const [desde, setDesde] = useState<string>(regla?.nuevoInicio ?? '');
+  const [hasta, setHasta] = useState<string>(regla?.nuevoFin ?? '');
+
   // La inmobiliaria pone los números. Arrancan en lo negociado o propuesto,
-  // y si no hay nada, en el canon actual: nunca en un IPC inventado.
+  // y si no hay nada, en el canon actual: nunca en un IPC inventado. En
+  // vivienda, en el canon con el incremento de la regla (el del back).
   const [newRent, setNewRent] = useState<number>(
-    renovacion.negotiatedRent || renovacion.proposedRent || renovacion.currentRent,
+    renovacion.negotiatedRent ||
+      renovacion.proposedRent ||
+      (regla && !regla.esComercial ? regla.canonConIncremento : renovacion.currentRent),
   );
   const [newAdminFee, setNewAdminFee] = useState<number>(
     renovacion.negotiatedAdminFee ?? renovacion.currentAdminFee ?? 0,
@@ -312,6 +371,14 @@ export function CuerpoDeRenovacion({
   const topeDelIpc = errorDelIpcDeLaRenovacion(ipcRate);
   const valoresQueNoCaben = Boolean(topeDelCanon || topeDeLaAdministracion || topeDelIpc);
 
+  // Vivienda: las fechas y el tope legal, con las MISMAS frases del back.
+  const fechasMalas = useMemo(
+    () => (esVivienda ? fechasDeLaRenovacion(renovacion, desde, hasta) : {}),
+    [esVivienda, renovacion, desde, hasta],
+  );
+  const topeDeVivienda = regla && esVivienda ? errorDelCanonDeVivienda(regla, newRent) : null;
+  const viviendaNoCabe = Boolean(fechasMalas.desde || fechasMalas.hasta || topeDeVivienda || topeDeLaAdministracion);
+
   const canal = canalDeEnvio(renovacion);
   const acepto = renovacionAceptada(renovacion);
 
@@ -393,6 +460,31 @@ export function CuerpoDeRenovacion({
   };
 
   const guardarBorrador = () => {
+    if (esVivienda && regla) {
+      if (viviendaNoCabe) return;
+      const datos = datosParaRenovar(regla, {
+        canon: newRent,
+        admin: newAdminFee,
+        desde,
+        hasta,
+        adminDeHoy: renovacion.currentAdminFee,
+      });
+      void correr(
+        'guardar',
+        async () => {
+          await onSaveDraft?.({
+            proposedRent: newRent,
+            negotiatedAdminFee: newAdminFee,
+            ipcRate: regla.cumpleElAnio && regla.ipc ? regla.ipc.rate : ipcRate,
+            ...(datos.newLeaseStartDate ? { newLeaseStartDate: datos.newLeaseStartDate } : {}),
+            ...(datos.newLeaseEndDate ? { newLeaseEndDate: datos.newLeaseEndDate } : {}),
+          });
+        },
+        { titulo: 'No se pudo guardar el borrador', mapa: CAMPOS_DE_VIVIENDA },
+        'guardar el borrador',
+      );
+      return;
+    }
     if (!losNumerosCaben('No se pudo guardar el borrador')) return;
     void correr(
       'guardar',
@@ -401,6 +493,22 @@ export function CuerpoDeRenovacion({
       },
       propuesta('No se pudo guardar el borrador'),
       'guardar el borrador',
+    );
+  };
+
+  /** Vivienda: renueva, genera el incremento y avisa a las dos partes. */
+  const renovar = () => {
+    if (!regla || !onRenovar || viviendaNoCabe || newRent <= 0) return;
+    void correr(
+      'renovar',
+      async () => {
+        await onRenovar?.(
+          datosParaRenovar(regla, { canon: newRent, admin: newAdminFee, desde, hasta, adminDeHoy: renovacion.currentAdminFee }),
+        );
+        setRenovado(true);
+      },
+      { titulo: 'No se pudo renovar el contrato', mapa: CAMPOS_DE_VIVIENDA },
+      'renovar el contrato',
     );
   };
 
@@ -510,7 +618,7 @@ export function CuerpoDeRenovacion({
     return fila?.description ?? null;
   }, [terminada, historial]);
 
-  const puedeNoRenovar = !terminada && !completada && paso <= 1;
+  const puedeNoRenovar = !terminada && !completada && !renovado && (esVivienda || paso <= 1);
   const etiquetaDeEnviar =
     canal === 'ninguno'
       ? 'Marcar como enviada'
@@ -531,7 +639,7 @@ export function CuerpoDeRenovacion({
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="truncate text-lg font-semibold text-fg">{renovacion.propertyTitle}</h2>
+              <h2 className="truncate text-lg font-medium text-fg">{renovacion.propertyTitle}</h2>
               <Badge
                 className={getRenovacionStatusColor(renovacion.status)}
                 data-testid="renovacion-estado"
@@ -546,8 +654,13 @@ export function CuerpoDeRenovacion({
         </div>
         <div className="mt-3.5 flex flex-wrap items-center gap-2">
           <ChipDeVencimiento renovacion={renovacion} hoy={elHoy} />
+          {esVivienda ? (
+            <span className="text-caption text-fg-muted" data-testid="renovacion-vivienda">
+              Vivienda urbana · la renovación se da (Ley 820)
+            </span>
+          ) : null}
         </div>
-        {!terminada ? (
+        {!terminada && !esVivienda ? (
           <Stepper
             className="mt-5"
             steps={PASOS_DE_RENOVACION.map((p) => ({ id: p.id, label: p.label }))}
@@ -564,13 +677,57 @@ export function CuerpoDeRenovacion({
               contrario. `popLayout`: el nuevo se monta YA (sus campos están
               listos al instante) y el viejo se va por encima. */}
           <CrossFade
-            swapKey={terminada ? 'no-renovada' : paso}
+            swapKey={terminada ? 'no-renovada' : esVivienda ? (renovado ? 'renovada' : 'vivienda') : paso}
             direction={direccionDelPaso}
             mode="popLayout"
             className="min-w-0"
           >
             {terminada ? (
               <PasoNoRenovada renovacion={renovacion} motivo={motivoDeCierre} />
+            ) : esVivienda && (renovado || completada) ? (
+              <PasoCompletada
+                renovacion={
+                  renovado ? { ...renovacion, negotiatedRent: newRent, newLeaseEndDate: hasta } : renovacion
+                }
+                onAbrirDocumento={abrirDocumento}
+              />
+            ) : esVivienda && regla ? (
+              <PasoRenovarVivienda
+                renovacion={renovacion}
+                regla={regla}
+                canon={newRent}
+                admin={newAdminFee}
+                desde={desde}
+                hasta={hasta}
+                errores={{
+                  canon: topeDelCanon ?? topeDeVivienda ?? errores.canon,
+                  admin: topeDeLaAdministracion ?? errores.admin,
+                  desde: fechasMalas.desde ?? errores.desde,
+                  hasta: fechasMalas.hasta ?? errores.hasta,
+                }}
+                onCanon={(v) => {
+                  setNewRent(v);
+                  borrarError('canon');
+                }}
+                onAdmin={(v) => {
+                  setNewAdminFee(v);
+                  borrarError('admin');
+                }}
+                onDesde={(v) => {
+                  setDesde(v);
+                  borrarError('desde');
+                }}
+                onHasta={(v) => {
+                  setHasta(v);
+                  borrarError('hasta');
+                }}
+                onFechasDeLaRegla={() => {
+                  setDesde(regla.nuevoInicio);
+                  setHasta(regla.nuevoFin);
+                  borrarError('desde');
+                  borrarError('hasta');
+                }}
+              />
             ) : paso === 0 ? (
               <PasoPropuesta
                 renovacion={renovacion}
@@ -662,7 +819,7 @@ export function CuerpoDeRenovacion({
       <SheetFooter
         start={
         <>
-          {!terminada && paso > 0 && paso < 3 ? (
+          {!esVivienda && !terminada && paso > 0 && paso < 3 ? (
             <Button
               type="button"
               variant="ghost"
@@ -691,7 +848,34 @@ export function CuerpoDeRenovacion({
         </>
         }
       >
-          {!terminada && paso === 0 ? (
+          {esVivienda && !terminada && !renovado && !completada ? (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                hideArrow
+                isLoading={ocupado === 'guardar'}
+                disabled={ocupado !== null || newRent <= 0 || viviendaNoCabe}
+                onClick={guardarBorrador}
+                data-testid="renovacion-guardar"
+              >
+                <FloppyDisk className="h-4 w-4" aria-hidden="true" />
+                Guardar borrador
+              </Button>
+              <Button
+                type="button"
+                hideArrow
+                isLoading={ocupado === 'renovar'}
+                disabled={ocupado !== null || newRent <= 0 || viviendaNoCabe}
+                onClick={renovar}
+                data-testid="renovacion-renovar"
+              >
+                <ArrowsClockwise className="h-4 w-4" aria-hidden="true" />
+                Renovar contrato
+              </Button>
+            </>
+          ) : null}
+          {!esVivienda && !terminada && paso === 0 ? (
             <>
               {renovacion.status === 'pending' ? (
                 <Button
@@ -720,7 +904,7 @@ export function CuerpoDeRenovacion({
               </Button>
             </>
           ) : null}
-          {!terminada && paso === 1 ? (
+          {!esVivienda && !terminada && paso === 1 ? (
             <Button
               type="button"
               hideArrow
@@ -733,7 +917,7 @@ export function CuerpoDeRenovacion({
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Button>
           ) : null}
-          {!terminada && paso === 2 ? (
+          {!esVivienda && !terminada && paso === 2 ? (
             <Button
               type="button"
               hideArrow
@@ -746,7 +930,7 @@ export function CuerpoDeRenovacion({
               Registrar firma
             </Button>
           ) : null}
-          {terminada || paso === 3 ? (
+          {terminada || (esVivienda ? renovado || completada : paso === 3) ? (
             <Button
               type="button"
               variant="outline"

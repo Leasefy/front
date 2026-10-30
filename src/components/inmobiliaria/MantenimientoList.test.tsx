@@ -171,3 +171,46 @@ describe('M6 — el vacío tiene salida', () => {
     expect(container.textContent).toContain('Gotera en el baño')
   })
 })
+
+describe('Quién gestiona la reparación (Portofino, 29-10-2026)', () => {
+  const marca = () => container.querySelector<HTMLElement>('[data-testid="marca-de-la-gestion"]')
+
+  it('la tarjeta de la que gestiona otro lleva «Gestiona: …»; la de la inmobiliaria, nada', async () => {
+    await montar({ data: [hacerSolicitud({ gestionadoPor: 'administracion' })] })
+    expect(marca()!.textContent).toBe('Gestiona: la administración')
+
+    await montar({ data: [hacerSolicitud({ gestionadoPor: 'inmobiliaria' })] })
+    expect(marca()).toBeNull()
+  })
+
+  it('«la hace el propietario» (22-10) se ve con la misma marca, una sola vez', async () => {
+    await montar({
+      data: [
+        hacerSolicitud({
+          laHaceElPropietario: { loDecidio: 'INMOBILIARIA', nota: null, desde: '2026-10-27T10:00:00.000Z', terminadaAt: null, terminadaNota: null },
+        }),
+      ],
+    })
+    expect(container.querySelectorAll('[data-testid="marca-de-la-gestion"]')).toHaveLength(1)
+    expect(marca()!.textContent).toBe('Gestiona: el propietario')
+    expect(container.textContent).not.toContain('La hace el propietario')
+  })
+
+  it('el menú no ofrece cotizar ni aprobar una que gestiona otro', async () => {
+    await montar({
+      data: [hacerSolicitud({ status: 'reported', gestionadoPor: 'propietario' })],
+      onAddQuote: vi.fn(),
+      onApproveQuote: vi.fn(),
+      onCancel: vi.fn(),
+    })
+    await abrirMenu()
+    expect(item('addQuote')).toBeUndefined()
+    expect(item('cancelRequest')).toBeDefined()
+  })
+
+  it('la de la inmobiliaria sí ofrece cotizar, como siempre', async () => {
+    await montar({ data: [hacerSolicitud({ status: 'reported' })], onAddQuote: vi.fn() })
+    await abrirMenu()
+    expect(item('addQuote')).toBeDefined()
+  })
+})

@@ -309,6 +309,9 @@ const COLOR_CRUDO_JUSTIFICADO: Record<string, string> = {
  * verifica el test de abajo).
  */
 const CONTROL_A_MANO_JUSTIFICADO: Record<string, string> = {
+  'components/ui/encabezado-ordenable.tsx':
+    'La cabecera de columna ordenable común (Nico, 28-10-2026): el disparador de orden dentro de `<TableHead>`; no hay ' +
+    'primitiva en Cadence.',
   'app/panel/inmobiliaria/agenda/page.tsx':
     'Dos filas clickeables enteras que abren el cajón del evento: la ficha del ' +
     'día en «Semana» y la tarjeta de la vista de celular (AG-03/AG-14). Las ' +

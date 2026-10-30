@@ -30,6 +30,8 @@ const CLAVES = [
   // CONT-1 (QA 19-10): sin inventario anterior no se nombra; «1 ítem» en singular.
   'porActualizarTextoSinAnterior', 'itemsUno',
   'firmaTitulo', 'firmaPendiente', 'firmadoPor', 'firmaNoIntegra', 'firmaInquilinoTitulo', 'firmaInquilinoAyuda', 'firmaAceptacion', 'firmaBoton', 'firmaHecha', 'firmaExito', 'firmaError',
+  // Portofino (29-10): el inventario se hace en un cajón sin salir del contrato nuevo (CajonDelInventario).
+  'cajonDescripcion', 'cajonAyuda',
 ].map((k) => `${B}.${k}`);
 
 function leer(dic: unknown, ruta: string): unknown {

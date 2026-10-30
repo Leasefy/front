@@ -24,6 +24,8 @@ import {
 } from '@/components/ui/table'
 import { TablePagination } from '@/components/ui/pagination'
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
 import type { RecentQuote } from '@/lib/hooks/cotizador/use-carrier-recent-quotes'
 import { formatoDeCifras, localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
@@ -75,8 +77,21 @@ export function CarrierRecentQuotesTable({ quotes, isLoading = false }: CarrierR
   // Son las últimas 50 cotizaciones de la aseguradora: 50 filas de un tirón no
   // se leen. El hook va antes de los early returns — es un hook, no puede
   // quedar detrás de un `if`.
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Antes de paginar (y de
+  // los early returns). La cédula no se ordena: es un prefijo cifrado, no dice nada.
+  const { ordenadas, orden, ordenarPor } = useOrdenDeLaTabla(
+    quotes ?? SIN_COTIZACIONES,
+    {
+      fecha: (q) => q.createdAt,
+      canon: (q) => q.canonMensualCop,
+      veredicto: (q) => q.verdict,
+      prima: (q) => q.primaMensualCop,
+      latencia: (q) => q.latencyMs,
+    },
+    { primero: { fecha: 'desc', canon: 'desc', prima: 'desc', latencia: 'desc' } },
+  )
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
-    useTablePagination(quotes ?? SIN_COTIZACIONES)
+    useTablePagination(ordenadas, { resetKey: `${orden?.campo ?? ''}|${orden?.sentido ?? ''}` })
 
   if (isLoading) {
     return (
@@ -132,24 +147,24 @@ export function CarrierRecentQuotesTable({ quotes, isLoading = false }: CarrierR
         <Table className="min-w-full divide-y divide-border">
           <TableHeader className="bg-surface-muted/60">
             <TableRow>
-              <TableHead className="px-4 py-3 text-left">
+              <EncabezadoOrdenable campo="fecha" orden={orden} onOrdenar={ordenarPor} className="px-4 py-3 text-left">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.recentQuotes.cols.date')}
-              </TableHead>
+              </EncabezadoOrdenable>
               <TableHead className="px-4 py-3 text-left">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.recentQuotes.cols.cedula')}
               </TableHead>
-              <TableHead className="px-4 py-3 text-right">
+              <EncabezadoOrdenable campo="canon" orden={orden} onOrdenar={ordenarPor} className="px-4 py-3 text-right" alineacion="derecha">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.recentQuotes.cols.canon')}
-              </TableHead>
-              <TableHead className="px-4 py-3 text-left">
+              </EncabezadoOrdenable>
+              <EncabezadoOrdenable campo="veredicto" orden={orden} onOrdenar={ordenarPor} className="px-4 py-3 text-left">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.recentQuotes.cols.verdict')}
-              </TableHead>
-              <TableHead className="px-4 py-3 text-right">
+              </EncabezadoOrdenable>
+              <EncabezadoOrdenable campo="prima" orden={orden} onOrdenar={ordenarPor} className="px-4 py-3 text-right" alineacion="derecha">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.recentQuotes.cols.prima')}
-              </TableHead>
-              <TableHead className="px-4 py-3 text-right">
+              </EncabezadoOrdenable>
+              <EncabezadoOrdenable campo="latencia" orden={orden} onOrdenar={ordenarPor} className="px-4 py-3 text-right" alineacion="derecha">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.recentQuotes.cols.latency')}
-              </TableHead>
+              </EncabezadoOrdenable>
               <TableHead className="px-4 py-3 text-center">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.recentQuotes.cols.view')}
               </TableHead>

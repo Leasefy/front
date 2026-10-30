@@ -48,6 +48,8 @@ import {
 } from '@/components/ui/select'
 import { TablePagination } from '@/components/ui/pagination'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { SinDatos } from '@/components/estado/SinDatos'
 import {
@@ -92,7 +94,7 @@ export function TercerosSinCorreo({ enCajon = false }: { enCajon?: boolean } = {
     void cargar()
   }, [cargar])
 
-  const todos = datos?.terceros ?? []
+  const todos = useMemo(() => datos?.terceros ?? [], [datos])
   const visibles = useMemo(() => {
     const t = busqueda.trim().toLowerCase()
     if (t === '') return todos
@@ -103,7 +105,13 @@ export function TercerosSinCorreo({ enCajon = false }: { enCajon?: boolean } = {
         (x.telefono ?? '').toLowerCase().includes(t),
     )
   }, [todos, busqueda])
-  const paginado = useTablePagination(visibles, { resetKey: `${clase}|${busqueda}` })
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas».
+  const { ordenadas, orden, ordenarPor } = useOrdenDeLaTabla(
+    visibles,
+    { nombre: (t) => t.nombre, tipo: (t) => t.clase, documento: (t) => t.documento ?? null, telefono: (t) => t.telefono ?? null, contratos: (t) => t.contratos },
+    { primero: { contratos: 'desc' } },
+  )
+  const paginado = useTablePagination(ordenadas, { resetKey: `${clase}|${busqueda}|${orden?.campo ?? ''}|${orden?.sentido ?? ''}` })
 
   return (
     <div className="space-y-4" data-testid="terceros-sin-correo">
@@ -214,13 +222,13 @@ export function TercerosSinCorreo({ enCajon = false }: { enCajon?: boolean } = {
             <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="whitespace-nowrap">Nombre</TableHead>
-                <TableHead className="whitespace-nowrap">Tipo</TableHead>
-                <TableHead className="whitespace-nowrap">Documento</TableHead>
-                <TableHead className="whitespace-nowrap">Teléfono</TableHead>
-                <TableHead className="whitespace-nowrap text-right">
+                <EncabezadoOrdenable campo="nombre" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Nombre</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="tipo" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Tipo</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="documento" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Documento</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="telefono" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Teléfono</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="contratos" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap text-right" alineacion="derecha">
                   Contratos
-                </TableHead>
+                </EncabezadoOrdenable>
                 <TableHead className="whitespace-nowrap">Sus facturas</TableHead>
               </TableRow>
             </TableHeader>

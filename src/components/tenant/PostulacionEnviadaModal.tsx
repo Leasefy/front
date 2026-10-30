@@ -197,8 +197,8 @@ export function PostulacionEnviadaModal({
             <Paso
               numero={2}
               icono={ShieldCheck}
-              titulo="Estudio de asegurabilidad"
-              texto="La aseguradora define si respalda este arriendo."
+              titulo="Estudio de tus documentos"
+              texto="La inmobiliaria revisa tu estudio y decide si te arrienda."
             />
             <Paso
               numero={3}

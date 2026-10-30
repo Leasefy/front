@@ -79,6 +79,7 @@ const AGENT_RESULT_SUMMARIES: Record<AgentType, string> = {
   comunicacion: '2 notificaciones programadas. 1 recordatorio enviado.',
   reportes: 'Rentabilidad neta 85.4%. +2.1% vs mes anterior.',
   retencion: 'Quién está en riesgo de irse, según Vinci.',
+  servicios: 'Las facturas de servicios públicos del mes, según Servi.',
 };
 
 const AGENT_ERROR_MESSAGES: Record<AgentType, string> = {
@@ -95,6 +96,7 @@ const AGENT_ERROR_MESSAGES: Record<AgentType, string> = {
   comunicacion: 'Fallo al preparar notificaciones. Servicio no disponible.',
   reportes: 'Error al generar el reporte. Datos incompletos.',
   retencion: 'No se pudo consultar a Vinci en este momento.',
+  servicios: 'No se pudo consultar a Servi en este momento.',
 };
 
 // ============================================================================

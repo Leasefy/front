@@ -64,6 +64,10 @@ import { IconButton } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import { PropuestaYCargoDeLaReparacion } from '@/components/inmobiliaria/deducciones/PropuestaYCargoDeLaReparacion';
 import { QuienHaceLaReparacion } from '@/components/inmobiliaria/mantenimiento/QuienHaceLaReparacion';
+import { GestionDeLaReparacion } from '@/components/inmobiliaria/mantenimiento/GestionDeLaReparacion';
+import { ICONO_DE_LA_GESTION } from '@/components/inmobiliaria/mantenimiento/QuienGestiona';
+import { MARCA_DE_LA_GESTION, gestionDeLaSolicitud } from '@/lib/mantenimiento/gestionado-por';
+import { useTr } from '@/lib/i18n/use-tr';
 import type {
   SolicitudMantenimiento,
   MantenimientoType,
@@ -113,6 +117,12 @@ export interface MantenimientoViewerProps {
    * propietario» y «La retoma la inmobiliaria»; se llama después del cambio.
    */
   onQuienLaHaceCambio?: () => void | Promise<void>;
+  /**
+   * Portofino 29-10-2026: con este callback el detalle deja cambiar quién
+   * gestiona la reparación y registrar los pasos del seguimiento por avisos;
+   * se llama después del cambio. Sin él, sólo se lee.
+   */
+  onGestionCambio?: () => void | Promise<void>;
   /**
    * Nico 28-10-2026: «los admin sí podrían eliminarlos». Sólo llega con
    * operaciones:delete; la página confirma y el back no deja si hay plata viva.
@@ -197,6 +207,12 @@ function generateTimelineFn(
   t: (key: string, params?: Record<string, string | number>) => string
 ): TimelineEvent[] {
   const events: TimelineEvent[] = [];
+  /*
+   * Portofino 29-10: la que gestiona otro no pasa por cotización, aprobación ni
+   * «el proveedor está ejecutando»: sus pasos son los del seguimiento (que se
+   * ven en «Quién la gestiona»). Aquí quedan el reporte y la cancelación.
+   */
+  const laGestionaOtro = gestionDeLaSolicitud(solicitud) !== 'inmobiliaria';
 
   // Reported event
   events.push({
@@ -222,7 +238,7 @@ function generateTimelineFn(
   });
 
   // Status-based events
-  if (['quoted', 'approved', 'in_progress', 'completed', 'cancelled'].includes(solicitud.status)) {
+  if (!laGestionaOtro && ['quoted', 'approved', 'in_progress', 'completed', 'cancelled'].includes(solicitud.status)) {
     if (solicitud.status !== 'cancelled' && solicitud.quotes.length > 0) {
       events.push({
         id: 'event-quoted',
@@ -237,7 +253,7 @@ function generateTimelineFn(
     }
   }
 
-  if (['approved', 'in_progress', 'completed'].includes(solicitud.status)) {
+  if (!laGestionaOtro && ['approved', 'in_progress', 'completed'].includes(solicitud.status)) {
     events.push({
       id: 'event-approved',
       status: 'approved',
@@ -249,7 +265,7 @@ function generateTimelineFn(
     });
   }
 
-  if (['in_progress', 'completed'].includes(solicitud.status)) {
+  if (!laGestionaOtro && ['in_progress', 'completed'].includes(solicitud.status)) {
     events.push({
       id: 'event-in_progress',
       status: 'in_progress',
@@ -260,7 +276,7 @@ function generateTimelineFn(
     });
   }
 
-  if (solicitud.status === 'completed') {
+  if (!laGestionaOtro && solicitud.status === 'completed') {
     events.push({
       id: 'event-completed',
       status: 'completed',
@@ -490,9 +506,20 @@ export function MantenimientoViewer({
   onCompletada,
   onCalificado,
   onQuienLaHaceCambio,
+  onGestionCambio,
   onEliminar,
 }: MantenimientoViewerProps) {
   const { t, formatDate: fmtDate } = useI18n();
+  const tr = useTr();
+  /*
+   * Portofino 29-10-2026: quién la gestiona. Si no es la inmobiliaria, el
+   * detalle NO ofrece cotizar, aprobar, la emergencia, el costo final ni la
+   * deducción (el back los rechaza con 400 GESTIONADA_POR_OTRO): en su lugar,
+   * el seguimiento por avisos de `GestionDeLaReparacion`.
+   */
+  const gestion = solicitud ? gestionDeLaSolicitud(solicitud) : 'inmobiliaria';
+  const laGestionaOtro = gestion !== 'inmobiliaria';
+  const IconoDeLaGestion = ICONO_DE_LA_GESTION[gestion];
   const [showNoteDialog, setShowNoteDialog] = useState(false);
   const [noteText, setNoteText] = useState('');
   const [showCancelDialog, setShowCancelDialog] = useState(false);
@@ -570,6 +597,20 @@ export function MantenimientoViewer({
       return acciones;
     }
     if (solicitud.status === 'cancelled') return [];
+
+    // Portofino 29-10: la que gestiona otro sólo se cancela (o se elimina); sus pasos van en el seguimiento.
+    if (gestionDeLaSolicitud(solicitud) !== 'inmobiliaria') {
+      if (onStatusChange) {
+        acciones.push({
+          id: 'cancelar',
+          etiqueta: t('inmobiliaria.mantenimiento.cancelRequest'),
+          icono: XCircle,
+          tono: 'text-danger',
+          alElegir: () => setShowCancelDialog(true),
+        });
+      }
+      return acciones;
+    }
 
     if (
       onApproveQuote &&
@@ -676,14 +717,11 @@ export function MantenimientoViewer({
             debajo. */}
         <SheetHeader
           leading={
-            <div
-              className={cn(
-                'w-10 h-10 rounded-md flex items-center justify-center flex-shrink-0',
-                priorityStyle.bg
-              )}
-            >
-              <TypeIcon className={cn('w-5 h-5', priorityStyle.text)} />
-            </div>
+            // 29-10 (revisión en pantalla): el ícono del tipo suelto, sin cajita de color (vara: nada de cajas de ícono).
+            <TypeIcon
+              className={cn('mt-1 h-5 w-5 shrink-0', solicitud.priority === 'emergency' ? 'text-danger' : 'text-fg-muted')}
+              aria-hidden="true"
+            />
           }
           title={solicitud.title}
           description={`${typeInfo?.labelEs ?? ''} · ${fmtDate(solicitud.createdAt)}`}
@@ -746,6 +784,16 @@ export function MantenimientoViewer({
               <Warning className="w-3.5 h-3.5" />
               {t('inmobiliaria.mantenimiento.priorityLabel')}: {t(priorityStyle.labelKey)}
             </span>
+            {/* Portofino 29-10: quién la gestiona, si no es la inmobiliaria (en neutro: no es un juicio). */}
+            {laGestionaOtro ? (
+              <span
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-caption font-medium bg-surface-muted text-fg-muted"
+                data-testid="detalle-gestionado-por"
+              >
+                <IconoDeLaGestion className="w-3.5 h-3.5" aria-hidden="true" />
+                {tr(MARCA_DE_LA_GESTION[gestion])}
+              </span>
+            ) : null}
           </div>
         </SheetHeader>
 
@@ -760,10 +808,13 @@ export function MantenimientoViewer({
             <div className="p-4 rounded-lg border border-border bg-card space-y-3">
               <div>
                 <p className="font-medium text-foreground">{solicitud.propertyTitle}</p>
-                <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
-                  <MapPin className="w-3.5 h-3.5" />
-                  {solicitud.propertyAddress}
-                </p>
+                {/* 29-10 (datos de Portofino): sin dirección, o si repite el título, no queda el pin solo. */}
+                {solicitud.propertyAddress?.trim() && solicitud.propertyAddress.trim() !== solicitud.propertyTitle?.trim() ? (
+                  <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
+                    <MapPin className="w-3.5 h-3.5" aria-hidden="true" />
+                    {solicitud.propertyAddress}
+                  </p>
+                ) : null}
               </div>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
@@ -814,6 +865,15 @@ export function MantenimientoViewer({
             ) : null}
           </div>
 
+          {/* Portofino 29-10: quién gestiona la reparación (y cambiarlo); si es otro, su seguimiento
+              por avisos. «La hace el propietario» (22-10) es el mismo tema: va adentro, debajo del
+              resumen, y sólo cuando la inmobiliaria la tiene o la hace el propietario por su cuenta. */}
+          <GestionDeLaReparacion solicitud={solicitud} onCambio={onGestionCambio}>
+            {onQuienLaHaceCambio && (!laGestionaOtro || solicitud.laHaceElPropietario) ? (
+              <QuienHaceLaReparacion solicitud={solicitud} onCambio={onQuienLaHaceCambio} />
+            ) : null}
+          </GestionDeLaReparacion>
+
           {/* Before Photos */}
           <div className="space-y-3">
             <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
@@ -837,18 +897,16 @@ export function MantenimientoViewer({
               quedó en el estado de cuenta del inquilino. */}
           <PropuestaYCargoDeLaReparacion
             solicitud={solicitud}
-            onRevisar={onApproveQuote ? (_id, quoteId) => handleSelectQuote(quoteId) : undefined}
+            onRevisar={onApproveQuote && !laGestionaOtro ? (_id, quoteId) => handleSelectQuote(quoteId) : undefined}
           />
 
-          {/* Portofino 22-10: ¿la hace la inmobiliaria o el propietario? */}
-          {onQuienLaHaceCambio ? (
-            <QuienHaceLaReparacion solicitud={solicitud} onCambio={onQuienLaHaceCambio} />
-          ) : null}
-
-          {/* Quotations Section */}
-          {(solicitud.status === 'quoted' ||
-            solicitud.status === 'reported' ||
-            solicitud.quotes.length > 0) && (
+          {/* Quotations Section — la que gestiona otro no se cotiza: sólo se ven, sin aprobar ni
+              agregar, las que hubiera de antes de pasársela. */}
+          {(laGestionaOtro
+            ? solicitud.quotes.length > 0
+            : solicitud.status === 'quoted' ||
+              solicitud.status === 'reported' ||
+              solicitud.quotes.length > 0) && (
             <div className="space-y-3">
               <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
                 <CurrencyDollar className="w-4 h-4" />
@@ -856,9 +914,9 @@ export function MantenimientoViewer({
               </h4>
               <CotizacionComparator
                 solicitud={solicitud}
-                onSelectQuote={onApproveQuote ? handleSelectQuote : undefined}
+                onSelectQuote={onApproveQuote && !laGestionaOtro ? handleSelectQuote : undefined}
                 onRequestNewQuote={
-                  onRequestQuote ? () => onRequestQuote(solicitud.id) : undefined
+                  onRequestQuote && !laGestionaOtro ? () => onRequestQuote(solicitud.id) : undefined
                 }
                 selectedQuoteId={selectedQuoteId}
               />
@@ -908,7 +966,8 @@ export function MantenimientoViewer({
             <Timeline events={timeline} fmtDate={fmtDate} />
           </div>
 
-          {/* Who Pays */}
+          {/* Who Pays — la que gestiona otro no se le cobra ni descuenta a nadie en Leasefy. */}
+          {!laGestionaOtro && (
           <div className="p-4 rounded-lg border border-border bg-muted/50">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -934,6 +993,7 @@ export function MantenimientoViewer({
               </Badge>
             </div>
           </div>
+          )}
         </CajonCuerpo>
 
         {/* Pie fijo: cancelar la solicitud (destructivo) a la izquierda; la
@@ -972,8 +1032,9 @@ export function MantenimientoViewer({
               </Button>
             )}
 
-            {/* Primary Action based on status */}
-            {solicitud.status === 'approved' && (
+            {/* Primary Action based on status. Portofino 29-10: la que gestiona otro avanza con el
+                seguimiento («Registrar el siguiente paso»), no con empezar ni cerrar con costo final. */}
+            {!laGestionaOtro && solicitud.status === 'approved' && (
               <Button
                 hideArrow
                 onClick={handleStartWork}
@@ -983,7 +1044,7 @@ export function MantenimientoViewer({
               </Button>
             )}
 
-            {solicitud.status === 'in_progress' && (
+            {!laGestionaOtro && solicitud.status === 'in_progress' && (
               // success/green: Cadence Button has no success variant (logged gap) — real Button
               // keeps DS states; only the fill is overridden for the missing tone.
               <Button

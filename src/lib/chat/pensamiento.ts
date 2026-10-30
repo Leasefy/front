@@ -224,6 +224,7 @@ export const NOMBRE_FUNCIONAL_DEL_MICRO: Readonly<Record<string, string>> = {
   avaluo: 'avalúos',
   documentos: 'documentos',
   comunicacion: 'comunicación',
+  servicios: 'servicios públicos',
 };
 
 /**
@@ -242,6 +243,7 @@ export const NOMBRE_FUNCIONAL_EN: Readonly<Record<string, string>> = {
   avaluo: 'appraisals',
   documentos: 'documents',
   comunicacion: 'communications',
+  servicios: 'utilities',
 };
 
 const escapar = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

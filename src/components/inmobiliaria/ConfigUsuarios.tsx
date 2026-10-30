@@ -51,6 +51,8 @@ import {
 import { TablePagination } from '@/components/ui/pagination';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
 import {
   DropdownList,
   DropdownListContent,
@@ -342,6 +344,12 @@ export function ConfigUsuarios({
    * pantalla. `resetKey` con los tres filtros — sin eso, filtrar desde la
    * página 3 deja la tabla vacía y se lee como «no hay usuarios».
    */
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas».
+  const { ordenadas, orden, ordenarPor } = useOrdenDeLaTabla(
+    filteredUsers,
+    { usuario: (u) => u.name || u.email, rol: (u) => u.role, estado: (u) => u.status, acceso: (u) => u.lastLoginAt ?? null },
+    { primero: { acceso: 'desc' } },
+  );
   const {
     pageItems,
     total,
@@ -350,8 +358,8 @@ export function ConfigUsuarios({
     setPage,
     setPageSize,
     shouldPaginate,
-  } = useTablePagination(filteredUsers, {
-    resetKey: `${search.trim()}|${filterRole}|${filterStatus}`,
+  } = useTablePagination(ordenadas, {
+    resetKey: `${search.trim()}|${filterRole}|${filterStatus}|${orden?.campo ?? ''}|${orden?.sentido ?? ''}`,
   });
 
   /** El vacío no dice lo mismo con un filtro puesto que sin ninguno. */
@@ -463,28 +471,20 @@ export function ConfigUsuarios({
         <Table className="w-full md:min-w-[800px] max-md:block">
           <TableHeader className="max-md:hidden">
             <TableRow className="border-b border-border-faint dark:border-border-strong">
-              <TableHead className="text-left p-4">
-                <span>
-                  {t('inmobiliaria.config.users.tableUser')}
-                </span>
-              </TableHead>
-              <TableHead className="text-left p-4">
-                <span>
-                  {t('inmobiliaria.config.users.role')}
-                </span>
-              </TableHead>
+              <EncabezadoOrdenable campo="usuario" orden={orden} onOrdenar={ordenarPor} className="text-left p-4">
+                {t('inmobiliaria.config.users.tableUser')}
+              </EncabezadoOrdenable>
+              <EncabezadoOrdenable campo="rol" orden={orden} onOrdenar={ordenarPor} className="text-left p-4">
+                {t('inmobiliaria.config.users.role')}
+              </EncabezadoOrdenable>
               {todosActivos ? null : (
-                <TableHead className="text-left p-4">
-                  <span>
-                    {t('inmobiliaria.config.users.status')}
-                  </span>
-                </TableHead>
+                <EncabezadoOrdenable campo="estado" orden={orden} onOrdenar={ordenarPor} className="text-left p-4">
+                  {t('inmobiliaria.config.users.status')}
+                </EncabezadoOrdenable>
               )}
-              <TableHead className="text-left p-4 hidden md:table-cell">
-                <span>
-                  {t('inmobiliaria.config.users.lastAccess')}
-                </span>
-              </TableHead>
+              <EncabezadoOrdenable campo="acceso" orden={orden} onOrdenar={ordenarPor} className="text-left p-4 hidden md:table-cell">
+                {t('inmobiliaria.config.users.lastAccess')}
+              </EncabezadoOrdenable>
               <TableHead className="w-12 p-4"></TableHead>
             </TableRow>
           </TableHeader>

@@ -4,6 +4,8 @@
  * Medios de pago: lo que el inquilino ve en «Cómo pagar» y lo que ofrece el
  * selector del recibo de caja. El componente trae y guarda lo suyo; acá sólo
  * se le pasa la agencia (de ahí saca el titular de las cuentas).
+ *
+ * Debajo, la asegurabilidad manual (Nico, 28-10-2026): cuánto se cobra por el estudio y a cuál de estas cuentas.
  */
 
 import { Wallet } from '@phosphor-icons/react';
@@ -12,6 +14,7 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { MediosDePago } from '@/components/inmobiliaria/medios-de-pago/MediosDePago';
 import { useInmobiliariaConfig } from '@/lib/hooks/useInmobiliaria';
 import { EsqueletoDeSeccion, VacioDeSeccion } from './piezas';
+import { ConfigDeLaAsegurabilidadManual } from './ConfigDeLaAsegurabilidadManual';
 
 export function SeccionMediosDePago() {
   const { config, isLoading, errorCrudo, refetch } = useInmobiliariaConfig();
@@ -34,6 +37,7 @@ export function SeccionMediosDePago() {
       }
     >
       <MediosDePago agencia={agency} />
+      <ConfigDeLaAsegurabilidadManual />
     </EstadoDeDatos>
   );
 }

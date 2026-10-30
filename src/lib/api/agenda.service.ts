@@ -7,6 +7,7 @@ import type { AgendaListResponse,
 } from './agenda.types';
 import { EVENTOS_POR_PAGINA, RESUMEN_AGENDA_VACIO } from './agenda.types';
 import { ApiError } from './client';
+import type { AreaDeLaAgenda } from '@/lib/agenda/areas-de-la-agenda';
 
 /** Payload to schedule an agency visit ("pedir cita"). */
 export interface CreateCitaInput {
@@ -73,6 +74,8 @@ export interface PaginaDeAgendaPedida {
   /** AG-04: la semana que se mira (días AAAA-MM-DD). */
   desde?: string;
   hasta?: string;
+  /** La agenda por área: sólo estas (vacío = todas). */
+  areas?: readonly AreaDeLaAgenda[];
 }
 
 export const agendaApi = {
@@ -93,6 +96,7 @@ export const agendaApi = {
         pedido.mias ? '&mias=true' : '',
         pedido.desde ? `&desde=${pedido.desde}` : '',
         pedido.hasta ? `&hasta=${pedido.hasta}` : '',
+        pedido.areas?.length ? `&area=${pedido.areas.map(encodeURIComponent).join(',')}` : '',
       ].join('');
       return await apiClient.get<AgendaListResponse>(
         `/inmobiliaria/agenda?page=${page}&pageSize=${pageSize}${deUnInmueble}${extra}`,

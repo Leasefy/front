@@ -26,6 +26,10 @@
 /**
  * Política de tratamiento de datos personales publicada en `/privacidad`.
  *
+ * v7.0 (29-10-2026): el plan gratis (Nico: «también en la Política»): quien usa Leasefy sin pagar autoriza a Leasefy a
+ * conservar y usar lo que carga y a ofrecer a esas personas inmuebles y servicios (§4 y §16). La v6.0 sigue en
+ * `politica-v6.ts`.
+ *
  * v6.0 (20-10-2026): la política de datos hermética (Nico): los agentes
  * trabajan dentro de la plataforma (§6), el control antes de que algo salga
  * (§11), quién ve y quién descarga (§17), y las grabaciones y transcripciones
@@ -33,13 +37,15 @@
  * La v5.0 sigue en `politica-v5.ts`, la v4.0 en `politica-v4.ts` y la v3.0 en
  * `politica-v3.ts`.
  */
-export const VERSION_POLITICA_DE_TRATAMIENTO = 'politica-tratamiento-v6.0';
+export const VERSION_POLITICA_DE_TRATAMIENTO = 'politica-tratamiento-v7.0';
 
 /** Desde cuándo rige la versión publicada (AAAA-MM-DD). */
-export const VIGENCIA_POLITICA_DE_TRATAMIENTO = '2026-10-20';
+export const VIGENCIA_POLITICA_DE_TRATAMIENTO = '2026-10-29';
 
 /**
  * Términos y condiciones publicados en `/terminos`.
+ *
+ * v2.3 (29-10-2026): §6 suma «El plan gratis» (va con la Política v7.0).
  *
  * v2.2 (15-10-2026): §18 suma la autorización de los inquilinos con contrato
  * para escribirles por WhatsApp desde Mensajes (va con la Política v5.0).
@@ -49,4 +55,4 @@ export const VIGENCIA_POLITICA_DE_TRATAMIENTO = '2026-10-20';
  * los términos de la §16 de la Política). Lo acepta la inmobiliaria al
  * registrarse (`onboarding-session.service.ts`, `CURRENT_TERMS_VERSION`).
  */
-export const VERSION_TERMINOS = 'terminos-v2.2';
+export const VERSION_TERMINOS = 'terminos-v2.3';

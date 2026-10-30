@@ -52,7 +52,9 @@
  */
 
 import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
 import { Certificate, DotsThreeVertical, Prohibit, SealWarning } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
@@ -121,6 +123,19 @@ export function ResolucionDeFacturacion({
   onCargaAbierta,
 }: ResolucionDeFacturacionProps = {}) {
   const [datos, setDatos] = useState<ResolucionesDeLaAgencia | null>(null)
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas».
+  const resoluciones = useMemo(() => datos?.resoluciones ?? [], [datos])
+  const { ordenadas, orden, ordenarPor } = useOrdenDeLaTabla(
+    resoluciones,
+    {
+      resolucion: (r) => r.fechaResolucion,
+      numera: (r) => r.tipoNombre,
+      numeros: (r) => r.disponibles,
+      vigencia: (r) => r.vigenteHasta,
+      estado: (r) => (r.anulada ? 'Anulada' : r.puedeNumerar ? 'Numerando' : (r.motivo ?? '')),
+    },
+    { primero: { resolucion: 'desc', numeros: 'desc', vigencia: 'desc' } },
+  )
   /*
    * 🔴 Q12 (Nico, la recomendada): anular una resolución, SÓLO el
    * administrador (el back responde 403 SOLO_EL_ADMINISTRADOR al contador). Al
@@ -296,11 +311,11 @@ export function ResolucionDeFacturacion({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="whitespace-nowrap">Resolución</TableHead>
-                    <TableHead className="whitespace-nowrap">Numera</TableHead>
-                    <TableHead className="whitespace-nowrap">Números</TableHead>
-                    <TableHead className="whitespace-nowrap">Vigencia</TableHead>
-                    <TableHead className="whitespace-nowrap">Estado</TableHead>
+                    <EncabezadoOrdenable campo="resolucion" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Resolución</EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="numera" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Numera</EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="numeros" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Números</EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="vigencia" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Vigencia</EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="estado" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Estado</EncabezadoOrdenable>
                     <TableHead />
                   </TableRow>
                 </TableHeader>
@@ -316,7 +331,7 @@ export function ResolucionDeFacturacion({
                       </TableCell>
                     </TableRow>
                   ) : (
-                    datos.resoluciones.map((r) => (
+                    ordenadas.map((r) => (
                       <TableRow key={r.id} data-testid={`resolucion-${r.id}`}>
                         <TableCell className="whitespace-nowrap text-fg">
                           <span className="font-mono tabular-nums">{r.numero}</span>

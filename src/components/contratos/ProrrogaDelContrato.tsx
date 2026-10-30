@@ -306,9 +306,13 @@ export function ProrrogaDelContrato({
       {plan.uso && !plan.noSeProrroga && plan.disponible && (
         <div className="flex flex-wrap items-end gap-2">
           <label className="text-caption" htmlFor="meses-de-prorroga">
+            {/* 🔴 Portofino (29-10-2026): «hay contratos de 12 meses que después del
+                año se renuevan cada 6 meses; otros cada 12; otros son a 6». En vivienda
+                este número es CADA CUÁNTO SE RENUEVA; el incremento sube igual sólo al
+                cumplir cada año de contrato. */}
             {plan.uso === 'COMERCIAL'
               ? 'Prórroga pactada, en meses (vacío = mes a mes)'
-              : 'Término inicial confirmado, en meses (vacío = el del contrato)'}
+              : 'Se renueva cada, en meses (vacío = el término del contrato)'}
             <Input
               id="meses-de-prorroga"
               inputMode="numeric"
@@ -324,6 +328,23 @@ export function ProrrogaDelContrato({
               aria-describedby="meses-de-prorroga-error"
             />
           </label>
+          {plan.uso === 'VIVIENDA'
+            ? [6, 12].map((m) => (
+                <Button
+                  key={m}
+                  size="sm"
+                  variant={meses.trim() === String(m) ? 'secondary' : 'ghost'}
+                  disabled={!editable}
+                  onClick={() => {
+                    setMeses(String(m));
+                    setErrorDeLosMeses(undefined);
+                  }}
+                  data-testid={`renueva-cada-${m}`}
+                >
+                  {m} meses
+                </Button>
+              ))
+            : null}
           <Button
             size="sm"
             variant="outline"
@@ -339,7 +360,9 @@ export function ProrrogaDelContrato({
               void (async () => {
                 const r = await hacer(
                   () => cicloDeVidaApi.fijarMesesDeProrroga(contract.id, n),
-                  'Término de la prórroga guardado.',
+                  plan.uso === 'VIVIENDA'
+                    ? 'Guardado: cada cuánto se renueva este contrato.'
+                    : 'Término de la prórroga guardado.',
                   'guardar el término de la prórroga',
                   ['meses'],
                 );
@@ -350,7 +373,16 @@ export function ProrrogaDelContrato({
           >
             Guardar término
           </Button>
-          <ErrorDelCampo id="meses-de-prorroga-error" mensaje={errorDeLosMeses} className="w-full" />
+          <ErrorDelCampo
+            id="meses-de-prorroga-error"
+            mensaje={errorDeLosMeses}
+            pista={
+              plan.uso === 'VIVIENDA'
+                ? 'Lo usual: 6 o 12 meses. El incremento sólo sube cuando se cumple cada año de contrato.'
+                : undefined
+            }
+            className="w-full"
+          />
         </div>
       )}
 

@@ -930,4 +930,10 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   // 30-10 (R17): la constancia de un documento subido en nombre del postulante.
   'Lo subió {quien} en nombre del postulante': 'Uploaded by {quien} on behalf of the applicant',
   'Lo subió tu inmobiliaria en nombre del postulante': 'Uploaded by your agency on behalf of the applicant',
+  // 30-10 (D1): bajar en el chat lo que dejó una acción.
+  'No pude bajar el archivo. Prueba de nuevo en un momento.': "I couldn't download the file. Try again in a moment.",
+  'Listo: quedó en tus descargas.': 'Done: it is in your downloads.',
+  'Descargarlo otra vez': 'Download it again',
+  'Descargar {nombre}': 'Download {nombre}',
+  'bajar el archivo': 'download the file',
 }

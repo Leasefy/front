@@ -248,7 +248,7 @@ describe('ChatDelPortal — Ori dentro del portal, sin modelo', () => {
     expect(boton('Descargar el certificado')).toBeNull();
     await clic('Sí, hazlo');
     await clic('Descargar el certificado');
-    await hasta(() => texto().includes('Listo: el certificado quedó en tus descargas.'));
+    await hasta(() => texto().includes('Listo: quedó en tus descargas.'));
     expect(pdfDelCertificado).toHaveBeenCalledWith(documentoId);
     expect(agentFetch).toHaveBeenCalledTimes(2);
   });

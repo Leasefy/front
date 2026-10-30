@@ -25,6 +25,8 @@ import { CasillasDeCodigo } from '@/components/ui/casillas-de-codigo';
 import { useAuth } from '@/lib/auth/use-auth';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
 import { useI18n } from '@/lib/i18n';
+import { useTr } from '@/lib/i18n/use-tr';
+import { bajarLaDescargaDelChat } from '@/lib/chat/descarga-del-chat';
 import { formatCurrency, formatDate, formatNumber } from '@/lib/format';
 import { getSupabase } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
@@ -55,6 +57,7 @@ import {
 import { esEstadoFinal, useProcesoDelChat } from '@/lib/chat/use-proceso-del-chat';
 import type { ChatMessage } from '@/lib/types/beta-chat';
 import { CajaDelChat } from './CajaDelChat';
+import { DescargaEnElChat } from './DescargaEnElChat';
 import { FILAS_A_LA_VISTA, filasQueSeOcultan } from './RespuestaConForma';
 
 /**
@@ -690,6 +693,7 @@ const ESPERA_ENTRE_INTENTOS_MS = 2000;
 
 function TarjetaDeResultadoDelHilo({ t: r, messageId, posteriores, ensayo, repite }: PropsComunes & { t: TarjetaResultado }) {
   const { t } = useI18n();
+  const tr = useTr();
   const { mandar, ocupado } = useMandar();
   const { refrescarEjecucion } = useBetaChatContext();
   const p = PRESENTACION_DEL_RESULTADO[r.estado];
@@ -774,6 +778,15 @@ function TarjetaDeResultadoDelHilo({ t: r, messageId, posteriores, ensayo, repit
   // Con el resumen en el texto de arriba, la fila ES el contenido («Se envía
   // en 0:45 · Deshacer»): un pie bajo un cuerpo vacío sería un filete suelto.
   const conResumen = !repite && !!r.resumen;
+  // D1 (30-10): el archivo que dejó la acción se baja aquí mismo, con tu sesión.
+  const descarga = r.descarga ? (
+    <DescargaEnElChat
+      sinBorde
+      etiqueta={tr('Descargar {nombre}', { nombre: r.descarga.nombre })}
+      accion={tr('bajar el archivo')}
+      bajar={() => bajarLaDescargaDelChat(r.descarga!)}
+    />
+  ) : null;
 
   // Volver a una tarjeta en gracia cuya cuenta ya terminó (recargar, cambiar
   // de conversación): se pide su versión de hoy una vez.
@@ -799,12 +812,17 @@ function TarjetaDeResultadoDelHilo({ t: r, messageId, posteriores, ensayo, repit
       data-estado={r.estado}
       titulo={r.titulo}
       conteo={<Estado tono={p.tono} pulso={p.pulso} texto={t(`beta.enElChat.tarjeta.estado.${r.estado}`)} ensayo={ensayo} />}
-      pie={conResumen && fila ? <Pie>{fila}</Pie> : undefined}
+      pie={conResumen && (fila || descarga) ? <Pie>{descarga}{fila}</Pie> : undefined}
     >
       {conResumen ? (
         <div className="flex items-start gap-2.5">
           {p.icono}
           <p className="min-w-0 font-body text-[15px] leading-relaxed text-fg">{r.resumen}</p>
+        </div>
+      ) : descarga && !fila ? (
+        <div className="flex items-center gap-2.5">
+          {p.icono}
+          {descarga}
         </div>
       ) : (
         <div className="flex items-center gap-2.5">

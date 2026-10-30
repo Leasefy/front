@@ -1,6 +1,6 @@
 {
   "_comentario": "Generado por scripts/contrato-del-chat-del-micro.mjs desde el openapi-snapshot.json del micro. No editar a mano: regenerar.",
-  "sacadoDe": "micro@0fb69327/openapi-snapshot.json",
+  "sacadoDe": "micro@e0f3e82b/openapi-snapshot.json",
   "cuando": "2026-10-30",
   "rutas": {
     "POST /api/agency/{agencyId}/ai-hub/chat/senales": {
@@ -801,6 +801,29 @@
                     "required": [
                       "etiqueta",
                       "intencion"
+                    ]
+                  },
+                  "descarga": {
+                    "type": "object",
+                    "properties": {
+                      "ruta": {
+                        "type": "string"
+                      },
+                      "nombre": {
+                        "type": "string"
+                      },
+                      "forma": {
+                        "type": "string",
+                        "enum": [
+                          "archivo",
+                          "enlace"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "ruta",
+                      "nombre",
+                      "forma"
                     ]
                   }
                 },
@@ -1708,6 +1731,29 @@
                         "etiqueta",
                         "intencion"
                       ]
+                    },
+                    "descarga": {
+                      "type": "object",
+                      "properties": {
+                        "ruta": {
+                          "type": "string"
+                        },
+                        "nombre": {
+                          "type": "string"
+                        },
+                        "forma": {
+                          "type": "string",
+                          "enum": [
+                            "archivo",
+                            "enlace"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "ruta",
+                        "nombre",
+                        "forma"
+                      ]
                     }
                   },
                   "required": [
@@ -2600,6 +2646,29 @@
                       "required": [
                         "etiqueta",
                         "intencion"
+                      ]
+                    },
+                    "descarga": {
+                      "type": "object",
+                      "properties": {
+                        "ruta": {
+                          "type": "string"
+                        },
+                        "nombre": {
+                          "type": "string"
+                        },
+                        "forma": {
+                          "type": "string",
+                          "enum": [
+                            "archivo",
+                            "enlace"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "ruta",
+                        "nombre",
+                        "forma"
                       ]
                     }
                   },

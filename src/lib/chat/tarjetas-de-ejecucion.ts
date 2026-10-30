@@ -36,6 +36,7 @@
  * inventa «Deshacer» ni «Cancelar»).
  */
 
+import { leerDescargaDelChat, type DescargaDelChat } from './descarga-del-chat';
 import {
   ACCIONES_SOBRE_UN_LOTE,
   ACCIONES_SOBRE_UN_PLAN,
@@ -167,6 +168,8 @@ export interface TarjetaResultado extends BaseDeLaTarjeta {
   resumen: string;
   gracia: { hasta: string; segundos: number } | null;
   deshacer: BotonDeLaTarjeta | null;
+  /** (30-10, D1) El archivo que dejó la acción, para bajarlo ahí mismo; sin archivo, `undefined`. */
+  descarga: DescargaDelChat | undefined;
 }
 
 export interface TarjetaProgramada extends BaseDeLaTarjeta {
@@ -409,6 +412,8 @@ export function leerTarjetaDeEjecucion(v: unknown): TarjetaDeEjecucion | null {
         resumen: textoONulo(v.resumen) ?? '',
         gracia: hasta && !Number.isNaN(Date.parse(hasta)) ? { hasta, segundos: numero(g?.segundos) ?? 60 } : null,
         deshacer: leerBoton(v.deshacer),
+        // Como `modificacion`: la llave siempre está; sin archivo (o no hecha), `undefined`.
+        descarga: estado === 'hecha' ? (leerDescargaDelChat(v.descarga) ?? undefined) : undefined,
       };
     }
     case 'programada': {

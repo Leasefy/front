@@ -90,10 +90,35 @@ export interface EntidadDeLaIntencion {
 export type AccionSobreUnPlan = 'hacer_plan' | 'cancelar_plan' | 'seguir_plan';
 export const ACCIONES_SOBRE_UN_PLAN: AccionSobreUnPlan[] = ['hacer_plan', 'cancelar_plan', 'seguir_plan'];
 
+/**
+ * (29-10) Lo que se hace sobre un LOTE: «Sí, hazlo», «No» / «Detener»,
+ * «Reintentar los que fallaron», «Seguir ahora». Con «Sí, hazlo» viajan los
+ * que la persona quitó (`quitar`), los que eligió entre homónimos
+ * (`elegidos`: el nombre por resolver y UNA de sus opciones) y lo que llenó
+ * una vez para todos (`datos`).
+ */
+export type AccionSobreUnLote = 'hacer_lote' | 'cancelar_lote' | 'reintentar_lote' | 'seguir_lote';
+export const ACCIONES_SOBRE_UN_LOTE: AccionSobreUnLote[] = ['hacer_lote', 'cancelar_lote', 'reintentar_lote', 'seguir_lote'];
+
+export interface ElegidoDelLote {
+  i: number;
+  tipo: string;
+  id: string;
+}
+
+export type IntencionSobreUnLote = {
+  accion: AccionSobreUnLote;
+  loteId: string;
+  quitar?: number[];
+  elegidos?: ElegidoDelLote[];
+  datos?: Record<string, string | number>;
+};
+
 export type IntencionDelChat =
   | { accion: 'ver' | 'cobranza'; entidad: EntidadDeLaIntencion }
   | { accion: 'confirmar' | 'cancelar' | 'deshacer'; propuestaId: string }
   | { accion: AccionSobreUnPlan; planId: string; datos?: Record<string, string | number> }
+  | IntencionSobreUnLote
   | { accion: string; entidad: EntidadDeLaIntencion; datos?: Record<string, string | number> };
 
 function esObjeto(v: unknown): v is Record<string, unknown> {
@@ -123,9 +148,41 @@ export function datosDelPlan(v: unknown): Record<string, string | number> {
   return datos;
 }
 
+const CLAVE_DEL_DATO_DEL_LOTE = /^[A-Za-z][A-Za-z0-9_]{0,39}$/;
+
+/** La intención sobre un lote, con sólo lo que el micro acepta (lo demás se descarta). */
+export function leerIntencionSobreUnLote(v: unknown): IntencionSobreUnLote | null {
+  if (!esObjeto(v) || !(ACCIONES_SOBRE_UN_LOTE as string[]).includes(String(v.accion))) return null;
+  const loteId = texto(v.loteId);
+  if (!loteId) return null;
+  const salida: IntencionSobreUnLote = { accion: v.accion as AccionSobreUnLote, loteId };
+  if (Array.isArray(v.quitar)) {
+    const quitar = v.quitar.filter((n): n is number => typeof n === 'number' && Number.isInteger(n) && n >= 1).slice(0, 5000);
+    if (quitar.length) salida.quitar = quitar;
+  }
+  if (Array.isArray(v.elegidos)) {
+    const elegidos = v.elegidos
+      .filter((e): e is Record<string, unknown> => esObjeto(e))
+      .flatMap((e) => (typeof e.i === 'number' && Number.isInteger(e.i) && texto(e.tipo) && texto(e.id) ? [{ i: e.i, tipo: String(e.tipo), id: String(e.id) }] : []))
+      .slice(0, 100);
+    if (elegidos.length) salida.elegidos = elegidos;
+  }
+  if (esObjeto(v.datos)) {
+    const datos: Record<string, string | number> = {};
+    for (const [k, d] of Object.entries(v.datos)) {
+      if (!CLAVE_DEL_DATO_DEL_LOTE.test(k)) continue;
+      if (typeof d === 'string' && d.length <= 1000) datos[k] = d;
+      else if (typeof d === 'number' && Number.isFinite(d)) datos[k] = d;
+    }
+    if (Object.keys(datos).length) salida.datos = datos;
+  }
+  return salida;
+}
+
 export function leerIntencion(v: unknown): IntencionDelChat | null {
   if (!esObjeto(v) || typeof v.accion !== 'string') return null;
   const accion = v.accion;
+  if ((ACCIONES_SOBRE_UN_LOTE as string[]).includes(accion)) return leerIntencionSobreUnLote(v);
   if (accion === 'confirmar' || accion === 'cancelar' || accion === 'deshacer') {
     const propuestaId = texto(v.propuestaId);
     return propuestaId ? { accion, propuestaId } : null;
@@ -405,6 +462,22 @@ export function respuestaDelPlan(
   for (const m of posteriores) {
     const i = m.intencion;
     if (m.role === 'user' && i && 'planId' in i && i.planId === planId) return i.accion;
+  }
+  return null;
+}
+
+/**
+ * (29-10) ¿La persona ya respondió ESTA tarjeta del lote? Lo primero que dijo
+ * sobre ese lote DESPUÉS de la tarjeta (la respuesta llega en un mensaje nuevo
+ * con su tarjeta al día; ésta queda como «respondida»).
+ */
+export function respuestaDelLote(
+  loteId: string,
+  posteriores: ReadonlyArray<{ role: string; intencion?: IntencionDelChat }>,
+): AccionSobreUnLote | null {
+  for (const m of posteriores) {
+    const i = m.intencion;
+    if (m.role === 'user' && i && 'loteId' in i && i.loteId === loteId) return i.accion;
   }
   return null;
 }

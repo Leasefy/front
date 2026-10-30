@@ -37,9 +37,11 @@
  */
 
 import {
+  ACCIONES_SOBRE_UN_LOTE,
   ACCIONES_SOBRE_UN_PLAN,
   datosDelPlan,
   leerEntidadDeLaIntencion,
+  leerIntencionSobreUnLote,
   type AccionSobreUnPlan,
   type IntencionDelChat,
   type ModoDelChat,
@@ -230,6 +232,8 @@ const CLAVE_DE_DATO = /^[A-Za-z][A-Za-z0-9_]{0,39}$/;
 export function leerIntencionDelBoton(v: unknown): IntencionDelChat | null {
   if (!esObjeto(v) || typeof v.accion !== 'string') return null;
   const accion = v.accion;
+  // (29-10) «Sí, hazlo», «No» / «Detener», «Reintentar», «Seguir» sobre un lote.
+  if ((ACCIONES_SOBRE_UN_LOTE as string[]).includes(accion)) return leerIntencionSobreUnLote(v);
   if (accion === 'confirmar' || accion === 'cancelar' || accion === 'deshacer') {
     const propuestaId = texto(v.propuestaId);
     return propuestaId ? { accion, propuestaId } : null;

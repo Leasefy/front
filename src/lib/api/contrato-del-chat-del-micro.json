@@ -1,6 +1,6 @@
 {
   "_comentario": "Generado por scripts/contrato-del-chat-del-micro.mjs desde el openapi-snapshot.json del micro. No editar a mano: regenerar.",
-  "sacadoDe": "micro@6923b60b/openapi-snapshot.json",
+  "sacadoDe": "micro@b5e0110a/openapi-snapshot.json",
   "cuando": "2026-10-30",
   "rutas": {
     "POST /api/agency/{agencyId}/ai-hub/chat/senales": {
@@ -733,6 +733,37 @@
                           "planId": {
                             "type": "string"
                           },
+                          "loteId": {
+                            "type": "string"
+                          },
+                          "quitar": {
+                            "type": "array",
+                            "items": {
+                              "type": "integer"
+                            }
+                          },
+                          "elegidos": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "i": {
+                                  "type": "integer"
+                                },
+                                "tipo": {
+                                  "type": "string"
+                                },
+                                "id": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "i",
+                                "tipo",
+                                "id"
+                              ]
+                            }
+                          },
                           "entidad": {
                             "type": "object",
                             "properties": {
@@ -841,6 +872,37 @@
                           },
                           "planId": {
                             "type": "string"
+                          },
+                          "loteId": {
+                            "type": "string"
+                          },
+                          "quitar": {
+                            "type": "array",
+                            "items": {
+                              "type": "integer"
+                            }
+                          },
+                          "elegidos": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "i": {
+                                  "type": "integer"
+                                },
+                                "tipo": {
+                                  "type": "string"
+                                },
+                                "id": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "i",
+                                "tipo",
+                                "id"
+                              ]
+                            }
                           },
                           "entidad": {
                             "type": "object",
@@ -975,6 +1037,37 @@
                           },
                           "planId": {
                             "type": "string"
+                          },
+                          "loteId": {
+                            "type": "string"
+                          },
+                          "quitar": {
+                            "type": "array",
+                            "items": {
+                              "type": "integer"
+                            }
+                          },
+                          "elegidos": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "i": {
+                                  "type": "integer"
+                                },
+                                "tipo": {
+                                  "type": "string"
+                                },
+                                "id": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "i",
+                                "tipo",
+                                "id"
+                              ]
+                            }
                           },
                           "entidad": {
                             "type": "object",
@@ -1546,6 +1639,37 @@
                             "planId": {
                               "type": "string"
                             },
+                            "loteId": {
+                              "type": "string"
+                            },
+                            "quitar": {
+                              "type": "array",
+                              "items": {
+                                "type": "integer"
+                              }
+                            },
+                            "elegidos": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "i": {
+                                    "type": "integer"
+                                  },
+                                  "tipo": {
+                                    "type": "string"
+                                  },
+                                  "id": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "i",
+                                  "tipo",
+                                  "id"
+                                ]
+                              }
+                            },
                             "entidad": {
                               "type": "object",
                               "properties": {
@@ -1654,6 +1778,37 @@
                             },
                             "planId": {
                               "type": "string"
+                            },
+                            "loteId": {
+                              "type": "string"
+                            },
+                            "quitar": {
+                              "type": "array",
+                              "items": {
+                                "type": "integer"
+                              }
+                            },
+                            "elegidos": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "i": {
+                                    "type": "integer"
+                                  },
+                                  "tipo": {
+                                    "type": "string"
+                                  },
+                                  "id": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "i",
+                                  "tipo",
+                                  "id"
+                                ]
+                              }
                             },
                             "entidad": {
                               "type": "object",
@@ -1788,6 +1943,37 @@
                             },
                             "planId": {
                               "type": "string"
+                            },
+                            "loteId": {
+                              "type": "string"
+                            },
+                            "quitar": {
+                              "type": "array",
+                              "items": {
+                                "type": "integer"
+                              }
+                            },
+                            "elegidos": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "i": {
+                                    "type": "integer"
+                                  },
+                                  "tipo": {
+                                    "type": "string"
+                                  },
+                                  "id": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "i",
+                                  "tipo",
+                                  "id"
+                                ]
+                              }
                             },
                             "entidad": {
                               "type": "object",
@@ -2346,6 +2532,37 @@
                             "planId": {
                               "type": "string"
                             },
+                            "loteId": {
+                              "type": "string"
+                            },
+                            "quitar": {
+                              "type": "array",
+                              "items": {
+                                "type": "integer"
+                              }
+                            },
+                            "elegidos": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "i": {
+                                    "type": "integer"
+                                  },
+                                  "tipo": {
+                                    "type": "string"
+                                  },
+                                  "id": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "i",
+                                  "tipo",
+                                  "id"
+                                ]
+                              }
+                            },
                             "entidad": {
                               "type": "object",
                               "properties": {
@@ -2454,6 +2671,37 @@
                             },
                             "planId": {
                               "type": "string"
+                            },
+                            "loteId": {
+                              "type": "string"
+                            },
+                            "quitar": {
+                              "type": "array",
+                              "items": {
+                                "type": "integer"
+                              }
+                            },
+                            "elegidos": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "i": {
+                                    "type": "integer"
+                                  },
+                                  "tipo": {
+                                    "type": "string"
+                                  },
+                                  "id": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "i",
+                                  "tipo",
+                                  "id"
+                                ]
+                              }
                             },
                             "entidad": {
                               "type": "object",
@@ -2588,6 +2836,37 @@
                             },
                             "planId": {
                               "type": "string"
+                            },
+                            "loteId": {
+                              "type": "string"
+                            },
+                            "quitar": {
+                              "type": "array",
+                              "items": {
+                                "type": "integer"
+                              }
+                            },
+                            "elegidos": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "i": {
+                                    "type": "integer"
+                                  },
+                                  "tipo": {
+                                    "type": "string"
+                                  },
+                                  "id": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "i",
+                                  "tipo",
+                                  "id"
+                                ]
+                              }
                             },
                             "entidad": {
                               "type": "object",
@@ -2821,6 +3100,37 @@
                               "planId": {
                                 "type": "string"
                               },
+                              "loteId": {
+                                "type": "string"
+                              },
+                              "quitar": {
+                                "type": "array",
+                                "items": {
+                                  "type": "integer"
+                                }
+                              },
+                              "elegidos": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "i": {
+                                      "type": "integer"
+                                    },
+                                    "tipo": {
+                                      "type": "string"
+                                    },
+                                    "id": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "i",
+                                    "tipo",
+                                    "id"
+                                  ]
+                                }
+                              },
                               "entidad": {
                                 "type": "object",
                                 "properties": {
@@ -3024,6 +3334,37 @@
                         "planId": {
                           "type": "string"
                         },
+                        "loteId": {
+                          "type": "string"
+                        },
+                        "quitar": {
+                          "type": "array",
+                          "items": {
+                            "type": "integer"
+                          }
+                        },
+                        "elegidos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "i": {
+                                "type": "integer"
+                              },
+                              "tipo": {
+                                "type": "string"
+                              },
+                              "id": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "i",
+                              "tipo",
+                              "id"
+                            ]
+                          }
+                        },
                         "entidad": {
                           "type": "object",
                           "properties": {
@@ -3084,6 +3425,37 @@
                         "planId": {
                           "type": "string"
                         },
+                        "loteId": {
+                          "type": "string"
+                        },
+                        "quitar": {
+                          "type": "array",
+                          "items": {
+                            "type": "integer"
+                          }
+                        },
+                        "elegidos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "i": {
+                                "type": "integer"
+                              },
+                              "tipo": {
+                                "type": "string"
+                              },
+                              "id": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "i",
+                              "tipo",
+                              "id"
+                            ]
+                          }
+                        },
                         "entidad": {
                           "type": "object",
                           "properties": {
@@ -3143,6 +3515,37 @@
                         },
                         "planId": {
                           "type": "string"
+                        },
+                        "loteId": {
+                          "type": "string"
+                        },
+                        "quitar": {
+                          "type": "array",
+                          "items": {
+                            "type": "integer"
+                          }
+                        },
+                        "elegidos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "i": {
+                                "type": "integer"
+                              },
+                              "tipo": {
+                                "type": "string"
+                              },
+                              "id": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "i",
+                              "tipo",
+                              "id"
+                            ]
+                          }
                         },
                         "entidad": {
                           "type": "object",
@@ -3212,6 +3615,834 @@
                 "null"
               ]
             }
+          ]
+        },
+        "lote": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "tipo": {
+              "type": "string",
+              "enum": [
+                "lote"
+              ]
+            },
+            "loteId": {
+              "type": "string"
+            },
+            "titulo": {
+              "type": "string"
+            },
+            "cita": {
+              "type": "string"
+            },
+            "verbo": {
+              "type": "string"
+            },
+            "descripcion": {
+              "type": "string"
+            },
+            "estado": {
+              "type": "string",
+              "enum": [
+                "propuesto",
+                "ejecutando",
+                "programado",
+                "en_pausa",
+                "hecho",
+                "cancelado",
+                "vencido"
+              ]
+            },
+            "modo": {
+              "type": "string",
+              "enum": [
+                "manual",
+                "copiloto",
+                "automatico"
+              ]
+            },
+            "pregunta": {
+              "type": "string"
+            },
+            "porQue": {
+              "type": "string"
+            },
+            "venceEn": {
+              "type": "string"
+            },
+            "riesgo": {
+              "type": "object",
+              "properties": {
+                "muevePlata": {
+                  "type": "boolean"
+                },
+                "escribeATerceros": {
+                  "type": "boolean"
+                },
+                "irreversible": {
+                  "type": "boolean"
+                },
+                "masiva": {
+                  "type": "boolean"
+                },
+                "fiscal": {
+                  "type": "boolean"
+                },
+                "dobleControl": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "paso": {
+                      "type": "string",
+                      "enum": [
+                        "propone",
+                        "aprueba"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "paso"
+                  ]
+                },
+                "proceso": {
+                  "type": "boolean"
+                },
+                "tope": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "agenteDueno": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "muevePlata",
+                "escribeATerceros",
+                "irreversible",
+                "masiva",
+                "fiscal",
+                "dobleControl",
+                "proceso",
+                "tope",
+                "agenteDueno"
+              ]
+            },
+            "cifra": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "n": {
+                    "type": "integer"
+                  },
+                  "etiqueta": {
+                    "type": "string"
+                  },
+                  "detalle": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "accion": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "estado": {
+                    "type": "string",
+                    "enum": [
+                      "listo",
+                      "quitado",
+                      "pendiente",
+                      "en_curso",
+                      "hecho",
+                      "fallido",
+                      "omitido"
+                    ]
+                  },
+                  "resumen": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "quitable": {
+                    "type": "boolean"
+                  },
+                  "revisado": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "n",
+                  "etiqueta",
+                  "detalle",
+                  "accion",
+                  "estado",
+                  "resumen",
+                  "quitable",
+                  "revisado"
+                ]
+              }
+            },
+            "noEntran": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "porQue": {
+                    "type": "string"
+                  },
+                  "cuantos": {
+                    "type": "integer"
+                  },
+                  "quienes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "porQue",
+                  "cuantos",
+                  "quienes"
+                ]
+              }
+            },
+            "porResolver": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "nombre": {
+                    "type": "string"
+                  },
+                  "motivo": {
+                    "type": "string",
+                    "enum": [
+                      "ambiguo",
+                      "no_aparece",
+                      "no_se_pudo_buscar"
+                    ]
+                  },
+                  "opciones": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "etiqueta": {
+                          "type": "string"
+                        },
+                        "detalle": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "entidad": {
+                          "type": "object",
+                          "properties": {
+                            "tipo": {
+                              "type": "string"
+                            },
+                            "id": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "tipo",
+                            "id"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "etiqueta",
+                        "detalle",
+                        "entidad"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "nombre",
+                  "motivo",
+                  "opciones"
+                ]
+              }
+            },
+            "quedan": {
+              "type": "integer"
+            },
+            "tope": {
+              "type": "integer"
+            },
+            "progreso": {
+              "type": "object",
+              "properties": {
+                "total": {
+                  "type": "integer"
+                },
+                "hechos": {
+                  "type": "integer"
+                },
+                "fallidos": {
+                  "type": "integer"
+                },
+                "omitidos": {
+                  "type": "integer"
+                },
+                "pendientes": {
+                  "type": "integer"
+                },
+                "quitados": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "total",
+                "hechos",
+                "fallidos",
+                "omitidos",
+                "pendientes",
+                "quitados"
+              ]
+            },
+            "espera": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "properties": {
+                "tipo": {
+                  "type": "string",
+                  "enum": [
+                    "horario",
+                    "sin_sesion",
+                    "limite",
+                    "proceso"
+                  ]
+                },
+                "porQue": {
+                  "type": "string"
+                },
+                "hasta": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "tipo",
+                "porQue",
+                "hasta"
+              ]
+            },
+            "resumen": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "fallas": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "porQue": {
+                    "type": "string"
+                  },
+                  "cuantos": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "porQue",
+                  "cuantos"
+                ]
+              }
+            },
+            "campos": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "clave": {
+                    "type": "string"
+                  },
+                  "etiqueta": {
+                    "type": "string"
+                  },
+                  "tipo": {
+                    "type": "string",
+                    "enum": [
+                      "moneda",
+                      "fecha",
+                      "mes",
+                      "numero",
+                      "texto",
+                      "texto_largo",
+                      "opcion"
+                    ]
+                  },
+                  "requerido": {
+                    "type": "boolean"
+                  },
+                  "opciones": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "valor": {
+                          "type": "string"
+                        },
+                        "etiqueta": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "valor",
+                        "etiqueta"
+                      ]
+                    }
+                  },
+                  "ayuda": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "valor": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "clave",
+                  "etiqueta",
+                  "tipo",
+                  "requerido",
+                  "opciones",
+                  "ayuda",
+                  "valor"
+                ]
+              }
+            },
+            "hacer": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "properties": {
+                "etiqueta": {
+                  "type": "string"
+                },
+                "intencion": {
+                  "type": "object",
+                  "properties": {
+                    "accion": {
+                      "type": "string"
+                    },
+                    "propuestaId": {
+                      "type": "string"
+                    },
+                    "planId": {
+                      "type": "string"
+                    },
+                    "loteId": {
+                      "type": "string"
+                    },
+                    "quitar": {
+                      "type": "array",
+                      "items": {
+                        "type": "integer"
+                      }
+                    },
+                    "elegidos": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "i": {
+                            "type": "integer"
+                          },
+                          "tipo": {
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "i",
+                          "tipo",
+                          "id"
+                        ]
+                      }
+                    },
+                    "entidad": {
+                      "type": "object",
+                      "properties": {
+                        "tipo": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "tipo",
+                        "id"
+                      ]
+                    },
+                    "datos": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "accion"
+                  ]
+                }
+              },
+              "required": [
+                "etiqueta",
+                "intencion"
+              ]
+            },
+            "cancelar": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "properties": {
+                "etiqueta": {
+                  "type": "string"
+                },
+                "intencion": {
+                  "type": "object",
+                  "properties": {
+                    "accion": {
+                      "type": "string"
+                    },
+                    "propuestaId": {
+                      "type": "string"
+                    },
+                    "planId": {
+                      "type": "string"
+                    },
+                    "loteId": {
+                      "type": "string"
+                    },
+                    "quitar": {
+                      "type": "array",
+                      "items": {
+                        "type": "integer"
+                      }
+                    },
+                    "elegidos": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "i": {
+                            "type": "integer"
+                          },
+                          "tipo": {
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "i",
+                          "tipo",
+                          "id"
+                        ]
+                      }
+                    },
+                    "entidad": {
+                      "type": "object",
+                      "properties": {
+                        "tipo": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "tipo",
+                        "id"
+                      ]
+                    },
+                    "datos": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "accion"
+                  ]
+                }
+              },
+              "required": [
+                "etiqueta",
+                "intencion"
+              ]
+            },
+            "reintentar": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "properties": {
+                "etiqueta": {
+                  "type": "string"
+                },
+                "intencion": {
+                  "type": "object",
+                  "properties": {
+                    "accion": {
+                      "type": "string"
+                    },
+                    "propuestaId": {
+                      "type": "string"
+                    },
+                    "planId": {
+                      "type": "string"
+                    },
+                    "loteId": {
+                      "type": "string"
+                    },
+                    "quitar": {
+                      "type": "array",
+                      "items": {
+                        "type": "integer"
+                      }
+                    },
+                    "elegidos": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "i": {
+                            "type": "integer"
+                          },
+                          "tipo": {
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "i",
+                          "tipo",
+                          "id"
+                        ]
+                      }
+                    },
+                    "entidad": {
+                      "type": "object",
+                      "properties": {
+                        "tipo": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "tipo",
+                        "id"
+                      ]
+                    },
+                    "datos": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "accion"
+                  ]
+                }
+              },
+              "required": [
+                "etiqueta",
+                "intencion"
+              ]
+            },
+            "seguir": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "properties": {
+                "etiqueta": {
+                  "type": "string"
+                },
+                "intencion": {
+                  "type": "object",
+                  "properties": {
+                    "accion": {
+                      "type": "string"
+                    },
+                    "propuestaId": {
+                      "type": "string"
+                    },
+                    "planId": {
+                      "type": "string"
+                    },
+                    "loteId": {
+                      "type": "string"
+                    },
+                    "quitar": {
+                      "type": "array",
+                      "items": {
+                        "type": "integer"
+                      }
+                    },
+                    "elegidos": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "i": {
+                            "type": "integer"
+                          },
+                          "tipo": {
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "i",
+                          "tipo",
+                          "id"
+                        ]
+                      }
+                    },
+                    "entidad": {
+                      "type": "object",
+                      "properties": {
+                        "tipo": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "tipo",
+                        "id"
+                      ]
+                    },
+                    "datos": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "accion"
+                  ]
+                }
+              },
+              "required": [
+                "etiqueta",
+                "intencion"
+              ]
+            },
+            "ensayo": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "tipo",
+            "loteId",
+            "titulo",
+            "cita",
+            "verbo",
+            "descripcion",
+            "estado",
+            "modo",
+            "pregunta",
+            "porQue",
+            "venceEn",
+            "riesgo",
+            "cifra",
+            "items",
+            "noEntran",
+            "porResolver",
+            "quedan",
+            "tope",
+            "progreso",
+            "espera",
+            "resumen",
+            "fallas",
+            "campos",
+            "hacer",
+            "cancelar",
+            "reintentar",
+            "seguir",
+            "ensayo"
           ]
         }
       },

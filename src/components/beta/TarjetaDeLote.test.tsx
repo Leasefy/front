@@ -46,6 +46,7 @@ import { AccionesEnElHilo } from './AccionesEnElHilo';
 import type { ChatMessage } from '@/lib/types/beta-chat';
 import { leerTarjetaDeLote, type TarjetaDeLote } from '@/lib/chat/lote-del-chat';
 import { leerIntencion } from '@/lib/chat/acciones-del-hilo';
+import { componenteDelMicro, erroresContraElEsquema } from '@/lib/api/contrato-del-chat-del-micro';
 
 const LOTE = '00000000-0000-4000-a000-000000000007';
 const RIESGO = { muevePlata: false, escribeATerceros: true, irreversible: false, masiva: true, fiscal: false, dobleControl: null, proceso: false, tope: null, agenteDueno: 'cobranza' };
@@ -221,6 +222,15 @@ describe('mientras corre y al final', () => {
 });
 
 describe('lo que llega del micro se lee con cuidado', () => {
+  it('los ejemplos son lo que el micro manda (el esquema del snapshot, estricto)', () => {
+    const esquema = componenteDelMicro('AiHubChatPiezasNuevasDelDone')!.properties!.lote;
+    for (const e of ['propuesto', 'ejecutando', 'hecho', 'programado', 'en_pausa', 'cancelado', 'vencido']) {
+      expect(erroresContraElEsquema(esquema, lote(e), 'lote')).toEqual([]);
+    }
+    expect(erroresContraElEsquema(esquema, { ...lote('propuesto'), inventada: 1 }, 'lote')).not.toEqual([]);
+    expect(erroresContraElEsquema(esquema, null, 'lote')).toEqual([]);
+  });
+
   it('un botón de OTRO lote no se pinta; una tarjeta sin id o sin nada que mostrar, tampoco', () => {
     const otro = leerTarjetaDeLote({ ...lote('propuesto'), hacer: { etiqueta: 'Sí', intencion: { accion: 'hacer_lote', loteId: 'otro' } } })!;
     expect(otro.hacer).toBeNull();

@@ -74,7 +74,8 @@ describe('los ejemplos son lo que el micro manda (esquema del snapshot, estricto
   it('el contrato trae la ruta de la tarjeta al día y las piezas nuevas del `done`', () => {
     expect(rutaDeLaEjecucion, 'GET …/ejecuciones/{id} no está en el contrato').not.toBeNull();
     expect(rutaDeLaEjecucion.ruta.respuesta?.properties?.tarjeta).toBeDefined();
-    expect(Object.keys(piezasDelDone.properties!).sort()).toEqual(['ejecucion', 'ensayo', 'plan']);
+    // (29-10) `lote`: la tarjeta del lote, aditiva como el plan.
+    expect(Object.keys(piezasDelDone.properties!).sort()).toEqual(['ejecucion', 'ensayo', 'lote', 'plan']);
   });
 
   it.each(Object.entries(EJEMPLOS))('%s cabe en `done.ejecucion` y en la respuesta de GET …/ejecuciones/{id}', (_, ejemplo) => {

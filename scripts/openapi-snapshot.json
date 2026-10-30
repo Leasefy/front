@@ -32833,6 +32833,10 @@
           },
           "texto": {
             "type": "string"
+          },
+          "pqrsId": {
+            "type": "string",
+            "format": "uuid"
           }
         },
         "required": [

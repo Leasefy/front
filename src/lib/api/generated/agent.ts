@@ -17288,6 +17288,8 @@ export interface components {
         PortalChatHacerResponse: {
             hecho: boolean;
             texto: string;
+            /** Format: uuid */
+            pqrsId?: string;
         };
         PortalChatHacerBody: {
             accion: string;

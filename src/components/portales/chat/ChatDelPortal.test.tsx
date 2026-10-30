@@ -5,6 +5,8 @@ import { act } from 'react';
 
 const agentFetch = vi.fn();
 vi.mock('@/lib/api/agent-fetch', () => ({ agentFetch: (...a: unknown[]) => agentFetch(...a) }));
+const subirAdjunto = vi.fn();
+vi.mock('@/lib/api/pqrs.service', () => ({ pqrsApi: { subirAdjunto: (...a: unknown[]) => subirAdjunto(...a) } }));
 
 import { ChatDelPortal, navegacionDelPago } from './ChatDelPortal';
 
@@ -161,5 +163,48 @@ describe('ChatDelPortal — Ori dentro del portal, sin modelo', () => {
     await hasta(() => texto().includes('Ya tienes un pago en verificación.'));
     expect(texto()).toContain('No salió');
     vi.unstubAllGlobals();
+  });
+  it('radicada la solicitud, la foto del daño se agrega ahí mismo a ESA solicitud (POST /pqrs/:id/adjuntos)', async () => {
+    const id = '7d3f0c2a-1b2c-4d5e-8f90-123456789abc';
+    agentFetch
+      .mockResolvedValueOnce(json(200, { pedido: 'radicar_pqrs', texto: 'Te dejo lista la solicitud.', tarjeta: TARJETA }))
+      .mockResolvedValueOnce(json(200, { hecho: true, texto: 'Listo, quedó radicada con el radicado PQRS-12.', pqrsId: id }));
+    subirAdjunto.mockReset().mockResolvedValue({ id: 'a-1' });
+    await abrir();
+    await escribir('se dañó la ducha');
+    await clic('Enviar');
+    await clic('Sí, hazlo');
+    await clic('Agregar una foto del daño');
+    const input = document.body.querySelector('input[type="file"]') as HTMLInputElement;
+    const foto = new File(['x'], 'ducha.jpg', { type: 'image/jpeg' });
+    Object.defineProperty(input, 'files', { value: [foto], configurable: true });
+    await act(async () => {
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await hasta(() => texto().includes('Le agregué a tu solicitud «ducha.jpg».'));
+    expect(subirAdjunto).toHaveBeenCalledWith(id, foto);
+    expect(boton('Agregar otra foto')).not.toBeNull();
+  });
+
+  it('sin la solicitud radicada no se ofrece la foto; un archivo que no sirve se dice sin subirlo', async () => {
+    const id = '7d3f0c2a-1b2c-4d5e-8f90-123456789abc';
+    agentFetch
+      .mockResolvedValueOnce(json(200, { pedido: 'radicar_pqrs', texto: 'Te dejo lista la solicitud.', tarjeta: TARJETA }))
+      .mockResolvedValueOnce(json(200, { hecho: true, texto: 'Listo, quedó radicada.', pqrsId: id }));
+    subirAdjunto.mockReset();
+    await abrir();
+    await escribir('se dañó la ducha');
+    await clic('Enviar');
+    await hasta(() => boton('Sí, hazlo'));
+    expect(boton('Agregar una foto del daño')).toBeNull();
+    await clic('Sí, hazlo');
+    await hasta(() => boton('Agregar una foto del daño'));
+    const input = document.body.querySelector('input[type="file"]') as HTMLInputElement;
+    Object.defineProperty(input, 'files', { value: [new File(['x'], 'notas.txt', { type: 'text/plain' })], configurable: true });
+    await act(async () => {
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await hasta(() => document.body.querySelector('[role="alert"]'));
+    expect(subirAdjunto).not.toHaveBeenCalled();
   });
 });

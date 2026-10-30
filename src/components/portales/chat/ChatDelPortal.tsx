@@ -30,6 +30,7 @@ import {
   type TarjetaDelChatDelPortal as Tarjeta,
 } from '@/lib/portales/chat-del-portal';
 import { abrirElPagoEnLinea } from '@/lib/portales/pago-desde-el-chat';
+import { FotoDelDano } from './FotoDelDano';
 import { TarjetaDelChatDelPortal, type EstadoDeLaTarjetaDelPortal } from './TarjetaDelChatDelPortal';
 
 export type TurnoDelPortal =
@@ -42,6 +43,8 @@ export type TurnoDelPortal =
       estado: EstadoDeLaTarjetaDelPortal;
       resultado: string | null;
       error?: boolean;
+      /** La solicitud que quedó radicada: para agregarle la foto del daño. */
+      pqrsId?: string;
     };
 
 /** Abre la pasarela (aparte para poder probarlo sin salir de la página). */
@@ -93,7 +96,7 @@ export function useChatDelPortal(portal: PortalDelChat) {
         return;
       }
       const r = await hacerEnElChatDelPortal(tarjeta);
-      cambiar(id, { estado: r.hecho ? 'hecha' : 'fallida', resultado: r.texto });
+      cambiar(id, { estado: r.hecho ? 'hecha' : 'fallida', resultado: r.texto, pqrsId: r.pqrsId });
     },
     [cambiar],
   );
@@ -193,7 +196,11 @@ export function ChatDelPortal({ portal }: { portal: PortalDelChat }) {
                     resultado={t.resultado}
                     onSi={() => void decirQueSi(t.id, t.tarjeta as Tarjeta)}
                     onAhoraNo={() => decirQueNo(t.id)}
-                  />
+                  >
+                    {t.estado === 'hecha' && t.tarjeta.accion === 'radicar_pqrs' && t.pqrsId && (
+                      <FotoDelDano pqrsId={t.pqrsId} />
+                    )}
+                  </TarjetaDelChatDelPortal>
                 )}
               </div>
             ),

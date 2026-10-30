@@ -1522,6 +1522,9 @@ function ValorEnfrentado({
 
 function DocumentRow({ doc, applicationId }: { doc: DocumentItem; applicationId: string }) {
   const tr = useTr();
+  const fechas = useLocaleDeFechas();
+  // 30-10 (R17): lo que la inmobiliaria subió en nombre del postulante lleva su constancia.
+  const constancia = doc.subidoEnNombreDelPostulante ?? null;
   const label = tr(DOC_TYPE_LABELS[doc.type] ?? doc.type);
   const sizeKb = doc.size ? `${Math.round(doc.size / 1024)} KB` : null;
   const isPdf = doc.mimeType === 'application/pdf' || doc.fileName?.endsWith('.pdf');
@@ -1580,6 +1583,14 @@ function DocumentRow({ doc, applicationId }: { doc: DocumentItem; applicationId:
           {doc.fileName ?? 'archivo'}
           {sizeKb && ` · ${sizeKb}`}
         </p>
+        {constancia && (
+          <p className="text-caption text-fg-subtle" data-testid="constancia-del-documento">
+            {constancia.por
+              ? tr('Lo subió {quien} en nombre del postulante', { quien: constancia.por })
+              : tr('Lo subió tu inmobiliaria en nombre del postulante')}
+            {` · ${new Date(constancia.el).toLocaleDateString(fechas, { day: 'numeric', month: 'short', year: 'numeric' })}`}
+          </p>
+        )}
       </div>
       <IconButton
         type="button"

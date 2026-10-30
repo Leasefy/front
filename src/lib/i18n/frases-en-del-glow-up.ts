@@ -927,4 +927,7 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   'Tomar una foto': 'Take a photo',
   'Subiendo archivos…': 'Uploading files…',
   'Archivos que mandaste': 'Files you sent',
+  // 30-10 (R17): la constancia de un documento subido en nombre del postulante.
+  'Lo subió {quien} en nombre del postulante': 'Uploaded by {quien} on behalf of the applicant',
+  'Lo subió tu inmobiliaria en nombre del postulante': 'Uploaded by your agency on behalf of the applicant',
 }

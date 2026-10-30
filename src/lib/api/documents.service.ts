@@ -36,6 +36,11 @@ export interface DocumentItem {
   reviewedAt?: string | null;
   /** Reason to surface to the tenant when reviewStatus is REJECTED. */
   rejectionReason?: string | null;
+  /**
+   * 30-10-2026 (R17): la constancia de un documento que la inmobiliaria subió
+   * EN NOMBRE del postulante (desde el chat): quién y cuándo. Ausente = lo subió él.
+   */
+  subidoEnNombreDelPostulante?: { por: string | null; el: string } | null;
 }
 
 function mapDocument(bd: BackendDocumentFull | BackendDocument): DocumentItem {
@@ -61,7 +66,17 @@ function mapDocument(bd: BackendDocumentFull | BackendDocument): DocumentItem {
     reviewStatus,
     reviewedAt: 'reviewedAt' in bd ? bd.reviewedAt : undefined,
     rejectionReason: 'rejectionReason' in bd ? bd.rejectionReason : undefined,
+    subidoEnNombreDelPostulante: constanciaDe(bd),
   };
+}
+
+/** La constancia del back (`subidoEnNombreDelPostulante`), si viene y tiene forma. */
+function constanciaDe(bd: unknown): DocumentItem['subidoEnNombreDelPostulante'] {
+  const c = (bd as { subidoEnNombreDelPostulante?: unknown }).subidoEnNombreDelPostulante
+  if (!c || typeof c !== 'object') return null
+  const { por, el } = c as { por?: unknown; el?: unknown }
+  if (typeof el !== 'string') return null
+  return { por: typeof por === 'string' && por.trim() ? por.trim() : null, el }
 }
 
 // ============================================================================

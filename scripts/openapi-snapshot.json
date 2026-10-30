@@ -1748,6 +1748,130 @@
           "ensayo"
         ]
       },
+      "AiHubChatTarjetaProgramado": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "programadas": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "cuando": {
+                  "type": "string"
+                },
+                "que": {
+                  "type": "string"
+                },
+                "estado": {
+                  "type": "string",
+                  "enum": [
+                    "activa",
+                    "pausada",
+                    "terminada"
+                  ]
+                },
+                "proxima": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "proximaDicha": {
+                  "type": "string"
+                },
+                "ultimoDisparo": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "en": {
+                      "type": "string"
+                    },
+                    "detalle": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "en",
+                    "detalle"
+                  ]
+                },
+                "esperaClic": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "desde": {
+                      "type": "string"
+                    },
+                    "texto": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "desde",
+                    "texto"
+                  ]
+                },
+                "botones": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "tipo": {
+                        "type": "string",
+                        "enum": [
+                          "pausar",
+                          "reanudar",
+                          "cancelar",
+                          "hacer_ahora"
+                        ]
+                      },
+                      "etiqueta": {
+                        "type": "string"
+                      },
+                      "mensaje": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "tipo",
+                      "etiqueta",
+                      "mensaje"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "id",
+                "cuando",
+                "que",
+                "estado",
+                "proxima",
+                "proximaDicha",
+                "ultimoDisparo",
+                "esperaClic",
+                "botones"
+              ]
+            }
+          },
+          "hayListas": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "programadas",
+          "hayListas"
+        ]
+      },
       "AiHubChatPiezasNuevasDelDone": {
         "type": "object",
         "properties": {
@@ -1798,6 +1922,9 @@
           },
           "lote": {
             "$ref": "#/components/schemas/AiHubChatTarjetaLote"
+          },
+          "programado": {
+            "$ref": "#/components/schemas/AiHubChatTarjetaProgramado"
           }
         },
         "required": [

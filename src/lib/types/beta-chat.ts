@@ -389,6 +389,8 @@ export interface ChatMessage {
    * `GET …/lotes/{id}` en su mismo mensaje. Ver `src/lib/chat/lote-del-chat.ts`.
    */
   lote?: import('@/lib/chat/lote-del-chat').TarjetaDeLote;
+  /** (29-10) La tarjeta de lo programado: cada orden con sus botones, que son mensajes del hilo. */
+  programado?: import('@/lib/chat/programado-del-chat').TarjetaDeLoProgramado;
   /** El turno corrió en modo ensayo del servidor: nada se ejecutó ni se programó. */
   ensayo?: boolean;
   /**

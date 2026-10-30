@@ -9974,11 +9974,38 @@ export interface components {
             } | null;
             ensayo: boolean;
         } | null;
+        AiHubChatTarjetaProgramado: {
+            programadas: {
+                id: string;
+                cuando: string;
+                que: string;
+                /** @enum {string} */
+                estado: "activa" | "pausada" | "terminada";
+                proxima: string | null;
+                proximaDicha: string;
+                ultimoDisparo: {
+                    en: string;
+                    detalle: string;
+                } | null;
+                esperaClic: {
+                    desde: string;
+                    texto: string;
+                } | null;
+                botones: {
+                    /** @enum {string} */
+                    tipo: "pausar" | "reanudar" | "cancelar" | "hacer_ahora";
+                    etiqueta: string;
+                    mensaje: string;
+                }[];
+            }[];
+            hayListas: boolean;
+        } | null;
         AiHubChatPiezasNuevasDelDone: {
             ejecucion: Omit<components["schemas"]["AiHubChatTarjetaDeEjecucion"], "tipo"> & (components["schemas"]["AiHubChatTarjetaPropuesta"] | components["schemas"]["AiHubChatTarjetaEnCurso"] | components["schemas"]["AiHubChatTarjetaResultado"] | components["schemas"]["AiHubChatTarjetaProgramada"] | components["schemas"]["AiHubChatTarjetaError"] | null);
             ensayo: boolean;
             plan?: components["schemas"]["AiHubChatTarjetaPlan"] & (Record<string, never> | null);
             lote?: components["schemas"]["AiHubChatTarjetaLote"];
+            programado?: components["schemas"]["AiHubChatTarjetaProgramado"];
         };
         DashboardSummaryResponse: {
             /** Format: uuid */

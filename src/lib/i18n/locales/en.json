@@ -12864,6 +12864,20 @@
           "noSeguir": "Don’t continue the plan"
         }
       },
+      "programado": {
+        "titulo": "Scheduled",
+        "region": "Your scheduled orders",
+        "activa": "Active",
+        "pausada": "Paused",
+        "terminada": "Won't run again",
+        "proxima": "Next run",
+        "ultimo": "Last run",
+        "nunca": "Hasn't run yet",
+        "espera": "Waiting for your click",
+        "hayListas": "Something is ready and waiting for your click: tap it and I'll show it to you to confirm.",
+        "vieja": "This list is from before: ask me \"what do I have scheduled?\" to see it up to date.",
+        "nada": "Nothing runs without your click: when it's time, I leave it ready here."
+      },
       "lote": {
         "estado": {
           "propuesto": "Waiting for your answer",

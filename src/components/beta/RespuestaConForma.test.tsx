@@ -265,6 +265,29 @@ describe('RespuestaConForma', () => {
     expect(container.querySelector('a[href]')).toBeNull();
   });
 
+  // 30-10 (D2, pregunta 4 «ambas»): «Cambiar datos…» sólo si la ficha deja cambiar algo.
+  it('«Cambiar datos…» pide EN EL HILO las modificaciones de esa ficha (intención, nunca otra pantalla)', () => {
+    pintar(<RespuestaConForma entidades={[{ ...JUAN, cambiarDatos: true }]} turnoId="t-1" />);
+    const cambiar = [...container.querySelectorAll('button')].find((b) => b.textContent === 'Cambiar datos…')!;
+    act(() => cambiar.click());
+    expect(contexto.sendMessage).toHaveBeenCalledWith('Quiero cambiar datos de Juan Camilo López', {
+      intencion: { accion: 'cambiar_datos', entidad: { tipo: 'persona', id: 'p-1' } },
+    });
+    expect(container.querySelector('a[href]')).toBeNull();
+  });
+
+  it('con la lista de acciones de la ficha debajo, «Cambiar datos…» sigue (la lista no trae las modificaciones)', () => {
+    pintar(<RespuestaConForma entidades={[{ ...JUAN, cambiarDatos: true }]} conAcciones />);
+    const textos = [...container.querySelectorAll('button')].map((b) => b.textContent);
+    expect(textos).toContain('Cambiar datos…');
+    expect(textos).not.toContain('Ver ficha');
+  });
+
+  it('sin permiso para cambiar ningún dato (o una tarjeta del grafo), «Cambiar datos…» no sale', () => {
+    pintar(<RespuestaConForma entidades={[JUAN]} turnoId="t-1" />);
+    expect([...container.querySelectorAll('button')].map((b) => b.textContent)).not.toContain('Cambiar datos…');
+  });
+
   it('con la lista completa de acciones de la ficha debajo, la tarjeta no repite sus atajos', () => {
     pintar(<RespuestaConForma entidades={[JUAN]} conAcciones />);
     expect([...container.querySelectorAll('button')].map((b) => b.textContent)).not.toContain('Ver ficha');

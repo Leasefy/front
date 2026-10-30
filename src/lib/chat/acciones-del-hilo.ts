@@ -116,7 +116,8 @@ export type IntencionSobreUnLote = {
 };
 
 export type IntencionDelChat =
-  | { accion: 'ver' | 'cobranza'; entidad: EntidadDeLaIntencion }
+  // 30-10 (D2): `cambiar_datos` = «Cambiar datos…» de la tarjeta (las modificaciones que la ficha permite).
+  | { accion: 'ver' | 'cobranza' | 'cambiar_datos'; entidad: EntidadDeLaIntencion }
   | { accion: 'confirmar' | 'cancelar' | 'deshacer'; propuestaId: string }
   | { accion: AccionSobreUnPlan; planId: string; datos?: Record<string, string | number> }
   | IntencionSobreUnLote

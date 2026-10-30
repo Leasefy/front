@@ -941,4 +941,10 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   'Entendido': 'Got it',
   'Ya se hizo': 'Done',
   'Se hizo solo en Automático': 'Done on its own in Automatic',
+  // 30-10 (D1): bajar en el chat lo que dejó una acción.
+  'No pude bajar el archivo. Prueba de nuevo en un momento.': "I couldn't download the file. Try again in a moment.",
+  'Listo: quedó en tus descargas.': 'Done: it is in your downloads.',
+  'Descargarlo otra vez': 'Download it again',
+  'Descargar {nombre}': 'Download {nombre}',
+  'bajar el archivo': 'download the file',
 }

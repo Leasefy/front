@@ -9,6 +9,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useReleerMientras } from '@/lib/hooks/use-releer-mientras';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Plus, ShoppingBagOpen } from '@phosphor-icons/react';
 import { Alert, Cifra, FranjaDeCifras, Ilustracion, Pagination, SearchInput, StatusBadge } from '@leasefy/cadence';
@@ -72,6 +73,11 @@ export function PantallaDeFirmas({ donde }: { donde: DondeFirma }) {
   useEffect(() => {
     void leer();
   }, [leer]);
+
+  // Nico, 30-10-2026: «cuando se firman las 2 partes, el que envió a firmar le toca recargar la página». Mientras haya
+  // documentos esperando firmas (o el pago), la lista se vuelve a leer sola con la pestaña a la vista.
+  const hayPendientes = (vista?.documentos ?? []).some((d) => d.estado === 'ENVIADO' || d.estado === 'POR_PAGAR');
+  useReleerMientras(hayPendientes, leer, 15_000);
 
   // De vuelta de Wompi: abre el documento pagado o avisa del paquete, y limpia la dirección.
   useEffect(() => {

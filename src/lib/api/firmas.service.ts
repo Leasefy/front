@@ -200,6 +200,9 @@ export function firmasApi(donde: DondeFirma) {
       apiClient.post<{ documento: DetalleDelDocumento; paymentUrl?: string; total?: number }>(`${base}/${id}/enviar`, { como }),
     cancelar: (id: string) => apiClient.post<DetalleDelDocumento>(`${base}/${id}/cancelar`, {}),
     reenviar: (id: string, firmanteId: string) => apiClient.post<DetalleDelDocumento>(`${base}/${id}/firmantes/${firmanteId}/reenviar`, {}),
+    /** Cambia los datos de quien no ha firmado y le manda el enlace otra vez (back 30-10-2026). */
+    cambiarFirmante: (id: string, firmanteId: string, datos: { nombre?: string; email?: string; telefono?: string }) =>
+      apiClient.patch<DetalleDelDocumento>(`${base}/${id}/firmantes/${firmanteId}`, datos),
     descargar: (id: string) => apiClient.get<{ url: string; expiresAt: string; firmado: boolean; sellado: boolean }>(`${base}/${id}/descargar`),
     comprar: (firmas: number) => apiClient.post<{ paqueteId: string; paymentUrl: string; total: number }>(`${base}/paquetes`, { firmas }),
   };

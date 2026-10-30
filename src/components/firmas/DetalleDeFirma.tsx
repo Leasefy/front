@@ -1,17 +1,23 @@
 'use client';
 
 /**
- * El cajón de un documento de Firmas: quién ya firmó y quién falta, su enlace por WhatsApp (sale del celular de quien
- * envía, con el texto listo), reenviar el correo, descargar el PDF (el firmado y sellado, o el original mientras
- * tanto) y cancelar (si nadie ha firmado, la firma vuelve a la bolsa).
+ * El cajón de un documento de Firmas: quién ya firmó y quién falta, cambiar sus datos si se escribieron mal (Nico,
+ * 30-10-2026), su enlace por WhatsApp (Leasefy ya se lo manda; esto lo abre en el WhatsApp de quien envía, con el texto
+ * listo), reenviar el correo, descargar el PDF (el firmado y sellado, o el original mientras tanto) y cancelar (si nadie
+ * ha firmado, la firma vuelve a la bolsa). Mientras falten firmas se vuelve a leer solo: quien envía ve el avance sin
+ * recargar.
  */
 
-import { useCallback, useEffect, useState } from 'react';
-import { ArrowSquareOut, Camera, CheckCircle, Clock, DownloadSimple, EnvelopeSimple, WhatsappLogo, XCircle } from '@phosphor-icons/react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ArrowSquareOut, Camera, CheckCircle, Clock, DownloadSimple, EnvelopeSimple, PencilSimple, WhatsappLogo, XCircle } from '@phosphor-icons/react';
 import { CopyButton, StatusBadge } from '@leasefy/cadence';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { CampoDeCelularDelMundo } from '@/components/ui/campo-de-celular-del-mundo';
+import { celularEnE164, paisesDelMundo } from '@/lib/phone/paises-del-mundo';
+import { useReleerMientras } from '@/lib/hooks/use-releer-mientras';
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { confirmar } from '@/components/ui/confirmar';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -19,6 +25,26 @@ import { firmasApi, type ComoPaga, type DetalleDelDocumento, type DondeFirma } f
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { COLORES_DE_FIRMANTE } from '@/lib/firmas/reglas-de-firmas';
 import { ESTADO_DEL_DOCUMENTO, fechaYHora, FORMA_DE_PAGO, textoDeLaPruebaDeVida } from './textos-de-firmas';
+
+/** Cada cuánto se vuelve a leer el documento abierto mientras falten firmas. */
+const RELEER_CADA_MS = 10_000;
+
+/** «+573126543976» → país «CO» y «3126543976», para el campo del celular (el país con el indicativo más largo). */
+function paisYNumero(e164: string | null): { pais: string; numero: string } {
+  const d = (e164 ?? '').replace(/\D/g, '');
+  if (!d) return { pais: 'CO', numero: '' };
+  const pais = [...paisesDelMundo()].sort((a, b) => b.indicativo.length - a.indicativo.length).find((p) => d.startsWith(p.indicativo));
+  return pais ? { pais: pais.iso, numero: d.slice(pais.indicativo.length) } : { pais: 'CO', numero: d };
+}
+
+interface Edicion {
+  firmanteId: string;
+  nombre: string;
+  email: string;
+  pais: string;
+  celular: string;
+  error: string | null;
+}
 
 interface Props {
   id: string | null;
@@ -33,6 +59,7 @@ export function DetalleDeFirma({ id, donde, alCerrar, alCambiar, pago }: Props) 
   const [doc, setDoc] = useState<DetalleDelDocumento | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [haciendo, setHaciendo] = useState<string | null>(null);
+  const [edicion, setEdicion] = useState<Edicion | null>(null);
 
   const leer = useCallback(async () => {
     if (!id) return;
@@ -46,8 +73,54 @@ export function DetalleDeFirma({ id, donde, alCerrar, alCambiar, pago }: Props) 
 
   useEffect(() => {
     setDoc(null);
+    setEdicion(null);
     void leer();
   }, [leer]);
+
+  // Mientras falten firmas, se vuelve a leer solo; cuando alguien firma, la lista de atrás también se actualiza.
+  const esperandoFirmas = Boolean(id && doc && (doc.estado === 'ENVIADO' || doc.estado === 'POR_PAGAR'));
+  useReleerMientras(esperandoFirmas && !edicion, leer, RELEER_CADA_MS);
+  const antes = useRef<string | null>(null);
+  useEffect(() => {
+    if (!doc) return;
+    const huella = `${doc.id}:${doc.estado}:${doc.firmaron}`;
+    if (antes.current && antes.current !== huella && antes.current.startsWith(`${doc.id}:`)) {
+      alCambiar();
+      if (doc.estado === 'FIRMADO') toast.success('Listo: firmaron todos. El documento firmado ya se puede descargar.');
+    }
+    antes.current = huella;
+  }, [doc, alCambiar]);
+
+  const editar = (f: DetalleDelDocumento['firmantes'][number]) => {
+    const { pais, numero } = paisYNumero(f.telefono);
+    setEdicion({ firmanteId: f.id, nombre: f.nombre, email: f.email ?? '', pais, celular: numero, error: null });
+  };
+
+  const guardarEdicion = async () => {
+    if (!doc || !edicion) return;
+    const celular = edicion.celular.trim();
+    const telefono = celular ? celularEnE164(celular, edicion.pais) : '';
+    if (celular && !telefono) {
+      setEdicion({ ...edicion, error: 'Revisa el celular: en Colombia son 10 dígitos y empieza por 3.' });
+      return;
+    }
+    setHaciendo(`editar-${edicion.firmanteId}`);
+    try {
+      const nuevo = await firmasApi(donde).cambiarFirmante(doc.id, edicion.firmanteId, {
+        nombre: edicion.nombre.trim(),
+        email: edicion.email.trim(),
+        telefono: telefono ?? '',
+      });
+      setDoc(nuevo);
+      setEdicion(null);
+      toast.success(`Listo: le mandamos el enlace a ${edicion.nombre.trim()} con los datos nuevos.`);
+      alCambiar();
+    } catch (e) {
+      setEdicion((x) => (x ? { ...x, error: mensajeParaLaPersona(e, { porDefecto: 'No pudimos guardar los datos.', accion: 'cambiar los datos' }) } : x));
+    } finally {
+      setHaciendo(null);
+    }
+  };
 
   const accion = async (clave: string, hacer: () => Promise<unknown>, exito: string) => {
     setHaciendo(clave);
@@ -169,12 +242,40 @@ export function DetalleDeFirma({ id, donde, alCerrar, alCambiar, pago }: Props) 
                         ) : null}
                       </div>
                     </div>
-                    {!f.firmado && doc.estado === 'ENVIADO' && enlace ? (
+                    {!f.firmado && doc.estado === 'ENVIADO' && edicion?.firmanteId === f.id ? (
+                      <div className="mt-3 space-y-3 pl-5" data-testid={`editar-firmante-${i + 1}`}>
+                        <Input value={edicion.nombre} onChange={(e) => setEdicion({ ...edicion, nombre: e.target.value, error: null })} aria-label="Nombre de quien firma" placeholder="Nombre" maxLength={200} />
+                        <Input type="email" value={edicion.email} onChange={(e) => setEdicion({ ...edicion, email: e.target.value, error: null })} aria-label="Correo de quien firma" placeholder="Correo" maxLength={255} />
+                        <CampoDeCelularDelMundo
+                          pais={edicion.pais}
+                          alCambiarPais={(p) => setEdicion({ ...edicion, pais: p, error: null })}
+                          value={edicion.celular}
+                          onChange={(v) => setEdicion({ ...edicion, celular: v, error: null })}
+                          aria-label="WhatsApp de quien firma"
+                          placeholder="WhatsApp"
+                        />
+                        {edicion.error ? (
+                          <p className="text-caption text-danger" role="alert" data-testid="error-de-la-edicion">
+                            {edicion.error}
+                          </p>
+                        ) : (
+                          <p className="text-caption text-fg-muted">Al guardar le mandamos el enlace otra vez, por correo y WhatsApp, con los datos nuevos.</p>
+                        )}
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Button size="sm" hideArrow isLoading={haciendo === `editar-${f.id}`} disabled={haciendo !== null} onClick={() => void guardarEdicion()} data-testid={`guardar-firmante-${i + 1}`}>
+                            Guardar y reenviar
+                          </Button>
+                          <Button size="sm" variant="ghost" hideArrow disabled={haciendo !== null} onClick={() => setEdicion(null)}>
+                            Cancelar
+                          </Button>
+                        </div>
+                      </div>
+                    ) : !f.firmado && doc.estado === 'ENVIADO' && enlace ? (
                       <div className="mt-3 flex flex-wrap items-center gap-2 pl-5">
                         {enlace.tieneCelular ? (
                           <Button size="sm" variant="secondary" hideArrow asChild>
                             <a href={enlace.whatsapp} target="_blank" rel="noopener noreferrer" data-testid={`whatsapp-${i + 1}`}>
-                              <WhatsappLogo className="h-4 w-4" weight="fill" /> Por WhatsApp
+                              <WhatsappLogo className="h-4 w-4" weight="fill" /> Desde mi WhatsApp
                             </a>
                           </Button>
                         ) : null}
@@ -192,6 +293,9 @@ export function DetalleDeFirma({ id, donde, alCerrar, alCambiar, pago }: Props) 
                           </Button>
                         ) : null}
                         <CopyButton text={enlace.enlace} label="Copiar enlace" copiedLabel="Copiado" size="sm" variant="ghost" />
+                        <Button size="sm" variant="ghost" hideArrow disabled={haciendo !== null} onClick={() => editar(f)} data-testid={`cambiar-firmante-${i + 1}`}>
+                          <PencilSimple className="h-4 w-4" /> Cambiar datos
+                        </Button>
                       </div>
                     ) : null}
                   </li>

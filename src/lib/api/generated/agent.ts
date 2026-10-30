@@ -17281,7 +17281,7 @@ export interface components {
         } | null;
         PortalChatPedidoResponse: {
             /** @enum {string} */
-            pedido: "cuanto_debo" | "mis_giros" | "link_de_pago" | "certificado" | "radicar_pqrs" | "ver_pqrs" | "extracto" | "reparaciones" | "cambiar_cuenta" | "ajeno" | "no_entiendo";
+            pedido: "cuanto_debo" | "mis_giros" | "link_de_pago" | "certificado" | "radicar_pqrs" | "ver_pqrs" | "extracto" | "reparaciones" | "cambiar_cuenta" | "mi_contrato" | "proximo_pago" | "ajeno" | "no_entiendo";
             texto: string;
             tarjeta: components["schemas"]["PortalChatTarjeta"];
             otrasTarjetas?: (components["schemas"]["PortalChatTarjeta"] & Record<string, never>)[];

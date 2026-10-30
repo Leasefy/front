@@ -70,7 +70,7 @@ export const CampoDeCelularDelMundo = React.forwardRef<HTMLInputElement, CampoDe
                 onChange={(e) => setBuscar(e.target.value)}
                 placeholder="Busca tu país o indicativo"
                 aria-label="Buscar país"
-                className="h-11 w-full bg-transparent text-body-sm text-fg outline-none placeholder:text-fg-subtle"
+                className="h-11 w-full bg-transparent text-body-sm text-fg outline-none placeholder:text-fg-placeholder"
                 data-testid="celular-buscar-pais"
               />
             </div>
@@ -115,7 +115,7 @@ export const CampoDeCelularDelMundo = React.forwardRef<HTMLInputElement, CampoDe
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder ?? (elegido.iso === 'CO' ? '300 123 4567' : 'Tu número sin el indicativo')}
           disabled={disabled}
-          className="flex-1 rounded-r-[12px] bg-transparent px-3.5 font-mono text-[15px] tabular-nums text-fg outline-none placeholder:text-fg-subtle disabled:cursor-not-allowed"
+          className="flex-1 rounded-r-[12px] bg-transparent px-3.5 font-mono text-[15px] tabular-nums text-fg outline-none placeholder:text-fg-placeholder disabled:cursor-not-allowed"
           {...props}
         />
       </div>

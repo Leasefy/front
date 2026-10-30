@@ -77,7 +77,7 @@ export function LlamadosDeAtencion({ contractId, puedeEditar }: { contractId: st
   };
 
   if (error) {
-    return <FalloDeCarga error={error} queEs="los llamados de atención" onReintentar={() => void cargar()} />;
+    return <FalloDeCarga error={error} queEs="los llamados de atención" onReintentar={cargar} />;
   }
 
   const aviso = datos ? avisoDeRepetidos(datos.porMotivo) : null;

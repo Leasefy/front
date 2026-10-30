@@ -159,16 +159,18 @@ export function WidgetsDeInicio() {
             cta="Leer el artículo"
           >
             <div className="flex items-center gap-3.5 pr-4">
-              <span className="size-16 shrink-0 overflow-hidden rounded-[14px] ring-1 ring-white/15">
-                <Image
-                  src={articulo.imagen}
-                  alt=""
-                  width={64}
-                  height={64}
-                  sizes="64px"
-                  className="size-full object-cover transition-transform duration-300 ease-out group-hover:scale-110 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
-                />
-              </span>
+              {articulo.imagen ? (
+                <span className="size-16 shrink-0 overflow-hidden rounded-[14px] ring-1 ring-white/15">
+                  <Image
+                    src={articulo.imagen}
+                    alt=""
+                    width={64}
+                    height={64}
+                    sizes="64px"
+                    className="size-full object-cover transition-transform duration-300 ease-out group-hover:scale-110 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+                  />
+                </span>
+              ) : null}
               <div className="min-w-0">
                 <p className={`${ROTULO} truncate`}>Blog · {articulo.categoria}</p>
                 <p className="mt-1 line-clamp-2 text-[14.5px] leading-snug text-white">{articulo.titulo}</p>

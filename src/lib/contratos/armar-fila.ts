@@ -237,6 +237,8 @@ export interface DatosDeOrigenDeContrato {
   fechaTerminacion?: string
   /** Notas del contrato. Multilínea en el archivo real. */
   observaciones?: string
+  /** Nico 29-10-2026: los servicios públicos del inmueble («EPM 13249728…»), tal cual. */
+  serviciosPublicos?: string
   estrato?: number
   fechaCreacion?: string
   creadoPor?: string
@@ -458,6 +460,7 @@ export function leerFilaDelArchivo(
   const estado = textoOpcional(v('estadoContrato'))
   const fechaTerminacion = fechaDeOrigen(v('fechaTerminacion'))
   const observaciones = textoOpcional(v('observaciones'))
+  const serviciosPublicos = textoOpcional(v('serviciosPublicos'))
   const fechaCreacion = fechaDeOrigen(v('fechaCreacionOrigen'))
   const creadoPor = textoOpcional(v('creadoPor'))
 
@@ -555,6 +558,8 @@ export function leerFilaDelArchivo(
     estadoOrigen: estado,
     fechaTerminacion,
     observaciones,
+    // Sólo viaja si la columna se mapeó y trae algo (un back anterior no la conoce).
+    ...(serviciosPublicos ? { serviciosPublicos } : {}),
     creadoPor,
     fechaCreacionOrigen: fechaCreacion,
   }
@@ -574,6 +579,7 @@ export function leerFilaDelArchivo(
       estado,
       fechaTerminacion,
       observaciones,
+      serviciosPublicos,
       estrato: estratoDePalabras(v('estratoInmueble')),
       fechaCreacion,
       creadoPor,

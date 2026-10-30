@@ -67,6 +67,9 @@ import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { PropietariosQueDeben } from '@/components/cartera/PropietariosQueDeben'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden'
 import { useCarteraConPropietarios } from '@/lib/hooks/use-cartera'
 import { rutaDelEstadoDeCuenta } from '@/lib/api/estado-de-cuenta.service'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
@@ -159,7 +162,20 @@ export function CarteraDePropietarios() {
   )
   const conGirado = (datos?.totales.giradoCop ?? 0) > 0
   const hayFiltros = busqueda.trim().length > 0
-  const paginado = useTablePagination(propietarios, { resetKey: busqueda })
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas».
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(
+    propietarios,
+    {
+      propietario: (p) => p.nombre || null,
+      meses: (p) => p.meses.length,
+      neto: (p) => p.totales.netoCop,
+      girado: (p) => p.totales.giradoCop,
+      debe: (p) => partirPorElMesEnCurso(p.meses, hastaMes).pendienteCop,
+      proximos: (p) => partirPorElMesEnCurso(p.meses, hastaMes).proximosCop,
+    },
+    { primero: { meses: 'desc', neto: 'desc', girado: 'desc', debe: 'desc', proximos: 'desc' } },
+  )
+  const paginado = useTablePagination(ordenadas, { resetKey: `${busqueda}|${orden?.campo ?? ''}|${orden?.sentido ?? ''}` })
 
   const alternar = (id: string) =>
     setAbiertos((previos) => {
@@ -238,7 +254,7 @@ export function CarteraDePropietarios() {
         </Presence>
 
         <section className="overflow-hidden rounded-lg border border-border bg-surface">
-          <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-end">
+          <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="relative w-full sm:w-72">
               <MagnifyingGlass
                 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted"
@@ -253,19 +269,31 @@ export function CarteraDePropietarios() {
                 data-testid="buscar-propietario"
               />
             </div>
+            {(datos?.propietarios.length ?? 0) > 1 ? (
+              <SelectorDeOrden
+                orden={orden}
+                onCambiar={setOrden}
+                className="w-full sm:w-56"
+                formas={[
+                  { campo: 'debe', sentido: 'desc', etiqueta: 'Se le debe más' },
+                  { campo: 'proximos', sentido: 'desc', etiqueta: 'Más en próximos giros' },
+                  { campo: 'propietario', sentido: 'asc', etiqueta: 'Propietario (A–Z)' },
+                ]}
+              />
+            ) : null}
           </div>
 
           <Table data-testid="tabla-por-pagar">
             <TableHeader>
               <TableRow>
-                <TableHead className="whitespace-nowrap">Propietario</TableHead>
-                <TableHead className="whitespace-nowrap text-right">Meses</TableHead>
-                <TableHead className="whitespace-nowrap text-right">Neto</TableHead>
-                {conGirado ? <TableHead className="whitespace-nowrap text-right">Girado</TableHead> : null}
-                <TableHead className="whitespace-nowrap text-right">
+                <EncabezadoOrdenable campo="propietario" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Propietario</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="meses" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap text-right" alineacion="derecha">Meses</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="neto" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap text-right" alineacion="derecha">Neto</EncabezadoOrdenable>
+                {conGirado ? <EncabezadoOrdenable campo="girado" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap text-right" alineacion="derecha">Girado</EncabezadoOrdenable> : null}
+                <EncabezadoOrdenable campo="debe" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap text-right" alineacion="derecha">
                   Se le debe hasta {mesEnTitulo(hastaMes)}
-                </TableHead>
-                <TableHead className="whitespace-nowrap text-right">Próximos giros</TableHead>
+                </EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="proximos" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap text-right" alineacion="derecha">Próximos giros</EncabezadoOrdenable>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -310,7 +338,7 @@ export function CarteraDePropietarios() {
                       <Peso valor={visibles.giradoCop} />
                     </TableCell>
                   ) : null}
-                  <TableCell className="text-right font-semibold text-fg">
+                  <TableCell className="text-right font-medium text-fg">
                     <Peso valor={visibles.pendienteCop} />
                   </TableCell>
                   <TableCell className="text-right text-fg-muted">

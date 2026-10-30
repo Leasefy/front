@@ -54,6 +54,22 @@ describe('cabeceras de seguridad', () => {
     expect(pp).toContain('payment=()')
   })
 
+  it('la cámara sólo en /firmar: la foto del firmante (y la regla va después de la general, que es la que gana)', async () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.resetModules()
+    const config = (await import('../../../next.config.mjs')).default as {
+      headers: () => Promise<{ source: string; headers: Cabecera[] }[]>
+    }
+    const reglas = await config.headers()
+    const general = reglas.findIndex((r) => r.source === '/:path*')
+    const firmar = reglas.findIndex((r) => r.source === '/firmar/:path*')
+    expect(firmar).toBeGreaterThan(general)
+    const pp = valor(reglas[firmar].headers, 'Permissions-Policy')!
+    expect(pp).toContain('camera=(self)')
+    expect(pp).toContain('microphone=(self)')
+    expect(pp).toContain('geolocation=()')
+  })
+
   it('aísla la ventana de las que abre otro sitio sin cortar nuestros popups (Wompi)', async () => {
     const cs = await cabecerasEn('production')
     expect(valor(cs, 'Cross-Origin-Opener-Policy')).toBe('same-origin-allow-popups')

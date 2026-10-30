@@ -29,6 +29,7 @@
  * tarde: para cuando el provider re-renderiza, ya salieron diez peticiones más.
  */
 
+import { trazarCierre } from './traza-del-cierre'
 import { TENANT_ONBOARDING_STORAGE_KEY } from '@/lib/onboarding/tenant-onboarding-status'
 
 /** Por qué se terminó la sesión. Define qué ve el usuario al llegar a /auth. */
@@ -61,7 +62,22 @@ const RUTA_AUTH = '/auth'
  */
 const RUTAS_DE_SALIDA = ['/auth', '/invitacion', '/registro']
 
+/**
+ * Rutas donde una sesión muerta sólo deja a la persona de VISITANTE: se limpia y se sigue ahí mismo, sin ir a /auth y
+ * sin cerrarle la puerta a las peticiones.
+ *
+ * 🔴 28-10-2026 (Nico: «le di clic en publicar gratis y eso se queda cargando… y después sale un modal y después lleva
+ * al inicio, es súper extraño»): `/publica/ventana` es la ventana «Publica gratis» que la landing abre encima, en un
+ * marco. Con una sesión vieja guardada en el navegador, `terminarSesion` llevaba EL MARCO a /auth y el login quedaba
+ * pintado encima de la home. Ahí se crea la cuenta o se entra: con la puerta cerrada (`cerrada`), además, crear la
+ * cuenta habría fallado con «Tu sesión expiró».
+ */
+const RUTAS_DE_VISITANTE = ['/publica/ventana']
+
 let cerrada = false
+/** Ya se limpió una sesión muerta en una RUTA_DE_VISITANTE: la limpieza corre una vez (el `signOut` de la limpieza
+ *  vuelve a emitir SIGNED_OUT, y sin esta guarda sería un rulo). */
+let quedoDeVisitante = false
 let motivoDeCierre: MotivoDeCierre | null = null
 let alCerrar: (() => void) | null = null
 
@@ -360,6 +376,11 @@ export async function terminarSesionSiMurio(motivo: MotivoDeCierre): Promise<boo
  */
 export function terminarSesion(motivo: MotivoDeCierre): void {
   if (cerrada) return
+  trazarCierre(`terminarSesion:${motivo}`)
+  if (typeof window !== 'undefined' && RUTAS_DE_VISITANTE.some((ruta) => window.location.pathname.startsWith(ruta))) {
+    seguirDeVisitante()
+    return
+  }
   cerrada = true
   motivoDeCierre = motivo
 
@@ -405,6 +426,23 @@ export function terminarSesion(motivo: MotivoDeCierre): void {
 export function reabrirTrasUnIngresoNuevo(): void {
   cerrada = false
   motivoDeCierre = null
+  quedoDeVisitante = false
+}
+
+/**
+ * La sesión murió en una RUTA_DE_VISITANTE: se borra lo local y se avisa la limpieza (el AuthProvider deja `user` en
+ * null y la pantalla sigue como la de alguien sin cuenta). No navega, no deja aviso para /auth y no marca `cerrada`:
+ * lo que se pida después sale sin token, como el de cualquier visitante.
+ */
+function seguirDeVisitante(): void {
+  if (quedoDeVisitante) return
+  quedoDeVisitante = true
+  purgarSesionLocal()
+  try {
+    alCerrar?.()
+  } catch {
+    // Un handler roto no puede impedir que la persona siga.
+  }
 }
 
 /**
@@ -413,6 +451,7 @@ export function reabrirTrasUnIngresoNuevo(): void {
  */
 export function resetSessionTerminal(): void {
   cerrada = false
+  quedoDeVisitante = false
   motivoDeCierre = null
   alCerrar = null
   confirmarMuerte = null

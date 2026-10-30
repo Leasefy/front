@@ -45,6 +45,9 @@ import {
 import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
 import { TablePagination } from '@/components/ui/pagination'
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden'
 import type { WorkItem, WorkItemAction } from '@/lib/api/work-item'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
@@ -326,6 +329,19 @@ export function PagoFallidoTabla({ items, onAction, onOpen, enmarcada = true }: 
     })
   }, [items, filtro, busqueda])
 
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». La lista ENTERA, antes de
+  // cortar la página.
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(
+    visibles,
+    {
+      inquilino: (item) => inquilinoDelFallido(item),
+      valor: (item) => (typeof item.amountCop === 'number' ? item.amountCop : null),
+      motivo: (item) => MOTIVO_META[clasificarMotivo(item)].label,
+      queHacer: (item) => QUE_HACER_LABEL[queHacerCon(clasificarMotivo(item))],
+    },
+    { primero: { valor: 'desc' } },
+  )
+
   /** Paginado de presentación: la cola crece con el volumen de inquilinos. */
   const {
     pageItems,
@@ -335,7 +351,7 @@ export function PagoFallidoTabla({ items, onAction, onOpen, enmarcada = true }: 
     setPage,
     setPageSize,
     shouldPaginate,
-  } = useTablePagination(visibles, { resetKey: `${filtro}|${busqueda}` })
+  } = useTablePagination(ordenadas, { resetKey: `${filtro}|${busqueda}|${orden?.campo ?? ''}|${orden?.sentido ?? ''}` })
 
   return (
     <Marco className="overflow-hidden" data-testid="fallidos-tabla">
@@ -352,17 +368,32 @@ export function PagoFallidoTabla({ items, onAction, onOpen, enmarcada = true }: 
           onCambio={setFiltro}
           etiqueta="Filtrar los pagos fallidos por lo que conviene hacer"
         />
-        <div className="relative w-full md:w-64">
-          <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" aria-hidden="true" />
-          <Input
-            type="search"
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="Buscar inquilino"
-            aria-label="Buscar por inquilino"
-            className="pl-9"
-            data-testid="fallidos-buscar"
-          />
+        <div className="flex w-full flex-col gap-3 sm:flex-row md:w-auto">
+          {items.length > 1 ? (
+            <SelectorDeOrden
+              orden={orden}
+              onCambiar={setOrden}
+              className="w-full sm:w-52"
+              formas={[
+                { campo: 'valor', sentido: 'desc', etiqueta: 'Valor más alto' },
+                { campo: 'valor', sentido: 'asc', etiqueta: 'Valor más bajo' },
+                { campo: 'inquilino', sentido: 'asc', etiqueta: 'Inquilino (A–Z)' },
+                { campo: 'motivo', sentido: 'asc', etiqueta: 'Por motivo' },
+              ]}
+            />
+          ) : null}
+          <div className="relative w-full md:w-64">
+            <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" aria-hidden="true" />
+            <Input
+              type="search"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Buscar inquilino"
+              aria-label="Buscar por inquilino"
+              className="pl-9"
+              data-testid="fallidos-buscar"
+            />
+          </div>
         </div>
       </div>
 
@@ -377,10 +408,10 @@ export function PagoFallidoTabla({ items, onAction, onOpen, enmarcada = true }: 
           <Table className="text-left max-md:block">
             <TableHeader className="max-md:hidden">
               <TableRow>
-                <TableHead scope="col" className="px-4">Inquilino</TableHead>
-                <TableHead scope="col" className="pr-4">Valor</TableHead>
-                <TableHead scope="col" className="pr-4">Motivo</TableHead>
-                <TableHead scope="col" className="pr-4">Qué conviene hacer</TableHead>
+                <EncabezadoOrdenable campo="inquilino" orden={orden} onOrdenar={ordenarPor} className="px-4">Inquilino</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="valor" orden={orden} onOrdenar={ordenarPor} className="pr-4">Valor</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="motivo" orden={orden} onOrdenar={ordenarPor} className="pr-4">Motivo</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="queHacer" orden={orden} onOrdenar={ordenarPor} className="pr-4">Qué conviene hacer</EncabezadoOrdenable>
                 <TableHead scope="col" className="px-4 text-right">
                   <span className="sr-only">Acción</span>
                 </TableHead>

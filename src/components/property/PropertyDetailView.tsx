@@ -44,6 +44,9 @@ import {
 import { formatCurrency, formatArea } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
+/** Nico 29-10-2026: el «¿Te podemos arrendar este inmueble?» (estimado + estudio con Fianly) apagado hasta que funcione. */
+const OFRECER_EL_ESTUDIO_DE_FIANLY = false;
+
 /**
  * Ronda 30 (diseño nuevo): el ancho de la página de muestra —hasta 1320 px de
  * contenido y un margen de 16 a 56 px según la pantalla—.
@@ -372,12 +375,13 @@ export function PropertyDetailView({
                 )}
 
               {/* «¿Te podemos arrendar este inmueble?» (Nico, 2026-09-14): el
-                  estimado gratis por ingreso y la puerta al estudio con Fianly.
+                  estimado gratis por ingreso y la puerta al estudio gratis de documentos.
                   Sólo en arriendo con canon, y no a quien ya tiene aprobación
                   vigente: ése ya sabe su tope (lo cubre el aviso de arriba). Tampoco
                   en un inmueble arrendado: el listado ya no lo muestra, y a quien
                   llega por un enlace viejo no se le ofrece arrendar algo ocupado. */}
-              {property.listingType !== 'sale' && property.status !== 'rented' && (property.monthlyRent ?? 0) > 0 && !aprobacionVigente && (
+              {/* Nico 29-10-2026: «ese form de Fianly también» se quita por ahora (no funciona hoy): `OFRECER_EL_ESTUDIO_DE_FIANLY`. */}
+              {OFRECER_EL_ESTUDIO_DE_FIANLY && property.listingType !== 'sale' && property.status !== 'rented' && (property.monthlyRent ?? 0) > 0 && !aprobacionVigente && (
                 <TePodemosArrendar
                   propertyId={property.id}
                   titulo={property.title}

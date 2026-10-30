@@ -13,6 +13,7 @@
  * decir que se esté cobrando.
  */
 
+import { useMemo } from 'react';
 import type { Icon } from '@phosphor-icons/react';
 import {
   CheckCircle,
@@ -28,9 +29,12 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { Badge, type BadgeProps } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/components/ui/table';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { formatCurrency } from '@/lib/format';
+import { useOrdenDeLaTabla, type OrdenDeLaTabla, type ValorParaOrdenar } from '@/lib/hooks/use-orden-de-la-tabla';
 import { useAutopagosDeLaInmobiliaria } from '@/lib/hooks/use-payu';
 import { instanteEnBogota } from '@/lib/payu/links-de-pago';
 import type { AutopagoDeContrato, EstadoDelIntentoDeAutopago } from '@/lib/types/payu';
@@ -127,16 +131,34 @@ function UltimoIntento({ a }: { a: AutopagoDeContrato }) {
   );
 }
 
-function Tabla({ items }: { items: AutopagoDeContrato[] }) {
+type CampoDelAutopago = 'contrato' | 'inquilino' | 'autopago' | 'tope' | 'intento';
+/** Cómo se ordena cada columna (Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas»). */
+const ORDEN_DE_AUTOPAGOS: Record<CampoDelAutopago, (a: AutopagoDeContrato) => ValorParaOrdenar> = {
+  contrato: (a) => a.contratoNumero,
+  inquilino: (a) => a.inquilino,
+  autopago: (a) => a.activo,
+  tope: (a) => a.topeCop,
+  intento: (a) => a.ultimoIntento?.fecha ?? null,
+};
+
+function Tabla({
+  items,
+  orden,
+  onOrdenar,
+}: {
+  items: AutopagoDeContrato[];
+  orden: OrdenDeLaTabla<CampoDelAutopago> | null;
+  onOrdenar: (campo: CampoDelAutopago) => void;
+}) {
   return (
     <Table data-testid="tabla-de-autopagos">
       <TableHeader>
         <TableRow>
-          <TableHead>Contrato</TableHead>
-          <TableHead>Inquilino</TableHead>
-          <TableHead>Autopago</TableHead>
-          <TableHead className="text-right">Tope</TableHead>
-          <TableHead>Último intento</TableHead>
+          <EncabezadoOrdenable campo="contrato" orden={orden} onOrdenar={onOrdenar}>Contrato</EncabezadoOrdenable>
+          <EncabezadoOrdenable campo="inquilino" orden={orden} onOrdenar={onOrdenar}>Inquilino</EncabezadoOrdenable>
+          <EncabezadoOrdenable campo="autopago" orden={orden} onOrdenar={onOrdenar}>Autopago</EncabezadoOrdenable>
+          <EncabezadoOrdenable campo="tope" orden={orden} onOrdenar={onOrdenar} className="text-right" alineacion="derecha">Tope</EncabezadoOrdenable>
+          <EncabezadoOrdenable campo="intento" orden={orden} onOrdenar={onOrdenar}>Último intento</EncabezadoOrdenable>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -191,6 +213,10 @@ function Lista({ items }: { items: AutopagoDeContrato[] }) {
 export function AutopagosDeLaInmobiliaria() {
   const { data, cargando, error, recargar } = useAutopagosDeLaInmobiliaria();
   const esMovil = useIsMobile();
+  const items = useMemo(() => data?.items ?? [], [data]);
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(items, ORDEN_DE_AUTOPAGOS, {
+    primero: { autopago: 'desc', tope: 'desc', intento: 'desc' },
+  });
 
   return (
     <EstadoDeDatos
@@ -217,10 +243,25 @@ export function AutopagosDeLaInmobiliaria() {
                 titulo="Ningún inquilino tiene autopago"
                 descripcion="El inquilino lo inscribe desde su portal, con un tope que él mismo pone. Cuando alguno lo haga, aparece aquí."
               />
-            ) : esMovil ? (
-              <Lista items={data.items} />
             ) : (
-              <Tabla items={data.items} />
+              <>
+                {data.items.length > 1 ? (
+                  <div className="flex justify-end border-b border-border px-4 py-3">
+                    <SelectorDeOrden
+                      orden={orden}
+                      onCambiar={setOrden}
+                      className="w-full sm:w-56"
+                      formas={[
+                        { campo: 'inquilino', sentido: 'asc', etiqueta: 'Inquilino (A–Z)' },
+                        { campo: 'autopago', sentido: 'desc', etiqueta: 'Activos primero' },
+                        { campo: 'tope', sentido: 'desc', etiqueta: 'Tope más alto' },
+                        { campo: 'intento', sentido: 'desc', etiqueta: 'Último intento más reciente' },
+                      ]}
+                    />
+                  </div>
+                ) : null}
+                {esMovil ? <Lista items={ordenadas} /> : <Tabla items={ordenadas} orden={orden} onOrdenar={ordenarPor} />}
+              </>
             )}
           </section>
         </div>

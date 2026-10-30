@@ -65,6 +65,21 @@ describe('middleware — el idioma de la parte pública (Nico, 16-10-2026)', () 
     expect(r.headers.get('location')).toBe('https://leasefy.co/en/propiedades?q=laureles')
   })
 
+  it('el enlace de un inmueble que se comparte: a WhatsApp y compañía se le sirve sin redirigir (Nico 28-10)', () => {
+    const id = 'd418773f-1079-4e35-9235-1f05f55f4cb4'
+    for (const ua of ['WhatsApp/2.24.21.80 i', 'facebookexternalhit/1.1', 'TelegramBot (like TwitterBot)']) {
+      const r = middleware(new NextRequest(`https://leasefy.co/propiedades/${id}`, { headers: { 'user-agent': ua } }))
+      expect(r.status).toBe(200)
+      expect(r.headers.get('location')).toBeNull()
+    }
+    // Una persona sigue yendo a su idioma.
+    const persona = middleware(
+      new NextRequest(`https://leasefy.co/propiedades/${id}`, { headers: { 'user-agent': 'Mozilla/5.0 (iPhone) Safari', 'accept-language': 'es-CO' } }),
+    )
+    expect(persona.status).toBe(307)
+    expect(persona.headers.get('location')).toContain(`/es/propiedades/${id}`)
+  })
+
   it('lo que eligió antes manda sobre el navegador', () => {
     const req = new NextRequest('https://leasefy.co/', { headers: { 'accept-language': 'en-US' } })
     // `cookie` es una cabecera prohibida en el constructor de Request: se pone aparte.

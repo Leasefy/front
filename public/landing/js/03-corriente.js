@@ -155,7 +155,7 @@ LF.corriente = (function () {
   }
   function iniciar() {
     LF.$$("canvas[data-corriente]").forEach(function (cv) { var o = montar(cv); if (o) { cv._corriente = o; lista.push(o); } });
-    window.addEventListener("resize", function () { if (quietoGlobal) arrancar(); });
+    LF.alCambiarDeTamano(function () { if (quietoGlobal) arrancar(); });
     if (quietoGlobal) setTimeout(arrancar, 60);
   }
   return { iniciar: iniciar };

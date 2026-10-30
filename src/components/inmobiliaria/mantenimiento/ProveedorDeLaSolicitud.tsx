@@ -14,16 +14,15 @@
  * la solicitud. Por eso sus botones son `type="button"` y el Enter registra.
  */
 
-import { useEffect, useMemo, useState, type KeyboardEvent } from 'react';
+import { useEffect, useState, type KeyboardEvent } from 'react';
 import { Plus, X } from '@phosphor-icons/react';
 import { Presence, Ilustracion } from '@leasefy/cadence';
 
 import { Button, Input } from '@/components/ui';
-import { Combobox } from '@/components/ui/combobox';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { toast } from '@/components/ui/toast';
-import { EN_PALABRAS } from '@/components/mantenimientos/especialidades';
 import { TipoDeDocumentoDelProveedor } from './TipoDeDocumentoDelProveedor';
+import { BuscadorDeProveedor } from './BuscadorDeProveedor';
 import {
   proveedoresDeMantenimientoApi,
   type ProveedorDeMantenimiento,
@@ -41,9 +40,6 @@ import { repartirErroresDelServidor, traeErroresPorCampo } from '@/lib/errores/e
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { ApiError } from '@/lib/api/client';
 import type { MantenimientoType } from '@/lib/types/inmobiliaria';
-
-/** La opción de la lista que abre el registro de uno nuevo. */
-const NUEVO = '__nuevo__';
 
 /** El oficio del back para el tipo de la solicitud (`plumbing` → `PLUMBING`). */
 export const oficioDelBack = (tipo: string) => (tipo === 'other' ? 'OTHER_MAINT' : tipo.toUpperCase());
@@ -118,27 +114,6 @@ export function ProveedorDeLaSolicitud({
   }, []);
 
   const oficio = tipo ? oficioDelBack(tipo) : '';
-  const opciones = useMemo(() => {
-    const ordenados = [...(proveedores ?? [])].sort(
-      (a, b) =>
-        Number(b.especialidades.includes(oficio)) - Number(a.especialidades.includes(oficio)) ||
-        a.nombre.localeCompare(b.nombre, 'es'),
-    );
-    return [
-      ...ordenados.map((p) => ({
-        value: p.id,
-        label: [
-          p.nombre,
-          p.especialidades.map((e) => EN_PALABRAS.get(e) ?? e).join(', '),
-          p.calificacion !== null ? `${p.calificacion.toFixed(1).replace('.', ',')} ★` : null,
-        ]
-          .filter(Boolean)
-          .join(' · '),
-      })),
-      { value: NUEVO, label: '+ Registrar un proveedor nuevo' },
-    ];
-  }, [proveedores, oficio]);
-
   const elegido = (proveedores ?? []).find((p) => p.id === valor) ?? null;
 
   const poner = (campo: CampoDelRegistro, v: string) => {
@@ -154,14 +129,6 @@ export function ProveedorDeLaSolicitud({
     setCampos(VACIO);
     setErrores({});
     setRegistrando(true);
-  };
-
-  const escoger = (v: string | undefined) => {
-    if (v === NUEVO) {
-      abrirRegistro();
-      return;
-    }
-    onCambiar(v);
   };
 
   const registrar = async () => {
@@ -234,19 +201,21 @@ export function ProveedorDeLaSolicitud({
   return (
     <div className="space-y-3" data-testid="proveedor-de-la-solicitud">
       <p className="text-sm text-fg-muted">
-        Si ya sabes con quién vas a trabajar. La cotización llega con él y no se le pide a otros.
+        Si ya sabes con quién vas a trabajar, búscalo entre tus proveedores por nombre, oficio o documento. La cotización
+        llega con él y no se le pide a otros.
       </p>
 
       {!registrando && proveedores.length > 0 && (
         <div className="space-y-2">
-          <Combobox
-            data-testid="proveedor-de-la-solicitud-lista"
-            value={valor}
-            onChange={escoger}
-            options={opciones}
-            placeholder="Escoge un proveedor registrado"
-            searchPlaceholder="Buscar por nombre u oficio"
+          <BuscadorDeProveedor
+            id="proveedor-de-la-solicitud-buscar"
+            proveedores={proveedores}
+            oficio={oficio}
+            valor={valor}
+            onCambiar={onCambiar}
+            onRegistrarNuevo={abrirRegistro}
             invalid={Boolean(error)}
+            describedBy={error ? 'mantenimiento-proveedorId-error' : undefined}
           />
           <ErrorDelCampo id="mantenimiento-proveedorId-error" mensaje={error} />
           {elegido && (

@@ -16,10 +16,12 @@ import {
   Table,
   TableHeader,
   TableBody,
-  TableHead,
   TableRow,
   TableCell,
 } from '@/components/ui/table';
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden';
 import { TablePagination } from '@/components/ui/pagination';
 import {
   PAGE_SIZE_OPTIONS,
@@ -73,6 +75,23 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
     [agents]
   );
   const topPerformerId = rankedAgents[0]?.id;
+  // El puesto es el del ranking por cierres, se ordene la tabla como se ordene.
+  const puestoDe = useMemo(() => new Map(rankedAgents.map((a, i) => [a.id, i + 1])), [rankedAgents]);
+
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Sin orden elegido, el ranking;
+  // el elegido ordena a TODOS los agentes antes de cortar la página.
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(
+    rankedAgents,
+    {
+      puesto: (a) => puestoDe.get(a.id) ?? null,
+      agente: (a) => a.name,
+      cierres: (a) => a.closings,
+      conversion: (a) => a.conversionRate,
+      dias: (a) => a.avgDaysToClose,
+      leads: (a) => a.activeLeads,
+    },
+    { primero: { cierres: 'desc', conversion: 'desc', leads: 'desc' } },
+  );
 
   // Sólo se pagina el RANKING. La comparación de barras de abajo es un gráfico:
   // recortarla dejaría de ser una comparación entre agentes.
@@ -84,11 +103,7 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
     setPage,
     setPageSize,
     shouldPaginate,
-  } = useTablePagination(rankedAgents);
-
-  // El puesto es global, no de la página: sin este corrimiento la página 2
-  // vuelve a numerar desde 1 y el sexto agente aparece como primero.
-  const puestoBase = (page - 1) * pageSize;
+  } = useTablePagination(ordenadas, { resetKey: `${orden?.campo ?? ''}|${orden?.sentido ?? ''}` });
 
   // Max conversion rate for proportional bar rendering
   const maxConversion = Math.max(...agents.map((a) => a.conversionRate));
@@ -130,38 +145,51 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
 
       {/* Agent Ranking Table */}
       <div className="rounded-lg border border-border bg-surface overflow-hidden">
-        <div className="p-4 border-b border-border">
+        <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
           <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
             <Users className="w-4 h-4 text-fg-muted" />
             Ranking de agentes
           </h3>
+          {agents.length > 1 ? (
+            <SelectorDeOrden
+              orden={orden}
+              onCambiar={setOrden}
+              className="w-full sm:w-56"
+              formas={[
+                { campo: 'cierres', sentido: 'desc', etiqueta: 'Más cierres' },
+                { campo: 'conversion', sentido: 'desc', etiqueta: 'Mejor conversión' },
+                { campo: 'dias', sentido: 'asc', etiqueta: 'Cierra más rápido' },
+                { campo: 'agente', sentido: 'asc', etiqueta: 'Agente (A–Z)' },
+              ]}
+            />
+          ) : null}
         </div>
         <div className="overflow-x-auto">
           <Table className="text-sm">
             <TableHeader>
               <TableRow className="border-b border-border-faint">
-                <TableHead className="text-left py-3 px-4 w-12">
+                <EncabezadoOrdenable campo="puesto" orden={orden} onOrdenar={ordenarPor} className="text-left py-3 px-4 w-12">
                   #
-                </TableHead>
-                <TableHead className="text-left py-3 px-4">
+                </EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="agente" orden={orden} onOrdenar={ordenarPor} className="text-left py-3 px-4">
                   Agente
-                </TableHead>
-                <TableHead className="text-right py-3 px-4">
+                </EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="cierres" orden={orden} onOrdenar={ordenarPor} className="text-right py-3 px-4" alineacion="derecha">
                   Cierres
-                </TableHead>
-                <TableHead className="text-left py-3 px-4 min-w-[180px]">
-                  Tasa conversion
-                </TableHead>
-                <TableHead className="text-right py-3 px-4">
-                  Prom. dias
-                </TableHead>
-                <TableHead className="text-right py-3 px-4">
+                </EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="conversion" orden={orden} onOrdenar={ordenarPor} className="text-left py-3 px-4 min-w-[180px]">
+                  Tasa de conversión
+                </EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="dias" orden={orden} onOrdenar={ordenarPor} className="text-right py-3 px-4" alineacion="derecha">
+                  Prom. días
+                </EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="leads" orden={orden} onOrdenar={ordenarPor} className="text-right py-3 px-4" alineacion="derecha">
                   Leads activos
-                </TableHead>
+                </EncabezadoOrdenable>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {agentesDeLaPagina.map((agent, index) => {
+              {agentesDeLaPagina.map((agent) => {
                 const isTop = agent.id === topPerformerId;
                 const conversionWidth =
                   maxConversion > 0
@@ -188,7 +216,7 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
                           />
                         ) : (
                           <span className="text-muted-foreground font-medium">
-                            {puestoBase + index + 1}
+                            {puestoDe.get(agent.id)}
                           </span>
                         )}
                       </div>

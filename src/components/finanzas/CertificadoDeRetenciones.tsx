@@ -36,6 +36,8 @@
 
 import { Ilustracion } from '@leasefy/cadence';
 import { useCallback, useEffect, useState } from 'react';
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
 import { CaretDown, CaretRight, DownloadSimple, SealCheck } from '@phosphor-icons/react';
 
 import { AccionConMotivo } from '@/components/contabilidad/piezas';
@@ -188,6 +190,20 @@ export function CertificadoDeRetencionesPanel() {
   // Sin pestañas (un solo grupo), se ve todo: un filtro de antes no deja la tabla escondida.
   const vistaEfectiva = gruposConFilas > 1 ? vista : 'todos';
   const filasVisibles = vistaEfectiva === 'todos' ? filas : filas.filter((f) => grupoDe(f) === vistaEfectiva);
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas».
+  const { ordenadas, orden, ordenarPor } = useOrdenDeLaTabla(
+    filasVisibles,
+    {
+      propietario: (f) => f.nombre ?? null,
+      documento: (f) => f.documento ?? null,
+      base: (f) => f.baseCop,
+      retefuente: (f) => f.retefuenteCop,
+      reteIva: (f) => f.reteIvaCop ?? null,
+      reteIca: (f) => f.reteIcaCop ?? null,
+      total: (f) => f.totalRetenidoCop,
+    },
+    { primero: { base: 'desc', retefuente: 'desc', reteIva: 'desc', reteIca: 'desc', total: 'desc' } },
+  );
 
   /**
    * 🔴 CB-32 (QA de Contabilidad, 03-10-2026): «Emitir» fijaba número y fecha al
@@ -447,14 +463,14 @@ export function CertificadoDeRetencionesPanel() {
               <Table className="max-md:block">
                 <TableHeader className="max-md:hidden">
                   <TableRow>
-                    <TableHead>Propietario</TableHead>
-                    <TableHead>Documento</TableHead>
-                    <TableHead className="text-right">Base</TableHead>
-                    <TableHead className="text-right">Retefuente</TableHead>
+                    <EncabezadoOrdenable campo="propietario" orden={orden} onOrdenar={ordenarPor}>Propietario</EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="documento" orden={orden} onOrdenar={ordenarPor}>Documento</EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="base" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Base</EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="retefuente" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Retefuente</EncabezadoOrdenable>
                     {/* Revisora r25 (Certificados, UI): una columna toda en $ 0 no informa: fuera. */}
-                    {conReteIva ? <TableHead className="text-right">ReteIVA</TableHead> : null}
-                    {conReteIca ? <TableHead className="text-right">ReteICA</TableHead> : null}
-                    <TableHead className="text-right">Total</TableHead>
+                    {conReteIva ? <EncabezadoOrdenable campo="reteIva" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">ReteIVA</EncabezadoOrdenable> : null}
+                    {conReteIca ? <EncabezadoOrdenable campo="reteIca" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">ReteICA</EncabezadoOrdenable> : null}
+                    <EncabezadoOrdenable campo="total" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Total</EncabezadoOrdenable>
                     <TableHead>Certificado</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -479,7 +495,7 @@ export function CertificadoDeRetencionesPanel() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filasVisibles.map((f) => {
+                    ordenadas.map((f) => {
                       const emitido = emitidos.get(f.propietarioId);
                       const abierto = abierta === f.propietarioId;
                       return [

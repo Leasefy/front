@@ -66,8 +66,11 @@ export function bloqueoDeLaConsulta(r: ParaIniciarUnContrato | null | undefined)
  */
 export function enlaceAlInventario(consignacionId: string, volver?: string | null): string {
   const base = `/panel/inmobiliaria/inmuebles/${consignacionId}`;
-  const regreso = volver ? `?volver=${encodeURIComponent(volver)}` : '';
-  return `${base}${regreso}#inventario`;
+  // `pestana=arrendarlo` (29-10-2026): el inventario vive en «Arrendarlo» y el
+  // ancla sola no alcanzaba a abrirla (el bloque carga después que las
+  // pestañas): la persona caía en otra pestaña («me lleva a Multimedia»).
+  const regreso = volver ? `&volver=${encodeURIComponent(volver)}` : '';
+  return `${base}?pestana=arrendarlo${regreso}#inventario`;
 }
 
 /** «A-12» si trae el número del sistema viejo, «#12» si no. */

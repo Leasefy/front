@@ -281,6 +281,12 @@ const DECLARADAS: readonly string[] = [
   'tenant-acuerdos.listMine',
   'tenant-acuerdos.requestPremoraPlan',
 
+  // T-0172: sólo dev/staging. El back la monta en `feature/T-0172-mock-segundo-factor`
+  // (`POST /auth/segundo-factor/mock/liberar`, borra los factores para que el mock
+  // inscriba uno nuevo) y todavía no llegó a `main`; en producción el back contesta
+  // 404 a propósito y el mock del 123456 nunca corre. Quitar al integrar T-0172.
+  'segundoFactorApi.liberarFactoresDelMock',
+
   // ── T-0109 firma-electronica-reforzada — contract.md FROZEN, back en
   // paralelo (WU-1..WU-4 no existen todavía). El wire está congelado en
   // `.orchestration/tasks/T-0109-firma-electronica-reforzada/contract.md`;

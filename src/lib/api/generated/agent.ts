@@ -9510,7 +9510,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Poll the status of an async ARCO job (D-26-10). Returns current status (pending | running | completed | failed) + result_uri for Acceso exports (presigned S3 URL, 24h TTL). Two-key counsel gate applies here too. */
+        /** Poll the status of an async ARCO job (D-26-10). Returns current status (pending | running | completed | failed) + result_uri for Acceso exports (presigned URL signed per request, at most 1 h, while the 24h export window is open). Two-key counsel gate applies here too. */
         get: operations["cotizadorArcoJobStatus"];
         put?: never;
         post?: never;
@@ -12767,7 +12767,7 @@ export interface components {
         AiHubChatPendingApproval: {
             id: string;
             /** @enum {string} */
-            agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | "director" | "retencion";
+            agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | "director" | "retencion" | "servicios";
             actionType: string;
             title: string;
             description: string;
@@ -12787,7 +12787,7 @@ export interface components {
         AiHubChatDispatch: {
             id?: string;
             /** @enum {string} */
-            agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | "director" | "retencion";
+            agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | "director" | "retencion" | "servicios";
             taskDescription: string;
             /** @enum {string} */
             status: "completed" | "failed";
@@ -12837,7 +12837,7 @@ export interface components {
             snapshot: components["schemas"]["AiHubChatSnapshot"];
             razonamiento?: {
                 /** @enum {string} */
-                agente?: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | "director" | "retencion";
+                agente?: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | "director" | "retencion" | "servicios";
                 texto: string;
             }[];
             generatedAt: string;
@@ -12875,7 +12875,7 @@ export interface components {
             kind: "routing" | "approval" | "feedback";
             pattern: {
                 /** @enum {string|null} */
-                agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | "director" | "retencion" | null;
+                agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | "director" | "retencion" | "servicios" | null;
                 tags: string[];
             };
             recommendation: string;
@@ -17437,7 +17437,7 @@ export interface components {
             tenant_id: string;
             reason?: string;
         };
-        /** @description Job status for GET /api/cotizador/arco/jobs/{job_id}. result_uri is a presigned S3 URL (24h TTL) for Acceso exports; null for other actions. error_message is non-null only on failed status. */
+        /** @description Job status for GET /api/cotizador/arco/jobs/{job_id}. result_uri is a short-lived presigned URL (at most 1 h, signed per request while the 24h export window is open) for Acceso exports; null for other actions. error_message is non-null only on failed status. */
         ArcoJobStatus: {
             /** @enum {string} */
             status: "pending" | "running" | "completed" | "failed";

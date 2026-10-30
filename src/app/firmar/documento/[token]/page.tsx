@@ -6,21 +6,28 @@
  * `/firmar/consignacion/[token]` y `/firmar/acta/[token]`.
  *
  * 404 `ENLACE_DE_FIRMA_INVALIDO` → «enlace no válido»; 410 `ENLACE_DE_FIRMA_VENCIDO` → «pide uno nuevo».
+ *
+ * Antes del código va la foto (Nico, 28-10-2026: «la firma debe llevar la foto»; ese día eligió «cámara propia + revisar
+ * la cara», sin Didit): dos pasos, «Tu foto» y «Tu código y tu firma» (`PruebaDeVida`). Si algún día se prende Didit, su
+ * prueba devuelve a la persona a este mismo enlace con `?vida=1` y aquí se pregunta el resultado. Ya firmado por todos, el
+ * código del documento y la página que lo verifica.
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { CheckCircle, Clock, DownloadSimple, FileText } from '@phosphor-icons/react';
+import { CheckCircle, Clock, DownloadSimple, FileText, SealCheck } from '@phosphor-icons/react';
 import { Presence } from '@leasefy/cadence';
 
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
-import { AvisoDelEnlace, CargandoElEnlace, MarcoDelEnlace, TituloDelEnlace } from '@/components/enlace-publico/MarcoDelEnlace';
+import { AvisoDelEnlace, CargandoElEnlace, MarcoDelEnlace, PasosDelEnlace, TituloDelEnlace } from '@/components/enlace-publico/MarcoDelEnlace';
+import { PruebaDeVida } from '@/components/firmas/PruebaDeVida';
 import { buttonVariants } from '@/components/ui/button';
 import { SignatureForm } from '@/components/contract/SignatureForm';
 import type { OtpAdapter } from '@/components/contract/OTPVerification';
 import { toast } from '@/components/ui/toast';
 import { ApiError } from '@/lib/api/client';
-import { firmaPublicaApi, type FirmaPublica } from '@/lib/api/firmas.service';
+import { firmaPublicaApi, type FirmaPublica, type PruebaDeVidaDelFirmante } from '@/lib/api/firmas.service';
 import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
 import { fechaYHora } from '@/components/firmas/textos-de-firmas';
 import { cn } from '@/lib/utils';
@@ -30,6 +37,21 @@ export default function FirmarDocumentoPage() {
   const [datos, setDatos] = useState<FirmaPublica | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [cargando, setCargando] = useState(true);
+  /** Volvió de Didit (`?vida=1`): la prueba de vida pregunta el resultado sola. Se lee una vez y se quita de la URL. */
+  const [volvioDeDidit, setVolvioDeDidit] = useState(false);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('vida') === '1') {
+      setVolvioDeDidit(true);
+      url.searchParams.delete('vida');
+      window.history.replaceState(null, '', url.pathname + url.search);
+    }
+  }, []);
+
+  const alCambiarLaPrueba = useCallback((pruebaDeVida: PruebaDeVidaDelFirmante) => {
+    setDatos((d) => (d ? { ...d, pruebaDeVida } : d));
+  }, []);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -96,23 +118,41 @@ export default function FirmarDocumentoPage() {
       ) : error && !datos ? (
         <FalloDeCarga error={error} queEs="el documento" onReintentar={cargar} enmarcado={false} />
       ) : datos ? (
-        <Contenido datos={datos} adapter={adapter} onFirmar={firmar} />
+        <Contenido
+          token={token}
+          datos={datos}
+          adapter={adapter}
+          onFirmar={firmar}
+          volvioDeDidit={volvioDeDidit}
+          onCambioDeLaPrueba={alCambiarLaPrueba}
+        />
       ) : null}
     </MarcoDelEnlace>
   );
 }
 
 function Contenido({
+  token,
   datos,
   adapter,
   onFirmar,
+  volvioDeDidit,
+  onCambioDeLaPrueba,
 }: {
+  token: string;
   datos: FirmaPublica;
   adapter: OtpAdapter;
   onFirmar: (p: { signatureData: string; otpVerificationToken?: string }) => Promise<void>;
+  volvioDeDidit: boolean;
+  onCambioDeLaPrueba: (p: PruebaDeVidaDelFirmante) => void;
 }) {
   const { firmante, documento, quienEnvia, firmantes } = datos;
   const otros = firmantes.filter((f) => !f.esUsted);
+  // Un back anterior a la prueba de vida no manda el campo: se firma como siempre.
+  const vida = datos.pruebaDeVida ?? null;
+  const pideFoto = Boolean(vida?.requerida);
+  const faltaLaFoto = pideFoto && vida?.estado !== 'APROBADA';
+  const porFirmar = !firmante.firmado && documento.estado === 'ENVIADO';
   return (
     <>
       <TituloDelEnlace
@@ -120,7 +160,8 @@ function Contenido({
         titulo={documento.titulo}
         descripcion={
           <>
-            Hola {firmante.nombre.split(' ')[0]}, {quienEnvia} te pide firmar este documento. Léelo y fírmalo con el código que te llega
+            Hola {firmante.nombre.split(' ')[0]}, {quienEnvia} te pide firmar este documento. Léelo
+            {pideFoto ? ', tómate una foto para confirmar que eres tú' : ''} y fírmalo con el código que te llega
             {datos.canales.whatsapp ? ' a tu correo o tu WhatsApp' : ' a tu correo'}. No necesitas crear una cuenta.
           </>
         }
@@ -167,16 +208,53 @@ function Contenido({
       {firmante.firmado ? (
         <Presence show className="flex items-start gap-2.5 rounded-md bg-success-soft px-4 py-3 text-body-sm text-fg" data-testid="ya-firmaste">
           <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-success" weight="fill" aria-hidden="true" />
-          <span>
-            {`Firmaste${firmante.firmadoAt ? ` el ${fechaYHora(firmante.firmadoAt)}` : ''}`.replace(/\.?$/, '.')}{' '}
-            {documento.estado === 'FIRMADO' ? 'Ya firmaron todos: descárgalo cuando quieras.' : 'Cuando firmen todos te llega el documento firmado al correo.'}
+          <span className="space-y-1">
+            <span className="block">
+              {`Firmaste${firmante.firmadoAt ? ` el ${fechaYHora(firmante.firmadoAt)}` : ''}`.replace(/\.?$/, '.')}{' '}
+              {documento.estado === 'FIRMADO' ? 'Ya firmaron todos: descárgalo cuando quieras.' : 'Cuando firmen todos te llega el documento firmado al correo.'}
+            </span>
+            {datos.verificacion ? (
+              <span className="block text-fg-muted">
+                Código del documento <span className="font-mono tabular-nums text-fg">{datos.verificacion.codigo}</span> ·{' '}
+                <Link href={`/verificar-firma/${datos.verificacion.codigo.replace('-', '')}`} className="text-primary underline-offset-4 hover:underline">
+                  verifícalo aquí
+                </Link>
+              </span>
+            ) : null}
           </span>
         </Presence>
       ) : documento.estado === 'CANCELADO' ? (
         <p className="text-body-sm text-fg-muted" data-testid="documento-cancelado">
           {quienEnvia} canceló este documento. Si tienes dudas, escríbele.
         </p>
+      ) : faltaLaFoto && vida ? (
+        <>
+          <PasosDelEnlace
+            etiqueta="Pasos para firmar"
+            pasos={[
+              { titulo: 'Tu foto', estado: 'actual' },
+              { titulo: 'Tu código y tu firma', estado: 'pendiente' },
+            ]}
+          />
+          <PruebaDeVida token={token} prueba={vida} quienEnvia={quienEnvia} volvioDeDidit={volvioDeDidit} onCambio={onCambioDeLaPrueba} />
+        </>
       ) : (
+        <>
+          {pideFoto && porFirmar ? (
+            <>
+              <PasosDelEnlace
+                etiqueta="Pasos para firmar"
+                pasos={[
+                  { titulo: 'Tu foto', estado: 'hecho' },
+                  { titulo: 'Tu código y tu firma', estado: 'actual' },
+                ]}
+              />
+              <Presence show className="flex items-center gap-2 text-body-sm text-fg" data-testid="prueba-de-vida-aprobada">
+                <SealCheck className="h-5 w-5 shrink-0 text-success" weight="fill" aria-hidden="true" />
+                {vida?.modo === 'DIDIT' ? 'Confirmamos que eres tú.' : 'Tu foto quedó lista.'} Ahora pide tu código y firma.
+              </Presence>
+            </>
+          ) : null}
         <SignatureForm
           onSign={onFirmar}
           adapter={adapter}
@@ -189,6 +267,7 @@ function Contenido({
             queSeFirma: 'este documento',
           }}
         />
+        </>
       )}
     </>
   );

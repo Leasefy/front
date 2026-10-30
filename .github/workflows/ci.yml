@@ -4,31 +4,62 @@ name: CI
 # covered by its pull_request run. With `branches: ["**"]` a push to a branch
 # with an open PR ran CI twice (refs/heads/x and refs/pull/N/merge differ, so
 # `concurrency` cannot dedupe them) and burned Actions minutes. Docs-only
-# changes skip CI. `workflow_dispatch` enables the manual e2e job below.
+# changes still run the workflow (no paths-ignore): the `changes` job detects them and the jobs below report success without running
+# their steps. `workflow_dispatch` enables the manual e2e job below.
 on:
   push:
     branches: [Main, develop]
-    paths-ignore: ["**/*.md"]
   pull_request:
-    paths-ignore: ["**/*.md"]
   workflow_dispatch:
 
-# Cancel superseded runs on the same ref to save CI minutes.
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Cancel superseded runs on pull requests only: a push to develop/main must finish, because promote-resolve.sh needs a green
+  # push run of this workflow for the exact develop commit (T-0204).
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # Required check. Decides whether the change is Markdown-only. The heavy jobs below always RUN (so their names, which are the
+  # required-check contexts, always report success) but skip their steps when docs_only is true. Any doubt (new branch, force push,
+  # error, empty diff) means docs_only=false, i.e. run everything. Do not put paths/paths-ignore on this workflow: a workflow that is
+  # filtered out leaves its required checks pending forever (T-0204).
+  changes:
+    name: Changes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      docs_only: ${{ steps.diff.outputs.docs_only }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: diff
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          # pull_request: the checkout is the merge commit, HEAD^1 is the base tip. push: compare with the previous tip.
+          if [ "$EVENT" = pull_request ]; then base=HEAD^1; else base="$BEFORE_SHA"; fi
+          docs_only=false
+          if [ -n "$base" ] && ! [[ "$base" =~ ^0+$ ]] && files="$(git diff --no-renames --name-only "$base" HEAD 2>/dev/null)" && [ -n "$files" ]; then
+            if ! grep -qvE '\.md$' <<<"$files"; then docs_only=true; fi
+          fi
+          echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
+          echo "docs_only=$docs_only"
+
   # ---------------------------------------------------------------------------
-  # Required job: typecheck + unit tests. Fast (~1-2 min incl. install) and
-  # deterministic — no app server, no DB, no secrets required.
+  # Typecheck. Cheap (~5s after install) and independent of the unit tests, so
+  # a type error shows up in ~2 min instead of waiting on the vitest shards.
   # ---------------------------------------------------------------------------
-  test:
-    name: Typecheck & Unit Tests
+  typecheck:
+    name: Typecheck
     runs-on: ubuntu-latest
+    needs: changes
     timeout-minutes: 15
     steps:
       - name: Checkout
+        if: needs.changes.outputs.docs_only != 'true'
         uses: actions/checkout@v4
 
       # pnpm is the authoritative package manager for this repo (pnpm-lock.yaml
@@ -40,11 +71,13 @@ jobs:
       # >=22.13 (imports node:sqlite) and this workflow runs Node 20. 10.x
       # satisfies both (same major Vercel uses for this repo).
       - name: Setup pnpm
+        if: needs.changes.outputs.docs_only != 'true'
         uses: pnpm/action-setup@v4
         with:
           version: 10
 
       - name: Setup Node.js
+        if: needs.changes.outputs.docs_only != 'true'
         uses: actions/setup-node@v4
         with:
           # Node 20 LTS — matches devDependency `@types/node@^20` and Next 14.2.x.
@@ -66,6 +99,7 @@ jobs:
       # Requires a `CADENCE_REPO_TOKEN` secret with read access to Leasefy/cadence
       # (the default GITHUB_TOKEN is scoped to `front` only and cannot read it).
       - name: Provide @leasefy/cadence (sibling design-system repo)
+        if: needs.changes.outputs.docs_only != 'true'
         run: |
           git clone --depth 1 --branch "$(cat .cadence-ref 2>/dev/null || echo main)" \
             "https://x-access-token:${{ secrets.CADENCE_REPO_TOKEN }}@github.com/Leasefy/cadence.git" \
@@ -73,19 +107,118 @@ jobs:
           pnpm --dir ../cadence install --frozen-lockfile --ignore-scripts
 
       - name: Install dependencies
+        if: needs.changes.outputs.docs_only != 'true'
         # --frozen-lockfile fails if pnpm-lock.yaml is out of sync with package.json.
         # The `postinstall` runs `prisma generate`, which only needs the committed
         # prisma/schema.prisma — no database connection or DATABASE_URL required.
         run: pnpm install --frozen-lockfile
 
       - name: Typecheck (tsc --noEmit)
-        # Cheap (~5s) and clean. tsconfig excludes tests/e2e, so this type-checks
-        # app + unit-test source only.
+        if: needs.changes.outputs.docs_only != 'true'
+        # tsconfig excludes tests/e2e, so this type-checks app + unit-test
+        # source only.
         run: pnpm exec tsc --noEmit
 
-      - name: Unit tests (vitest)
-        # `pnpm test` === `vitest run` (happy-dom environment).
-        run: pnpm test
+  # ---------------------------------------------------------------------------
+  # Unit tests, split across parallel shards. The full vitest suite no longer
+  # fits in a single job (PR run 40920405410 was still passing at minute 15
+  # when the timeout cancelled it; no test failed). `--shard=i/N` splits by
+  # test file, so each shard runs roughly 1/N of the suite. fail-fast is off so
+  # one failing shard does not hide failures in the others. To add capacity,
+  # extend `shard` and the N in `--shard` together.
+  # ---------------------------------------------------------------------------
+  unit-tests:
+    name: Unit tests (shard ${{ matrix.shard }}/4)
+    runs-on: ubuntu-latest
+    needs: changes
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - name: Checkout
+        if: needs.changes.outputs.docs_only != 'true'
+        uses: actions/checkout@v4
+
+      # pnpm is the authoritative package manager for this repo (pnpm-lock.yaml
+      # is committed and all docs use `pnpm`). No `packageManager` field exists,
+      # so the version is pinned explicitly here. Pinned to 10.x — a two-sided
+      # constraint: pnpm-workspace.yaml uses the `allowBuilds` settings block,
+      # which pnpm 9 rejects ("packages field missing or empty" on `pnpm store
+      # path`, run by setup-node's `cache: pnpm`); but pnpm 11 needs Node
+      # >=22.13 (imports node:sqlite) and this workflow runs Node 20. 10.x
+      # satisfies both (same major Vercel uses for this repo).
+      - name: Setup pnpm
+        if: needs.changes.outputs.docs_only != 'true'
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        if: needs.changes.outputs.docs_only != 'true'
+        uses: actions/setup-node@v4
+        with:
+          # Node 20 LTS — matches devDependency `@types/node@^20` and Next 14.2.x.
+          node-version: 20
+          cache: pnpm
+
+      # @leasefy/cadence is a `file:../cadence` dependency — the private sibling
+      # repo Leasefy/cadence. CI only checks out `front`, so cadence must exist at
+      # ../cadence BEFORE install or `pnpm install` fails with ENOENT (same failure
+      # mode `fix/ci-provision-design-system` fixed for the old @leasefy/ui stub).
+      # Its built `dist/` is committed, so a shallow clone covers the JS itself —
+      # but unlike the old @leasefy/ui stub, cadence's dist/index.js imports real
+      # runtime deps (clsx, tailwind-merge, radix, sonner, phosphor-icons) that are
+      # NOT bundled, so cadence's own node_modules must be populated too or tsc/
+      # vitest fail to resolve them. --ignore-scripts skips esbuild's postinstall
+      # (blocked by pnpm's default build-script policy) — safe here since we only
+      # consume cadence's prebuilt dist, never build it in this workflow.
+      # The cadence ref comes from `.cadence-ref` (falls back to `main` when absent).
+      # Requires a `CADENCE_REPO_TOKEN` secret with read access to Leasefy/cadence
+      # (the default GITHUB_TOKEN is scoped to `front` only and cannot read it).
+      - name: Provide @leasefy/cadence (sibling design-system repo)
+        if: needs.changes.outputs.docs_only != 'true'
+        run: |
+          git clone --depth 1 --branch "$(cat .cadence-ref 2>/dev/null || echo main)" \
+            "https://x-access-token:${{ secrets.CADENCE_REPO_TOKEN }}@github.com/Leasefy/cadence.git" \
+            ../cadence
+          pnpm --dir ../cadence install --frozen-lockfile --ignore-scripts
+
+      - name: Install dependencies
+        if: needs.changes.outputs.docs_only != 'true'
+        # --frozen-lockfile fails if pnpm-lock.yaml is out of sync with package.json.
+        # The `postinstall` runs `prisma generate`, which only needs the committed
+        # prisma/schema.prisma — no database connection or DATABASE_URL required.
+        run: pnpm install --frozen-lockfile
+
+      - name: Unit tests (vitest, shard ${{ matrix.shard }}/4)
+        if: needs.changes.outputs.docs_only != 'true'
+        # `pnpm test` === `vitest run` (happy-dom environment); args after the
+        # script name are forwarded to vitest.
+        run: pnpm test --shard=${{ matrix.shard }}/4
+
+  # ---------------------------------------------------------------------------
+  # Required job: aggregate gate. Keeps the status name "Typecheck & Unit Tests"
+  # that this workflow always exposed, so branch protection keeps working
+  # without listing every shard. `if: always()` makes it run (and fail) when a
+  # needed job fails or is cancelled, instead of being skipped (a skipped
+  # required check counts as passing).
+  # ---------------------------------------------------------------------------
+  test:
+    name: Typecheck & Unit Tests
+    needs: [changes, typecheck, unit-tests]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check results of typecheck and unit-test shards
+        run: |
+          echo "changes:    ${{ needs.changes.result }}"
+          echo "typecheck:  ${{ needs.typecheck.result }}"
+          echo "unit-tests: ${{ needs.unit-tests.result }}"
+          # A failed `changes` job skips typecheck and unit-tests, and a skipped job counts as passing: require it explicitly.
+          [ "${{ needs.changes.result }}" = "success" ] && [ "${{ needs.typecheck.result }}" = "success" ] && [ "${{ needs.unit-tests.result }}" = "success" ]
 
   # ---------------------------------------------------------------------------
   # Manual-only E2E job. NOT a required check — opt-in via "Run workflow".
@@ -128,7 +261,7 @@ jobs:
           node-version: 20
           cache: pnpm
 
-      # See the `test` job: @leasefy/cadence = file:../cadence (private sibling
+      # See the `typecheck` job: @leasefy/cadence = file:../cadence (private sibling
       # repo, real runtime deps not bundled in dist/). Needs CADENCE_REPO_TOKEN.
       - name: Provide @leasefy/cadence (sibling design-system repo)
         run: |

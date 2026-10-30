@@ -3,18 +3,20 @@
 /**
  * SessionRevocationHandler
  *
- * Mount once in the root layout (inside AuthProvider). Listens on Realtime for
- * a `session_revocations` row targeting THIS device's session and, when it
- * arrives, signs the user out and shows a blocking "signed in elsewhere" notice.
+ * Mount once in the root layout (inside AuthProvider). Listens, through the
+ * realtime adapter (Supabase `session_revocations` or the SSE `session.revoked`
+ * event, per NEXT_PUBLIC_REALTIME_PROVIDER), for a revocation targeting THIS
+ * device's session and, when it arrives, signs the user out and shows a blocking "signed in elsewhere" notice.
  * This is the instant path of single-session enforcement; the 401 backstop in
  * apiClient covers the case where this event never arrived.
  */
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth/use-auth'
 import { getAccessToken } from '@/lib/api/client'
 import { decodeAccessToken } from '@/lib/auth/jwt'
+import { cierrePropioEnCurso, limpiarCierrePropio } from '@/lib/auth/cierre-propio'
 import { useSessionRevocation } from '@/lib/hooks/use-session-revocation'
 
 export function SessionRevocationHandler() {
@@ -30,7 +32,15 @@ export function SessionRevocationHandler() {
     [user?.id],
   )
 
+  // A new signed-in user means the previous own sign-out is over.
+  useEffect(() => {
+    if (user?.id) limpiarCierrePropio()
+  }, [user?.id])
+
   const handleRevoked = useCallback(() => {
+    // The user is leaving on purpose (explicit or idle logout): the revocation
+    // their own logout provoked is not «signed in elsewhere».
+    if (cierrePropioEnCurso()) return
     setRevoked(true)
     void signOut()
   }, [signOut])

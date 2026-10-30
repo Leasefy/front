@@ -14,6 +14,8 @@ import { ArrowLeft, Check, Copy, Globe, MagnifyingGlass, Sparkle } from '@phosph
 import { OrbeDeAgente } from '@/components/agentes/OrbeDeAgente';
 import { tieneCoordenadas } from '@/components/map/coordenadas';
 import { PropertyCard } from '@/components/property/PropertyCard';
+import { LogoDelAdministrador } from '@/components/property/AdministradoPor';
+import { Button } from '@/components/ui/button';
 import { Sheet, SheetBody, SheetContent, SheetHeader } from '@/components/ui/sheet';
 import { ApiError } from '@/lib/api/client';
 import { marketplaceApi, type PaginaDeInmobiliaria as Pagina } from '@/lib/api/marketplace.service';
@@ -428,14 +430,39 @@ function Contenido({ pagina }: { pagina: Pagina }) {
             {pagina.nombre} no tiene inmuebles publicados ahora. Síguela y te aviso cuando publique.
           </p>
         )}
+        {/* 🔴 Nico, 29-10-2026: el enlace suelto con la lupa no se veía. Ahora es una
+            invitación al resto del portafolio: su logo, cuántos tiene y el botón. El
+            enlace sigue siendo un <a> con su texto (lo rastrea Google). */}
         {totalSuyos > SE_VEN_AQUI && (
-          <Link
-            href={`/propiedades?${escribirBusqueda({ inmobiliaria: pagina.id })}&vista=lista`}
-            className="mt-5 inline-flex items-center gap-1.5 text-[14px] font-medium text-primary hover:underline"
+          <div
+            className="mt-6 flex flex-col gap-4 rounded-[20px] border border-border bg-surface p-5 shadow-susurro sm:flex-row sm:items-center sm:justify-between"
+            data-testid="ver-todo-el-portafolio"
           >
-            <MagnifyingGlass className="h-4 w-4" aria-hidden />
-            Ver los {numero(totalSuyos)} inmuebles de {pagina.nombre}
-          </Link>
+            <div className="flex min-w-0 items-center gap-4">
+              <LogoDelAdministrador
+                administrador={{ agencyId: pagina.id, nombre: pagina.nombre, logoUrl: pagina.logoUrl ?? null }}
+                tamano={48}
+                className="shrink-0"
+              />
+              <div className="min-w-0">
+                <p className="font-mono text-label uppercase text-fg-subtle">Todo su portafolio</p>
+                <p className="text-h3 text-fg">
+                  <span className="font-mono tabular-nums">{numero(totalSuyos)}</span> inmuebles de {pagina.nombre}
+                </p>
+                <p className="text-body-sm text-fg-muted">
+                  Aquí ves {SE_VEN_AQUI}; los demás, en el buscador con filtros y mapa.
+                </p>
+              </div>
+            </div>
+            <Button asChild variant="ink" hideArrow className="w-full shrink-0 gap-2 sm:w-auto">
+              <Link href={`/propiedades?${escribirBusqueda({ inmobiliaria: pagina.id })}&vista=lista`}>
+                <MagnifyingGlass className="h-4 w-4" aria-hidden />
+                Ver los {numero(totalSuyos)} inmuebles
+                {/* El nombre va en el texto del enlace (SEO y lector de pantalla); a la vista ya está arriba. */}
+                <span className="sr-only"> de {pagina.nombre}</span>
+              </Link>
+            </Button>
+          </div>
         )}
         <p className="mt-6 flex items-center gap-1.5 text-[13px] text-fg-muted">
           <Sparkle className="h-4 w-4 text-primary" weight="fill" aria-hidden />

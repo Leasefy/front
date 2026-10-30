@@ -8,6 +8,7 @@
  */
 
 import { apiClient } from '@/lib/api/client';
+import { enviarFormulario } from '@/lib/api/consignacion-firma.service';
 import type {
   CambiosDeMedioDePago,
   MedioDePago,
@@ -88,6 +89,17 @@ export const mediosDePagoApi = {
       items: items.map((i) => ({ id: i.id, orden: i.orden })),
     });
     return ordenarMedios(comoLista(res));
+  },
+
+  /** El QR del banco (Nico 29-10-2026): una imagen JPG, PNG o WebP de hasta 2 MB. Reemplaza la anterior. */
+  async subirQr(id: string, imagen: File): Promise<MedioDePago> {
+    const formulario = new FormData();
+    formulario.append('file', imagen);
+    return enviarFormulario<MedioDePago>(`${BASE}/${encodeURIComponent(id)}/qr`, formulario, 'No pudimos subir el QR.');
+  },
+
+  async quitarQr(id: string): Promise<MedioDePago> {
+    return apiClient.delete<MedioDePago>(`${BASE}/${encodeURIComponent(id)}/qr`);
   },
 
   /** El lado del inquilino: por inmobiliaria, sólo lo visible, enmascarado. */

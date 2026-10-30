@@ -24,6 +24,9 @@ import { Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } 
 import { Table, TableBodyAnimado, TableCell, TableHead, TableHeader, TableRow, TableRowAnimada } from '@/components/ui/table'
 import { TablePagination } from '@/components/ui/pagination'
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden'
 import {
   Avatar,
   CrossFade,
@@ -253,6 +256,16 @@ function PostulacionesContenido() {
     )
   }, [items, filter, search, inmueble, listaCorta])
 
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Sin elegir, el de siempre:
+  // las de un mismo inmueble juntas y en el orden de su lista corta.
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(visibleItems, {
+    interesado: (c) => c.tenantName,
+    inmueble: (c) => c.propertyTitle,
+    estado: (c) => c.status,
+    puntaje: (c) => c.riskScore?.totalScore ?? null,
+    fecha: (c) => c.submittedAt,
+  }, { primero: { puntaje: 'desc', fecha: 'desc' } })
+
   /** Los inmuebles con postulaciones, con cuántas tiene cada uno (para el filtro). */
   const inmueblesConPostulaciones = useMemo(() => {
     const m = new Map<string, { titulo: string; n: number }>()
@@ -273,7 +286,7 @@ function PostulacionesContenido() {
     setPage,
     setPageSize,
     shouldPaginate,
-  } = useTablePagination(visibleItems, { resetKey: `${filter}|${search.trim()}|${inmueble}` })
+  } = useTablePagination(ordenadas, { resetKey: `${filter}|${search.trim()}|${inmueble}|${orden?.campo ?? ''}|${orden?.sentido ?? ''}` })
 
   /**
    * Revisora r24 (Postulaciones #1): en una pestaña que ya filtra por estado, el estado de cada fila repite
@@ -427,6 +440,18 @@ function PostulacionesContenido() {
                   />
                 )}
               </div>
+              <SelectorDeOrden
+                orden={orden}
+                onCambiar={setOrden}
+                className="w-full sm:w-56"
+                formas={[
+                  { campo: 'fecha', sentido: 'desc', etiqueta: tr('Más recientes') },
+                  { campo: 'fecha', sentido: 'asc', etiqueta: tr('Más antiguas') },
+                  { campo: 'puntaje', sentido: 'desc', etiqueta: tr('Mayor puntaje') },
+                  { campo: 'interesado', sentido: 'asc', etiqueta: tr('Interesado (A–Z)') },
+                  { campo: 'inmueble', sentido: 'asc', etiqueta: tr('Inmueble (A–Z)') },
+                ]}
+              />
               {inmueblesConPostulaciones.length > 1 ? (
                 <Select value={inmueble} onValueChange={setInmueble}>
                   <SelectTrigger className="w-full sm:w-72" aria-label={tr('Inmueble')} data-testid="filtro-inmueble">
@@ -494,15 +519,15 @@ function PostulacionesContenido() {
                         <CasillaDeLaPagina ids={pageItems.map((p) => p.id)} marcadas={marcadas} onMarcar={marcar} queSon="postulaciones" />
                       </TableHead>
                     )}
-                    <TableHead>{tr("Interesado")}</TableHead>
-                    <TableHead>{tr("Inmueble")}</TableHead>
-                    {mostrarEstado && <TableHead>{tr("Estado")}</TableHead>}
+                    <EncabezadoOrdenable campo="interesado" orden={orden} onOrdenar={ordenarPor}>{tr("Interesado")}</EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="inmueble" orden={orden} onOrdenar={ordenarPor}>{tr("Inmueble")}</EncabezadoOrdenable>
+                    {mostrarEstado && <EncabezadoOrdenable campo="estado" orden={orden} onOrdenar={ordenarPor}>{tr("Estado")}</EncabezadoOrdenable>}
                     {/* 🔴 El estudio es opcional (Nico, 04-10-2026): quien se
                         postuló sin él (o con el canon por encima de su
                         respaldo) se ve marcado aquí. */}
                     {hayEstudio && <TableHead>{tr("Estudio")}</TableHead>}
-                    {hayPuntaje && <TableHead>{tr("Puntaje")}</TableHead>}
-                    <TableHead>{tr("Fecha")}</TableHead>
+                    {hayPuntaje && <EncabezadoOrdenable campo="puntaje" orden={orden} onOrdenar={ordenarPor}>{tr("Puntaje")}</EncabezadoOrdenable>}
+                    <EncabezadoOrdenable campo="fecha" orden={orden} onOrdenar={ordenarPor}>{tr("Fecha")}</EncabezadoOrdenable>
                   </TableRow>
                 </TableHeader>
                 {/* Filtrar, buscar, paginar o decidir: las filas entran

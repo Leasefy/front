@@ -34,6 +34,8 @@ import type {
   Dispersion,
   DispersionSummary,
   SolicitudMantenimiento,
+  GestionadoPor,
+  EtapaDelSeguimiento,
   MantenimientoQuote,
   NuevaCotizacion,
   Renovacion,
@@ -1819,6 +1821,39 @@ export const mantenimientoApi = {
   },
 
   /**
+   * Portofino 29-10-2026: cambiar quién GESTIONA la reparación
+   * (`PUT :id { gestionadoPor }`). A otro, sólo antes de aprobar una
+   * cotización (409 `GESTION_CON_COTIZACION_APROBADA`); volverla a la
+   * inmobiliaria cuando la hace el propietario es retomarla. Sin la migración
+   * del back, 503 `GESTIONADO_POR_SIN_MIGRAR` con su frase.
+   */
+  async cambiarGestion(id: string, gestionadoPor: GestionadoPor): Promise<SolicitudMantenimiento> {
+    return mantenimientoApi.update(id, { gestionadoPor });
+  },
+
+  /**
+   * Portofino 29-10-2026: un paso del seguimiento por avisos de una reparación
+   * que NO gestiona la inmobiliaria (`POST :id/seguimiento { etapa, nota? }`):
+   * `visita` no mueve la tarjeta, `en_arreglo` la pasa a «En arreglo» y
+   * `terminado` a «Completada», sin cotización, aprobación ni costo. Responde
+   * la solicitud completa. 400 `GESTIONADA_POR_LA_INMOBILIARIA` /
+   * `SOLICITUD_CANCELADA`; 503 `GESTIONADO_POR_SIN_MIGRAR`.
+   */
+  async registrarSeguimiento(
+    id: string,
+    etapa: EtapaDelSeguimiento,
+    nota?: string | null,
+  ): Promise<SolicitudMantenimiento> {
+    const limpia = nota?.trim();
+    return mantenimientoDelBack(
+      await apiClient.post<SolicitudMantenimiento>(
+        `${BASE}/mantenimiento/${encodeURIComponent(id)}/seguimiento`,
+        limpia ? { etapa, nota: limpia } : { etapa },
+      ),
+    );
+  },
+
+  /**
    * Mover la solicitud a otra columna del tablero.
    *
    * 🔴 Acá estaba la mitad de cliente del bug del arrastre. Esto era un `switch`
@@ -2013,7 +2048,15 @@ export const mantenimientoApi = {
   async mesesParaDiferir(
     id: string,
     lado: 'PROPIETARIO' | 'INQUILINO',
-  ): Promise<{ disponible: boolean; contractId: string | null; meses: MesParaUnConcepto[]; motivo?: string }> {
+  ): Promise<{
+    disponible: boolean;
+    contractId: string | null;
+    meses: MesParaUnConcepto[];
+    motivo?: string;
+    /** Nico 28-10: el canon y el tope del mes (% del canon) para sugerir en cuántos meses. Un back anterior no los manda. */
+    canonCop?: number | null;
+    topeDelMesPct?: number;
+  }> {
     return apiClient.get(`${BASE}/mantenimiento/${id}/meses-para-diferir?lado=${lado}`);
   },
 
@@ -2129,6 +2172,9 @@ export const renovacionesApi = {
       ipcRate?: number;
       historyNote?: string;
       notificationMessage?: string;
+      /** La fecha de la renovación puesta a mano (`YYYY-MM-DD`), Nico 29-10-2026. */
+      newLeaseStartDate?: string;
+      newLeaseEndDate?: string;
     },
   ): Promise<void> {
     const { status, ...rest } = payload;
@@ -2136,6 +2182,25 @@ export const renovacionesApi = {
       status: RENOVACION_STATUS_TO_BACKEND[status] ?? status,
       ...rest,
     });
+  },
+
+  /**
+   * «Renovar contrato» — VIVIENDA URBANA (Nico, 29-10-2026): renueva, genera
+   * el incremento (IPC del año anterior si cumple un año de contrato) y avisa
+   * al inquilino y al propietario. `avisoEnviado: false` = renovó pero el
+   * aviso no salió.
+   */
+  async renovar(
+    id: string,
+    payload: {
+      canon?: number;
+      negotiatedAdminFee?: number;
+      newLeaseStartDate?: string;
+      newLeaseEndDate?: string;
+    },
+  ): Promise<{ avisoEnviado: boolean }> {
+    const r = await apiClient.post<{ avisoEnviado?: boolean }>(`${BASE}/renovaciones/${id}/renovar`, payload);
+    return { avisoEnviado: r?.avisoEnviado !== false };
   },
 
   /** Upload the renewal document (multipart). Returns the stored name/path. */

@@ -16,12 +16,18 @@
  *    Alta y Emergencia son sólo de la inmobiliaria; en las demás el propietario
  *    puede responder «La hago yo» o la inmobiliaria se la puede dejar.
  *
+ * 3. EL TOPE DEL MES de una reparación diferida (Nico, 28-10-2026: «que le dé la
+ *    sugerencia a cuántos meses… tener en cuenta el valor del canon»; el tope,
+ *    «configurable»): el % del canon que, como mucho, se descuenta o se cobra por
+ *    mes. Con él, el diálogo de la reparación sugiere en cuántos meses diferirla.
+ *    Sin fijarlo, el sugerido (30 %).
+ *
  * 🔴 Cambiar el tiempo NO mueve las reparaciones ya reportadas: cada una nació
  * con su plazo. Lo dice la pantalla, porque es lo primero que se pregunta.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Clock, Siren, UserCircle } from '@phosphor-icons/react';
+import { Clock, Percent, Siren, UserCircle } from '@phosphor-icons/react';
 
 import { Button, Input } from '@/components/ui';
 import { Switch } from '@/components/ui/switch';
@@ -44,6 +50,15 @@ const PRIORIDADES: Array<{ valor: PrioridadDelBack; titulo: string; descripcion:
 
 const MAX_HORAS = 8760; // Un año. Más que eso no es un plazo, es un olvido.
 
+/** El tope escrito («25», «12,5»): un número de 1 a 100 con hasta dos decimales, o `null` si no sirve. Vacío = el sugerido. */
+export function topeEscrito(texto: string): number | null | 'vacio' {
+  const limpio = texto.trim().replace(',', '.');
+  if (limpio === '') return 'vacio';
+  if (!/^\d{1,3}(\.\d{1,2})?$/.test(limpio)) return null;
+  const n = Number(limpio);
+  return n >= 1 && n <= 100 ? n : null;
+}
+
 /** «4 horas», «1 día», «3 días», «1 día y 6 horas». */
 export function horasEnPalabras(horas: number): string {
   if (!Number.isInteger(horas) || horas <= 0) return '';
@@ -64,6 +79,7 @@ export function SeccionReparaciones() {
   const [error, setError] = useState<unknown>(null);
   const [horas, setHoras] = useState<Record<string, string>>({});
   const [soloInmobiliaria, setSoloInmobiliaria] = useState<PrioridadDelBack[]>([]);
+  const [tope, setTope] = useState('');
   const [guardando, setGuardando] = useState(false);
   const conBarraRef = useRef(false);
 
@@ -71,6 +87,7 @@ export function SeccionReparaciones() {
     setDatos(d);
     setHoras(Object.fromEntries(PRIORIDADES.map((p) => [p.valor, String(d.slaHoras[p.valor])])));
     setSoloInmobiliaria(d.prioridadesSoloDeLaInmobiliaria);
+    setTope(d.topeDelMes ? String(d.topeDelMes.pct).replace('.', ',') : '');
   };
 
   const cargar = useCallback(async () => {
@@ -95,6 +112,11 @@ export function SeccionReparaciones() {
   const mismaLista = (a: PrioridadDelBack[], b: PrioridadDelBack[]) =>
     a.length === b.length && a.every((x) => b.includes(x));
   const prioridadesCambiaron = datos ? !mismaLista(soloInmobiliaria, datos.prioridadesSoloDeLaInmobiliaria) : false;
+  const topeLeido = topeEscrito(tope);
+  const topeCambio = Boolean(
+    datos?.topeDelMes &&
+      (topeLeido === 'vacio' ? datos.topeDelMes.configurado : topeLeido !== datos.topeDelMes.pct),
+  );
 
   /** Lo que la persona escribió y no es un número de horas que el back acepte. */
   const horaMala = PRIORIDADES.find((p) => {
@@ -106,6 +128,10 @@ export function SeccionReparaciones() {
     if (!datos) return false;
     if (horasCambiadas.length > 0 && horaMala) {
       toast.error(`El tiempo de ${horaMala.titulo} va en horas enteras, entre 1 y ${MAX_HORAS}.`);
+      return false;
+    }
+    if (topeCambio && topeLeido === null) {
+      toast.error('El tope va en porcentaje del canon, entre 1 y 100 (por ejemplo 30 o 12,5).');
       return false;
     }
     setGuardando(true);
@@ -120,6 +146,7 @@ export function SeccionReparaciones() {
             }
           : {}),
         ...(prioridadesCambiaron ? { prioridadesSoloDeLaInmobiliaria: soloInmobiliaria } : {}),
+        ...(topeCambio ? { topeDelMesPct: topeLeido === 'vacio' ? null : topeLeido } : {}),
       });
       poner(d);
       if (!conBarraRef.current) {
@@ -141,7 +168,7 @@ export function SeccionReparaciones() {
 
   const { conBarra } = useCambiosPorGuardar({
     id: 'reparaciones',
-    cambios: horasCambiadas.length + (prioridadesCambiaron ? 1 : 0),
+    cambios: horasCambiadas.length + (prioridadesCambiaron ? 1 : 0) + (topeCambio ? 1 : 0),
     guardar,
     descartar: () => {
       if (datos) poner(datos);
@@ -164,7 +191,7 @@ export function SeccionReparaciones() {
     );
   }
 
-  const hayCambios = horasCambiadas.length > 0 || prioridadesCambiaron;
+  const hayCambios = horasCambiadas.length > 0 || prioridadesCambiaron || topeCambio;
 
   return (
     <div className="space-y-4">
@@ -262,6 +289,53 @@ export function SeccionReparaciones() {
           );
         })}
       </TarjetaDeAjustes>
+
+      {datos.topeDelMes ? (
+        <>
+          <div className="space-y-1 pt-2">
+            <h3 className="flex items-center gap-2 text-base font-medium text-fg">
+              <Percent className="h-4 w-4 text-fg-muted" aria-hidden="true" />
+              ¿Cuánto se descuenta por mes de una reparación?
+            </h3>
+            <p className="text-sm text-fg-muted">
+              Cuando una reparación se difiere en meses, Leasefy sugiere en cuántos para que ningún mes pase de este
+              porcentaje del canon. Es una sugerencia: en cada reparación se eligen los meses.
+            </p>
+          </div>
+          {datos.disponible.topeDelMes === false && (
+            <div role="alert" className="rounded-xl bg-warning-soft px-3 py-2 text-caption text-fg">
+              Todavía no se puede cambiar: Leasefy tiene pendiente una actualización. Mientras tanto se sugiere con el{' '}
+              {datos.topeDelMes.sugeridoPct} % del canon.
+            </div>
+          )}
+          <TarjetaDeAjustes>
+            <FilaDeAjuste
+              icono={Percent}
+              titulo="Tope del mes"
+              descripcion={
+                topeLeido === null
+                  ? 'Escribe un porcentaje entre 1 y 100, por ejemplo 30 o 12,5.'
+                  : `Lo más que se descuenta al propietario (o se cobra al inquilino) cada mes. Sugerido: ${datos.topeDelMes.sugeridoPct} %. Vacío, vuelve al sugerido.`
+              }
+            >
+              <div className="flex items-center gap-2">
+                <Input
+                  inputMode="decimal"
+                  className="w-24 text-right font-mono tabular-nums"
+                  aria-label="Tope del mes de una reparación diferida, en porcentaje del canon"
+                  aria-invalid={topeLeido === null ? true : undefined}
+                  placeholder={String(datos.topeDelMes.sugeridoPct)}
+                  disabled={!puedeEditar || datos.disponible.topeDelMes === false}
+                  value={tope}
+                  onChange={(e) => setTope(e.target.value)}
+                  data-testid="tope-del-mes"
+                />
+                <span className="w-28 shrink-0 text-caption text-fg-muted">% del canon</span>
+              </div>
+            </FilaDeAjuste>
+          </TarjetaDeAjustes>
+        </>
+      ) : null}
 
       <p className="text-caption text-fg-muted">
         Cambiar los tiempos <span className="text-fg">no mueve las reparaciones ya reportadas</span>: cada una se juzga con el plazo con el

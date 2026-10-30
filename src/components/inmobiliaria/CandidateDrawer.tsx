@@ -31,6 +31,7 @@ import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader } from '@/comp
 import { IconButton, Ilustracion } from '@leasefy/cadence';
 import { formatCurrency } from '@/lib/format';
 import { EstudioPagadoALaInmobiliaria } from '@/components/inmobiliaria/estudios/EstudioPagadoALaInmobiliaria';
+import { AsegurabilidadManualDeLaPostulacion } from '@/components/inmobiliaria/estudios/AsegurabilidadManualDeLaPostulacion';
 import { ChipDeLaMarcaDelEstudio } from '@/components/inmobiliaria/MarcaDelEstudio';
 import { landlordApplicationsApi } from '@/lib/api/applications.service';
 import { ChatThread } from '@/components/messages/ChatThread';
@@ -519,6 +520,8 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                 (recibo + factura) y, vigente, no se le vuelve a cobrar. Sólo
                 dentro del panel de la inmobiliaria. */}
             <EstudioPagadoALaInmobiliaria applicationId={candidate.id} />
+            {/* Nico 28-10-2026: la asegurabilidad manual — el comprobante del candidato y «aprobado por Sura»… */}
+            <AsegurabilidadManualDeLaPostulacion applicationId={candidate.id} />
           </section>
 
           {/* La Calificación Leasefy sin estudio (Nico, 19-10-2026: «mostrarla en el cajón»): desde la cuenta

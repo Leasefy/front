@@ -1,7 +1,7 @@
 /**
  * Notification hooks for landlord and tenant dashboards.
  *
- * Inbox delivery is realtime (Supabase postgres_changes on `notification_logs`)
+ * Inbox delivery is realtime (Supabase postgres_changes on `notification_logs` or the SSE stream, per NEXT_PUBLIC_REALTIME_PROVIDER)
  * — the previous 2-minute REST poll was removed. On mount we do a single REST
  * fetch for the initial page + unreadCount, then stream INSERTs live. A REST
  * refetch also runs on realtime (re)connect to close any gap opened while the

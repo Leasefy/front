@@ -12,6 +12,7 @@ import {
   modoDeLaPolitica,
   nuevoNonce,
   politicaDeContenido,
+  politicaDeLaHome,
   type EntornoDeLaPolitica,
 } from './politica-de-contenido'
 
@@ -104,6 +105,15 @@ describe('politicaDeContenido', () => {
   })
 })
 
+describe('politicaDeLaHome', () => {
+  // 28-10-2026: «Publicar gratis» abre /publica/ventana encima, en un marco del mismo sitio. Sólo ése.
+  it('deja abrir la ventana de publicar (un marco del mismo sitio) y nada de afuera', () => {
+    const p = politicaDeLaHome({ desarrollo: false, soloReporte: false })
+    expect(directiva(p, 'frame-src')).toEqual(["'self'"])
+    expect(directiva(p, 'frame-ancestors')).toEqual(["'self'"])
+  })
+})
+
 describe('modo y alcance', () => {
   it('por defecto REPORTE: obligatoria sólo con CSP_MODO=obligatoria', () => {
     expect(cabeceraDeLaPolitica(modoDeLaPolitica(undefined))).toBe('Content-Security-Policy-Report-Only')
@@ -125,5 +135,30 @@ describe('modo y alcance', () => {
     const b = nuevoNonce()
     expect(a).not.toBe(b)
     expect(atob(a)).toHaveLength(16)
+  })
+})
+
+describe('politicaDeContenido: new storage hosts (T-0182)', () => {
+  const CON_ALMACEN: EntornoDeLaPolitica = { ...PROD, NEXT_PUBLIC_ASSETS_HOST: 'd111.cloudfront.net' }
+  const S3 = [
+    'https://leasefy-prod-files.s3.us-east-2.amazonaws.com',
+    'https://leasefy-prod-avaluo.s3.us-east-2.amazonaws.com',
+  ]
+
+  it('img-src, connect-src and frame-src carry the exact S3 buckets; img-src also the CloudFront host', () => {
+    const p = politicaDeContenido('n', CON_ALMACEN)
+    expect(directiva(p, 'img-src')).toEqual(expect.arrayContaining(['https://d111.cloudfront.net', ...S3]))
+    expect(directiva(p, 'connect-src')).toEqual(expect.arrayContaining(S3))
+    expect(directiva(p, 'frame-src')).toEqual(expect.arrayContaining(S3))
+    expect(directiva(p, 'connect-src')).not.toContain('https://d111.cloudfront.net')
+  })
+
+  it('never opens a wildcard on amazonaws.com or cloudfront.net', () => {
+    const p = politicaDeContenido('n', CON_ALMACEN)
+    expect(p).not.toMatch(/\*\.amazonaws\.com|\*\.cloudfront\.net/)
+  })
+
+  it('without NEXT_PUBLIC_ASSETS_HOST there is no CloudFront origin', () => {
+    expect(politicaDeContenido('n', PROD)).not.toContain('cloudfront')
   })
 })

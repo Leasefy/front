@@ -36,7 +36,9 @@
  */
 
 import Link from 'next/link'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
 import { CloudArrowUp, Copy, Info, Warning } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
@@ -185,6 +187,20 @@ export function ColaDeTransmision() {
   const { estado: anteLaDian } = useEstadoAnteLaDian()
   const permisos = usePermissionsContextSafe()
   const [datos, setDatos] = useState<Cola | null>(null)
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas».
+  const documentos = useMemo(() => datos?.documentos ?? [], [datos])
+  const { ordenadas, orden, ordenarPor } = useOrdenDeLaTabla(
+    documentos,
+    {
+      documento: (d) => d.documentoNombre ?? null,
+      dian: (d) => d.numeroDian ?? null,
+      estado: (d) => d.estadoNombre ?? d.estado,
+      intentos: (d) => d.intentos,
+      cufe: (d) => d.cufe ?? d.cude ?? d.motivo ?? null,
+      desde: (d) => d.encoladaAt ?? null,
+    },
+    { primero: { intentos: 'desc', desde: 'desc' } },
+  )
   // DIAN-FEEL: los saltos en la numeración de las facturas (el 6 que no es factura).
   const [saltos, setSaltos] = useState<SaltoDeLaNumeracion[]>([])
   const [cargando, setCargando] = useState(true)
@@ -452,14 +468,14 @@ export function ColaDeTransmision() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="whitespace-nowrap">Documento</TableHead>
-                <TableHead className="whitespace-nowrap">N° DIAN</TableHead>
-                <TableHead className="whitespace-nowrap">Estado</TableHead>
-                <TableHead className="whitespace-nowrap text-right">
+                <EncabezadoOrdenable campo="documento" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Documento</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="dian" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">N° DIAN</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="estado" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Estado</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="intentos" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap text-right" alineacion="derecha">
                   Intentos
-                </TableHead>
-                <TableHead className="whitespace-nowrap">CUFE / motivo</TableHead>
-                <TableHead className="whitespace-nowrap">En cola desde</TableHead>
+                </EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="cufe" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">CUFE / motivo</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="desde" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">En cola desde</EncabezadoOrdenable>
                 <TableHead />
               </TableRow>
             </TableHeader>
@@ -484,7 +500,7 @@ export function ColaDeTransmision() {
                   </TableCell>
                 </TableRow>
               ) : (
-                datos.documentos.map((d) => (
+                ordenadas.map((d) => (
                   <TableRow key={d.id} data-testid={`transmision-${d.id}`}>
                     <TableCell className="whitespace-nowrap text-fg">
                       {d.documentoNombre}

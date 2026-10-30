@@ -23,10 +23,11 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden';
 import { TablePagination } from '@/components/ui/pagination';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import {
@@ -37,6 +38,7 @@ import {
 import { hoy } from '@/lib/contabilidad/fechas';
 import { nombreDelMes } from '@/lib/recaudo/meses';
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { FranjaDeInforme, TarjetaDeInforme, EsqueletoDeTabla } from '../piezas';
@@ -101,9 +103,23 @@ export function TablaDeCartera({
         : conciliacion.contratos,
     [conciliacion.contratos, soloLasQueNoCuadran],
   );
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». La lista ENTERA se ordena
+  // antes de cortar la página. «Mayor diferencia» mira el tamaño (sobre o falte); la columna, la cifra con su signo.
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(
+    filas,
+    {
+      contrato: (c) => nombreDelContrato(c),
+      libro: (c) => c.libroCop,
+      cuotas: (c) => c.cuotasCop,
+      diferencia: (c) => c.diferenciaCop,
+      tamano: (c) => Math.abs(c.diferenciaCop),
+      motivo: (c) => (c.motivos[0] ? ETIQUETA_DEL_MOTIVO[c.motivos[0].tipo] : 'Cuadra'),
+    },
+    { primero: { libro: 'desc', cuotas: 'desc', diferencia: 'desc', tamano: 'desc' } },
+  );
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
-    useTablePagination(filas, {
-      resetKey: `${conciliacion.hasta}|${filas.length}|${soloLasQueNoCuadran}`,
+    useTablePagination(ordenadas, {
+      resetKey: `${conciliacion.hasta}|${filas.length}|${soloLasQueNoCuadran}|${orden?.campo ?? ''}|${orden?.sentido ?? ''}`,
     });
   const cuadra = conciliacion.diferenciaCop === 0;
 
@@ -182,7 +198,22 @@ export function TablaDeCartera({
       ) : null}
 
       <section className="space-y-2">
-        <h3 className="text-sm font-medium text-fg">Por contrato</h3>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <h3 className="text-sm font-medium text-fg">Por contrato</h3>
+          {filas.length > 1 ? (
+            <SelectorDeOrden
+              orden={orden}
+              onCambiar={setOrden}
+              className="w-full sm:w-56"
+              formas={[
+                { campo: 'tamano', sentido: 'desc', etiqueta: 'Mayor diferencia' },
+                { campo: 'contrato', sentido: 'asc', etiqueta: 'Contrato (A–Z)' },
+                { campo: 'libro', sentido: 'desc', etiqueta: 'Más en el libro' },
+                { campo: 'cuotas', sentido: 'desc', etiqueta: 'Más en las cuotas' },
+              ]}
+            />
+          ) : null}
+        </div>
         <div className="overflow-x-clip rounded-lg border border-border bg-surface">
           {filas.length === 0 ? (
             <p className="px-4 py-6 text-sm text-fg-muted" data-testid="cartera-sin-diferencias">
@@ -220,11 +251,11 @@ export function TablaDeCartera({
             <Table data-testid="tabla-de-cartera">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Contrato</TableHead>
-                  <TableHead numeric>Libro (1305)</TableHead>
-                  <TableHead numeric>Cuotas</TableHead>
-                  <TableHead numeric>Diferencia</TableHead>
-                  <TableHead>Motivo</TableHead>
+                  <EncabezadoOrdenable campo="contrato" orden={orden} onOrdenar={ordenarPor}>Contrato</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="libro" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Libro (1305)</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="cuotas" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Cuotas</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="diferencia" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Diferencia</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="motivo" orden={orden} onOrdenar={ordenarPor}>Motivo</EncabezadoOrdenable>
                 </TableRow>
               </TableHeader>
               <TableBody>

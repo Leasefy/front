@@ -19,7 +19,7 @@
  * abra el libro de hoy. Para sacarla de circulación está «activa».
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Buildings, Plus } from '@phosphor-icons/react';
 
@@ -29,7 +29,6 @@ import { Label } from '@/components/ui/label';
 import {
   Table,
   TableCell,
-  TableHead,
   TableHeader,
   TableRow,
   TableBodyAnimado,
@@ -37,6 +36,9 @@ import {
 } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
@@ -92,18 +94,37 @@ export function Copropiedades() {
   const sinNinguna = filas !== null && filas !== undefined && filas.length === 0;
   // Con todas activas no hay nada que separar: la pestaña «Activas» sería la lista entera.
   const vistaReal = inactivas.length === 0 ? 'todas' : vista;
-  const deLaVista = vistaReal === 'activas' ? activas : vistaReal === 'inactivas' ? inactivas : (filas ?? []);
-  const visibles = deLaVista.filter(
-    (c) =>
-      texto === '' ||
-      c.nombre.toLowerCase().includes(texto) ||
-      c.nit.includes(texto.replace(/\D/g, '')),
-  );
+  // En `useMemo`: la lista se arma en cada pintada y el orden de abajo sólo debe recalcularse cuando cambia.
+  const visibles = useMemo(() => {
+    const deLaVista = (filas ?? []).filter((c) =>
+      vistaReal === 'activas' ? c.activa : vistaReal === 'inactivas' ? !c.activa : true,
+    );
+    return deLaVista.filter(
+      (c) =>
+        texto === '' ||
+        c.nombre.toLowerCase().includes(texto) ||
+        c.nit.includes(texto.replace(/\D/g, '')),
+    );
+  }, [filas, vistaReal, texto]);
   const inmueblesAsignados = activas.reduce((t, c) => t + c.inmuebles, 0);
   const cifras = localeDeLasCifras();
 
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». La lista ENTERA se ordena
+  // antes de cortar la página.
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(
+    visibles,
+    {
+      nombre: (c) => c.nombre,
+      nit: (c) => c.nit,
+      direccion: (c) => c.direccion ?? null,
+      inmuebles: (c) => c.inmuebles,
+    },
+    { primero: { inmuebles: 'desc' } },
+  );
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
-    useTablePagination(visibles, { resetKey: `${texto}|${visibles.length}` });
+    useTablePagination(ordenadas, {
+      resetKey: `${texto}|${visibles.length}|${orden?.campo ?? ''}|${orden?.sentido ?? ''}`,
+    });
 
   return (
     <div className="space-y-6">
@@ -152,6 +173,19 @@ export function Copropiedades() {
               />
             </div>
             )}
+            {(filas ?? []).length > 1 ? (
+              <SelectorDeOrden
+                orden={orden}
+                onCambiar={setOrden}
+                className="w-full sm:w-56"
+                formas={[
+                  { campo: 'nombre', sentido: 'asc', etiqueta: 'Copropiedad (A–Z)' },
+                  { campo: 'nombre', sentido: 'desc', etiqueta: 'Copropiedad (Z–A)' },
+                  { campo: 'inmuebles', sentido: 'desc', etiqueta: 'Más inmuebles' },
+                  { campo: 'inmuebles', sentido: 'asc', etiqueta: 'Menos inmuebles' },
+                ]}
+              />
+            ) : null}
             {falta || sinNinguna ? null : (
               <Button
                 size="sm"
@@ -196,10 +230,10 @@ export function Copropiedades() {
               {error || pageItems.length === 0 ? null : (
                 <TableHeader className="max-md:hidden">
                   <TableRow>
-                    <TableHead>Copropiedad</TableHead>
-                    <TableHead>NIT</TableHead>
-                    <TableHead>Dirección</TableHead>
-                    <TableHead numeric>Inmuebles</TableHead>
+                    <EncabezadoOrdenable campo="nombre" orden={orden} onOrdenar={ordenarPor}>Copropiedad</EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="nit" orden={orden} onOrdenar={ordenarPor}>NIT</EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="direccion" orden={orden} onOrdenar={ordenarPor}>Dirección</EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="inmuebles" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Inmuebles</EncabezadoOrdenable>
                   </TableRow>
                 </TableHeader>
               )}

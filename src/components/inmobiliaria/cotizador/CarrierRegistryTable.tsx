@@ -59,6 +59,10 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
 import { useI18n } from '@/lib/i18n'
+import { useTr } from '@/lib/i18n/use-tr'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden'
 
 import { CarrierOverridePopover } from './CarrierOverridePopover'
 import type { OverrideFields } from './CarrierOverridePopover'
@@ -89,6 +93,8 @@ export const NOMBRE_DEL_ESTADO: Record<string, string> = {
 }
 const enPalabras = (mapa: Record<string, string>, valor: string | null | undefined) =>
   valor == null ? '' : mapa[valor] ?? valor
+/** «sura» → «Sura». `capitalize` subía cada palabra («Seguros Del Estado»): en español sólo la primera. */
+const conMayusculaInicial = (texto: string) => texto.charAt(0).toLocaleUpperCase('es-CO') + texto.slice(1)
 
 export interface MergedCarrierRow {
   global: GlobalCarrierRow
@@ -120,6 +126,14 @@ const BREACH_BADGE_CLASS: Record<string, string> = {
 }
 
 const COLUMNAS = 8
+
+/** Al ordenar por estado: la que falla primero, la que responde bien al final. */
+const TURNO_DEL_ESTADO: Record<string, number> = {
+  breached: 0,
+  degraded: 1,
+  unknown: 2,
+  healthy: 3,
+}
 
 /** Filas esqueleto con las mismas columnas que la tabla real. */
 function FilasDeCarga() {
@@ -207,8 +221,8 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
         {/* Name + Route — sticky first column */}
         <TableCell className="px-4 py-3 text-sm sticky left-0 bg-surface z-10 max-md:static max-md:col-start-1 max-md:row-start-1 max-md:block max-md:p-0">
           <div className="flex flex-col gap-0.5">
-            <span className="font-medium text-fg capitalize">
-              {row.global.name}
+            <span className="font-medium text-fg">
+              {conMayusculaInicial(row.global.name)}
             </span>
             <span className="text-caption text-fg-muted">{enPalabras(NOMBRE_DE_LA_RUTA, row.global.route)}</span>
             {row.hasOverride && (
@@ -379,6 +393,7 @@ export function CarrierRegistryTable({
   onResetOverride,
 }: CarrierRegistryTableProps) {
   const { t } = useI18n()
+  const tr = useTr()
 
   // El registro crece con cada aseguradora que se da de alta; la página de
   // aseguradoras le pasa la lista entera, así que el recorte va acá.
@@ -390,8 +405,22 @@ export function CarrierRegistryTable({
     const q = plano(busqueda.trim())
     return q ? rows.filter((r) => plano(r.global.name).includes(q)) : rows
   }, [rows, busqueda])
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Antes de paginar.
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(
+    visibles,
+    {
+      nombre: (r) => r.global.name,
+      modo: (r) => enPalabras(NOMBRE_DEL_MODO, r.override?.mode ?? r.global.mode),
+      activaGlobal: (r) => r.global.enabled,
+      activaTuya: (r) => r.override?.enabled ?? r.global.enabled,
+      prioridadGlobal: (r) => r.global.priority,
+      prioridadTuya: (r) => r.override?.priority ?? r.global.priority,
+      estado: (r) => TURNO_DEL_ESTADO[r.global.breachStatus] ?? TURNO_DEL_ESTADO.unknown,
+    },
+    { primero: { activaGlobal: 'desc', activaTuya: 'desc' } },
+  )
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
-    useTablePagination(visibles, { resetKey: busqueda })
+    useTablePagination(ordenadas, { resetKey: `${busqueda}|${orden?.campo ?? ''}|${orden?.sentido ?? ''}` })
 
   // Los cuatro estados, en el orden de la casa: cargando → falló → vacío →
   // filas. El vacío se evalúa al final para que la tabla nunca diga «no hay
@@ -441,7 +470,7 @@ export function CarrierRegistryTable({
   return (
     <section className="overflow-hidden rounded-lg border border-border bg-surface">
       {rows.length > 0 && !isLoading && !error ? (
-        <div className="border-b border-border px-4 py-3">
+        <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative w-full sm:max-w-sm">
             <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" aria-hidden="true" />
             <Input
@@ -454,32 +483,45 @@ export function CarrierRegistryTable({
               data-testid="aseguradoras-buscar"
             />
           </div>
+          {rows.length > 1 ? (
+            <SelectorDeOrden
+              orden={orden}
+              onCambiar={setOrden}
+              className="w-full sm:w-56"
+              formas={[
+                { campo: 'nombre', sentido: 'asc', etiqueta: tr('Aseguradora (A–Z)') },
+                { campo: 'activaTuya', sentido: 'desc', etiqueta: tr('Activas para ti primero') },
+                { campo: 'prioridadTuya', sentido: 'asc', etiqueta: tr('Por tu prioridad') },
+                { campo: 'estado', sentido: 'asc', etiqueta: tr('Con fallas primero') },
+              ]}
+            />
+          ) : null}
         </div>
       ) : null}
       <Table className="min-w-full divide-y divide-border max-md:block">
         <TableHeader className="bg-surface-muted/60 max-md:hidden">
           <TableRow>
-            <TableHead className="px-4 py-3 text-left sticky left-0 bg-surface-muted z-10">
+            <EncabezadoOrdenable campo="nombre" orden={orden} onOrdenar={ordenarPor} className="px-4 py-3 text-left sticky left-0 bg-surface-muted z-10">
               {t('inmobiliaria.ai.cotizador.aseguradoras.table.colName')}
-            </TableHead>
-            <TableHead className="px-4 py-3 text-left">
+            </EncabezadoOrdenable>
+            <EncabezadoOrdenable campo="modo" orden={orden} onOrdenar={ordenarPor} className="px-4 py-3 text-left">
               {t('inmobiliaria.ai.cotizador.aseguradoras.table.colMode')}
-            </TableHead>
-            <TableHead className="px-4 py-3 text-left">
+            </EncabezadoOrdenable>
+            <EncabezadoOrdenable campo="activaGlobal" orden={orden} onOrdenar={ordenarPor} className="px-4 py-3 text-left">
               {t('inmobiliaria.ai.cotizador.aseguradoras.table.colGlobalEnabled')}
-            </TableHead>
-            <TableHead className="px-4 py-3 text-left">
+            </EncabezadoOrdenable>
+            <EncabezadoOrdenable campo="activaTuya" orden={orden} onOrdenar={ordenarPor} className="px-4 py-3 text-left">
               {t('inmobiliaria.ai.cotizador.aseguradoras.table.colTenantEnabled')}
-            </TableHead>
-            <TableHead className="px-4 py-3 text-left">
+            </EncabezadoOrdenable>
+            <EncabezadoOrdenable campo="prioridadGlobal" orden={orden} onOrdenar={ordenarPor} className="px-4 py-3 text-left">
               {t('inmobiliaria.ai.cotizador.aseguradoras.table.colGlobalPriority')}
-            </TableHead>
-            <TableHead className="px-4 py-3 text-left">
+            </EncabezadoOrdenable>
+            <EncabezadoOrdenable campo="prioridadTuya" orden={orden} onOrdenar={ordenarPor} className="px-4 py-3 text-left">
               {t('inmobiliaria.ai.cotizador.aseguradoras.table.colTenantPriority')}
-            </TableHead>
-            <TableHead className="px-4 py-3 text-left">
+            </EncabezadoOrdenable>
+            <EncabezadoOrdenable campo="estado" orden={orden} onOrdenar={ordenarPor} className="px-4 py-3 text-left">
               {t('inmobiliaria.ai.cotizador.aseguradoras.table.colBreachStatus')}
-            </TableHead>
+            </EncabezadoOrdenable>
             <TableHead className="px-4 py-3 text-left">
               {t('inmobiliaria.ai.cotizador.aseguradoras.table.colActions')}
             </TableHead>

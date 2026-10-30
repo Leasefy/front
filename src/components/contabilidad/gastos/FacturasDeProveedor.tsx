@@ -33,9 +33,10 @@
  * pantalla lo dice en vez de dejar intentar.
  */
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { ArrowsClockwise, FileText, Money, Plus, Prohibit } from '@phosphor-icons/react';
+import { DotsThreeVertical, FileText, Plus, Prohibit } from '@phosphor-icons/react';
+import { IconButton, SearchInput } from '@leasefy/cadence';
 
 import {
   AlertDialog,
@@ -48,6 +49,13 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
+import {
+  DropdownList,
+  DropdownListContent,
+  DropdownListItem,
+  DropdownListTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import {
@@ -58,6 +66,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { TablePagination } from '@/components/ui/pagination';
+import { PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
 import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import {
@@ -111,6 +121,10 @@ import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 /** El valor de «todas» en los `Select` del DS (Radix no acepta `''`). */
 const TODOS = '__todos__';
+/** Las filas de cada página al abrir (las opciones son las de todas las tablas: 10, 25 y 50). */
+const FILAS_POR_PAGINA = 25;
+/** La pausa del buscador antes de pedir (como en «Egresos elige la salida del extracto»). */
+const PAUSA_DEL_BUSCADOR_MS = 300;
 
 const TONO_DEL_ESTADO: Record<
   EstadoDeFacturaDeProveedor,
@@ -157,6 +171,28 @@ export function FacturasDeProveedor({
   const [hasta, setHasta] = useState('');
   const [estado, setEstado] = useState<EstadoDeFacturaDeProveedor | ''>(estadoInicial);
   const [rubroFiltro, setRubroFiltro] = useState('');
+  /*
+   * Nico (29-10): «Facturas de proveedor sólo muestra 50». El back entrega de a
+   * una página (tope 200); la lista ahora pagina y busca en el servidor. Lo
+   * escrito se manda con una pausa corta para no pedir con cada letra.
+   */
+  const [texto, setTexto] = useState('');
+  const [buscar, setBuscar] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setBuscar(texto.trim()), PAUSA_DEL_BUSCADOR_MS);
+    return () => clearTimeout(t);
+  }, [texto]);
+  const [filasPorPagina, setFilasPorPagina] = useState(FILAS_POR_PAGINA);
+  // Cambiar un filtro vuelve a la primera página (sin pedir dos veces: la página va atada al filtro).
+  const claveDelFiltro = [desde, hasta, estado, rubroFiltro, buscar, filasPorPagina].join('|');
+  const [paginaElegida, setPaginaElegida] = useState({ clave: claveDelFiltro, n: 1 });
+  const paginaActual = paginaElegida.clave === claveDelFiltro ? paginaElegida.n : 1;
+  const irALaPagina = useCallback(
+    (n: number) => setPaginaElegida({ clave: claveDelFiltro, n }),
+    [claveDelFiltro],
+  );
+  /** Sólo la respuesta del último pedido se pinta (pasar rápido de página no deja una vieja encima). */
+  const ultimoPedido = useRef(0);
 
   /** Lo que el formulario necesita, cargado una vez. Un fallo no tumba la lista. */
   const [cuentas, setCuentas] = useState<CuentaPuc[]>([]);
@@ -179,27 +215,36 @@ export function FacturasDeProveedor({
   const registro = usePuedeRegistrar();
 
   const cargar = useCallback(async () => {
+    const pedido = ++ultimoPedido.current;
     setCargando(true);
     setError(null);
     try {
-      setPagina(
-        await gastosApi.facturas.listar({
-          desde: desde || undefined,
-          hasta: hasta || undefined,
-          estado: estado || undefined,
-          rubro: rubroFiltro || undefined,
-        }),
-      );
+      const respuesta = await gastosApi.facturas.listar({
+        desde: desde || undefined,
+        hasta: hasta || undefined,
+        estado: estado || undefined,
+        rubro: rubroFiltro || undefined,
+        buscar: buscar || undefined,
+        limite: filasPorPagina,
+        desplazamiento: (paginaActual - 1) * filasPorPagina,
+      });
+      if (pedido === ultimoPedido.current) setPagina(respuesta);
     } catch (e) {
-      setError(e);
+      if (pedido === ultimoPedido.current) setError(e);
     } finally {
-      setCargando(false);
+      if (pedido === ultimoPedido.current) setCargando(false);
     }
-  }, [desde, hasta, estado, rubroFiltro]);
+  }, [desde, hasta, estado, rubroFiltro, buscar, paginaActual, filasPorPagina]);
 
   useEffect(() => {
     void cargar();
   }, [cargar]);
+
+  // Si la página quedó vacía (se anuló la última de la última página), vuelve a la última que tiene.
+  useEffect(() => {
+    if (!pagina || pagina.facturas.length > 0 || pagina.total === 0 || paginaActual === 1) return;
+    irALaPagina(Math.max(1, Math.ceil(pagina.total / filasPorPagina)));
+  }, [pagina, paginaActual, filasPorPagina, irALaPagina]);
 
   /** Después de causar, anular, registrar o pagar: la lista y los conteos de la franja. */
   const [version, setVersion] = useState(0);
@@ -223,6 +268,8 @@ export function FacturasDeProveedor({
           hasta: hasta || undefined,
           estado: e,
           rubro: rubroFiltro || undefined,
+          // Lo buscado también: si no, «Por causar 3» no cuadra con la lista que se ve.
+          buscar: buscar || undefined,
           limite: 1,
         }),
       ),
@@ -240,7 +287,7 @@ export function FacturasDeProveedor({
     return () => {
       vivo = false;
     };
-  }, [desde, hasta, rubroFiltro, version]);
+  }, [desde, hasta, rubroFiltro, buscar, version]);
 
   /*
    * Lo del formulario, en cuatro pedidos independientes. Si los proveedores no
@@ -345,10 +392,12 @@ export function FacturasDeProveedor({
   };
 
   const totales = pagina?.totales;
-  const sinCausar = useMemo(
+  // Las que están en borrador en TODO el período (el conteo por estado), no sólo en esta página.
+  const sinCausarEnLaPagina = useMemo(
     () => (pagina?.facturas ?? []).filter((f) => f.estado === 'BORRADOR').length,
     [pagina],
   );
+  const sinCausar = conteos.BORRADOR ? conteos.BORRADOR.n : sinCausarEnLaPagina;
 
   if (cargando && !pagina) {
     return (
@@ -467,7 +516,7 @@ export function FacturasDeProveedor({
           totales, nota y lista— con el estado en un desplegable. Ahora es UNA tarjeta: arriba los
           estados con su plata (lo que está por causar y por pagar es lo que pide trabajo), cada
           uno filtra; debajo fechas y rubro; la lista; y los totales del filtro al pie. */}
-      <section className="overflow-hidden rounded-lg border border-border bg-surface">
+      <section className="overflow-hidden rounded-lg border border-border bg-surface" aria-busy={cargando || undefined}>
         <div className="border-b border-border px-4 pt-4 pb-3 empty:hidden">
           <PestanasDeEstado
             etiqueta="Filtrar por estado"
@@ -494,6 +543,21 @@ export function FacturasDeProveedor({
         </div>
 
         <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-3">
+        {/* Nico (29-10): con más de 50 facturas no se llegaba a las demás. El buscador va en la
+            barra de la tabla, como en las hermanas. El ancho va en esta caja: el `className` del
+            SearchInput es del campo y su envoltura es `w-full` (la «×» se iba al otro extremo). */}
+        <div className="w-full sm:w-80">
+          <SearchInput
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            onClear={() => setTexto('')}
+            placeholder="Proveedor, NIT, número o concepto"
+            aria-label="Buscar una factura"
+            inputSize="md"
+            className="w-full"
+            data-testid="facturas-buscar"
+          />
+        </div>
         {/* El período, con los mismos atajos del libro y los informes (antes, dos campos «Sin
             fecha» sin decir cuál era cuál). */}
         <div className="min-w-0">
@@ -530,7 +594,7 @@ export function FacturasDeProveedor({
 
         {pagina.facturas.length === 0 ? (
           <SinDatos
-            hayFiltros={Boolean(desde || hasta || estado || rubroFiltro)}
+            hayFiltros={Boolean(desde || hasta || estado || rubroFiltro || buscar)}
             queSon="facturas"
             ilustracion="billetera"
             titulo="Todavía no hay facturas de proveedor"
@@ -542,6 +606,8 @@ export function FacturasDeProveedor({
               setHasta('');
               setEstado('');
               setRubroFiltro('');
+              setTexto('');
+              setBuscar('');
             }}
           />
         ) : (
@@ -556,7 +622,7 @@ export function FacturasDeProveedor({
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead className="text-right">Se le paga</TableHead>
                   <TableHead>Estado</TableHead>
-                  <TableHead>Acciones</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBodyAnimado className="max-md:block">
@@ -578,8 +644,9 @@ export function FacturasDeProveedor({
                         </p>
                       </TableCell>
                       {/* CB-17: la tabla no cabía a 1440 (las acciones se cortaban):
-                          columnas de texto más angostas y la fecha corta de la casa. */}
-                      <TableCell className="max-w-[14rem] max-md:col-start-1 max-md:row-start-1 max-md:block max-md:max-w-none max-md:p-0">
+                          columnas de texto más angostas y la fecha corta de la casa.
+                          29-10: 12rem (con 14rem se pasaba 18 px a 1440 con datos de Portofino). */}
+                      <TableCell className="max-w-[12rem] max-md:col-start-1 max-md:row-start-1 max-md:block max-md:max-w-none max-md:p-0">
                         <p className="truncate text-sm text-fg" title={f.proveedorNombre}>
                           {f.proveedorNombre}
                         </p>
@@ -591,7 +658,7 @@ export function FacturasDeProveedor({
                       <TableCell className="whitespace-nowrap text-caption text-fg-muted max-md:col-start-2 max-md:row-start-3 max-md:block max-md:p-0 max-md:text-right">
                         {fechaCorta(diaDe(f.fecha))}
                       </TableCell>
-                      <TableCell className="max-w-[14rem] max-md:col-start-1 max-md:row-start-2 max-md:block max-md:max-w-none max-md:p-0">
+                      <TableCell className="max-w-[12rem] max-md:col-start-1 max-md:row-start-2 max-md:block max-md:max-w-none max-md:p-0">
                         <p className="truncate text-sm text-fg" title={f.concepto}>
                           {f.concepto}
                         </p>
@@ -630,41 +697,69 @@ export function FacturasDeProveedor({
                         ) : null}
                       </TableCell>
                       <TableCell className="max-md:col-span-2 max-md:row-start-4 max-md:block max-md:p-0">
-                        <div className="flex flex-wrap gap-2">
-                          <AccionConMotivo
-                            puede={p.causar.puede}
-                            motivo={p.causar.motivo}
-                            ocupado={causando === f.id}
-                            textoOcupado="Causando…"
-                            onClick={() => void causar(f)}
-                            testId={`causar-${f.id}`}
-                          >
-                            <ArrowsClockwise className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
-                            Causar
-                          </AccionConMotivo>
-                          <AccionConMotivo
-                            puede={p.anular.puede}
-                            motivo={p.anular.motivo}
-                            onClick={() => {
-                              setAnulando(f);
-                              setMotivo('');
-                            }}
-                            testId={`anular-${f.id}`}
-                          >
-                            <Prohibit className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
-                            Anular
-                          </AccionConMotivo>
-                          {/* 🔴 CB-R21: pagar la causada crea SU egreso (Egresos → lote → doble firma). */}
-                          {sePuedePagar(f) ? (
+                        {/* Revisión en pantalla 29-10 (datos de Portofino): «Causar» y «Anular» iban apilados con el
+                            mismo peso; la fila medía 107 px y la tabla no cabía a 1440. A la vista, sólo lo que sigue
+                            para ESA factura (causar el borrador o pagar la causada); anular, que reversa, va en el «⋯»
+                            con su motivo cuando no se puede, como en Recibos de caja. */}
+                        <div className="flex items-center justify-end gap-1 max-md:-ml-2 max-md:justify-start">
+                          {f.estado === 'BORRADOR' ? (
+                            <AccionConMotivo
+                              puede={p.causar.puede}
+                              motivo={p.causar.motivo}
+                              motivoVisible={false}
+                              ocupado={causando === f.id}
+                              textoOcupado="Causando…"
+                              onClick={() => void causar(f)}
+                              testId={`causar-${f.id}`}
+                            >
+                              Causar
+                            </AccionConMotivo>
+                          ) : sePuedePagar(f) ? (
+                            /* 🔴 CB-R21: pagar la causada crea SU egreso (Egresos → lote → doble firma). */
                             <AccionConMotivo
                               puede={registro.puede}
                               motivo={registro.motivo}
+                              motivoVisible={false}
                               onClick={() => setPagando(f)}
                               testId={`pagar-${f.id}`}
                             >
-                              <Money className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
                               Pagar
                             </AccionConMotivo>
+                          ) : null}
+                          {f.estado !== 'ANULADA' ? (
+                            <DropdownList>
+                              <DropdownListTrigger asChild>
+                                <IconButton
+                                  variant="ghost"
+                                  size="sm"
+                                  aria-label={`Más acciones de la factura ${f.prefijoDelProveedor ? `${f.prefijoDelProveedor}-` : ''}${f.numeroDelProveedor}`}
+                                  data-testid={`acciones-de-${f.id}`}
+                                  icon={<DotsThreeVertical className="h-4 w-4" weight="bold" />}
+                                />
+                              </DropdownListTrigger>
+                              <DropdownListContent align="end" className={ANCHO_DEL_MENU_DE_ACCIONES}>
+                                <DropdownListItem
+                                  disabled={!p.anular.puede}
+                                  onSelect={() => {
+                                    setAnulando(f);
+                                    setMotivo('');
+                                  }}
+                                  className="text-danger"
+                                  data-testid={`anular-${f.id}`}
+                                >
+                                  <Prohibit className="h-4 w-4" aria-hidden="true" />
+                                  Anular la factura
+                                </DropdownListItem>
+                                {!p.anular.puede && p.anular.motivo ? (
+                                  <p
+                                    className="max-w-[18rem] px-3 pb-2 pt-1 text-caption text-fg-muted"
+                                    data-testid={`anular-${f.id}-motivo`}
+                                  >
+                                    {p.anular.motivo}
+                                  </p>
+                                ) : null}
+                              </DropdownListContent>
+                            </DropdownList>
                           ) : null}
                         </div>
                       </TableCell>
@@ -675,6 +770,19 @@ export function FacturasDeProveedor({
             </Table>
           </div>
         )}
+
+        {pagina.total > PAGE_SIZE_OPTIONS[0] ? (
+          <div className="border-t border-border px-4 py-3" data-testid="facturas-paginacion">
+            <TablePagination
+              total={pagina.total}
+              page={paginaActual}
+              pageSize={filasPorPagina}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={irALaPagina}
+              onPageSizeChange={setFilasPorPagina}
+            />
+          </div>
+        ) : null}
 
         {/* Los totales del filtro, al pie de la lista (antes, una tarjeta aparte arriba). */}
         {totales && pagina.total > 0 ? (

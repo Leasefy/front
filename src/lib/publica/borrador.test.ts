@@ -38,6 +38,12 @@ describe('el publicador rápido (19-10-2026)', () => {
     expect(venta).toMatchObject({ listingType: 'sale', monthlyRent: null, salePrice: 450_000_000 });
   });
 
+  it('Nico 29-10: las características (opcionales) viajan como amenities; sin ninguna, no se manda el campo', () => {
+    expect(paraCrear({ ...lleno, caracteristicas: ['parking', 'pool'] })).toMatchObject({ amenities: ['parking', 'pool'] });
+    expect('amenities' in paraCrear({ ...lleno, caracteristicas: [] })).toBe(false);
+    expect('amenities' in paraCrear(lleno)).toBe(false);
+  });
+
   it('una descripción de menos de 20 letras no viaja (el back la rechazaría)', () => {
     expect('description' in paraCrear({ ...lleno, descripcion: 'Muy lindo' })).toBe(false);
     expect(paraCrear({ ...lleno, descripcion: 'Muy lindo, con mucha luz y vista' }).description).toBe('Muy lindo, con mucha luz y vista');

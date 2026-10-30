@@ -15,7 +15,10 @@ import { Alert, Cifra, FranjaDeCifras, Ilustracion, Pagination, SearchInput, Sta
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/components/ui/table';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden';
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
@@ -93,8 +96,20 @@ export function PantallaDeFirmas({ donde }: { donde: DondeFirma }) {
         (!q || sinTildes(d.titulo).includes(q) || d.firmantes.some((f) => sinTildes(`${f.nombre} ${f.email ?? ''} ${f.telefono ?? ''}`).includes(q))),
     );
   }, [vista, filtro, buscar]);
-  const visibles = filtrados.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA);
-  useEffect(() => setPagina(1), [filtro, buscar]);
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Por defecto, lo más reciente.
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(
+    filtrados,
+    {
+      documento: (d) => d.titulo,
+      firmas: (d) => (d.total > 0 ? d.firmaron / d.total : 0),
+      estado: (d) => ESTADO_DEL_DOCUMENTO[d.estado].texto,
+      enviado: (d) => d.enviadoAt ?? d.creadoAt,
+      envio: (d) => d.creadoPor.nombre,
+    },
+    { inicial: { campo: 'enviado', sentido: 'desc' }, primero: { enviado: 'desc', firmas: 'desc' } },
+  );
+  const visibles = ordenadas.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA);
+  useEffect(() => setPagina(1), [filtro, buscar, orden]);
 
   const conteo = (f: Filtro) => (vista?.documentos ?? []).filter((d) => pasaElFiltro(d, f)).length;
   const bolsa = vista?.bolsa;
@@ -194,7 +209,19 @@ export function PantallaDeFirmas({ donde }: { donde: DondeFirma }) {
                       { valor: 'cancelados', etiqueta: 'Cancelados', cuantos: conteo('cancelados') },
                     ]}
                   />
-                  <SearchInput value={buscar} onChange={(e) => setBuscar(e.target.value)} onClear={() => setBuscar('')} placeholder="Buscar por documento o persona" aria-label="Buscar documentos" className="lg:w-72" />
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <SelectorDeOrden
+                      orden={orden}
+                      onCambiar={setOrden}
+                      formas={[
+                        { campo: 'enviado', sentido: 'desc', etiqueta: 'Más recientes' },
+                        { campo: 'enviado', sentido: 'asc', etiqueta: 'Más antiguos' },
+                        { campo: 'documento', sentido: 'asc', etiqueta: 'Documento (A–Z)' },
+                        { campo: 'firmas', sentido: 'asc', etiqueta: 'Les faltan más firmas' },
+                      ]}
+                    />
+                    <SearchInput value={buscar} onChange={(e) => setBuscar(e.target.value)} onClear={() => setBuscar('')} placeholder="Buscar por documento o persona" aria-label="Buscar documentos" className="lg:w-72" />
+                  </div>
                 </div>
                 {/* Bajo 768: tarjetas. */}
                 <ul className="divide-y divide-border md:hidden">
@@ -218,11 +245,11 @@ export function PantallaDeFirmas({ donde }: { donde: DondeFirma }) {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Documento</TableHead>
-                      <TableHead>Firmas</TableHead>
-                      <TableHead>Estado</TableHead>
-                      <TableHead className="hidden md:table-cell">Enviado</TableHead>
-                      {donde === 'inmobiliaria' ? <TableHead className="hidden lg:table-cell">Lo envió</TableHead> : null}
+                      <EncabezadoOrdenable campo="documento" orden={orden} onOrdenar={ordenarPor}>Documento</EncabezadoOrdenable>
+                      <EncabezadoOrdenable campo="firmas" orden={orden} onOrdenar={ordenarPor}>Firmas</EncabezadoOrdenable>
+                      <EncabezadoOrdenable campo="estado" orden={orden} onOrdenar={ordenarPor}>Estado</EncabezadoOrdenable>
+                      <EncabezadoOrdenable campo="enviado" orden={orden} onOrdenar={ordenarPor} className="hidden md:table-cell">Enviado</EncabezadoOrdenable>
+                      {donde === 'inmobiliaria' ? <EncabezadoOrdenable campo="envio" orden={orden} onOrdenar={ordenarPor} className="hidden lg:table-cell">Lo envió</EncabezadoOrdenable> : null}
                     </TableRow>
                   </TableHeader>
                   <TableBody>

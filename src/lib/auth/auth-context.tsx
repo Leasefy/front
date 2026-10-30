@@ -26,6 +26,7 @@ import {
 } from './session-terminal'
 import { claimSession } from '@/lib/api/session.service'
 import { revocarSesion } from './revocar-sesion'
+import { trazarCierre } from './traza-del-cierre'
 import { CLAVE_DE_PERFIL_ELEGIDO, leerPerfilElegido, type PerfilDeOnboarding } from './perfil-de-onboarding'
 import { getDeviceId } from '@/lib/auth/device-id'
 import {
@@ -1638,15 +1639,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
       regreso && regreso !== '/'
         ? `?returnUrl=${encodeURIComponent(`/auth/post-login?returnUrl=${encodeURIComponent(regreso)}`)}`
         : ''
-    const { error } = await supabase.auth.signInWithOAuth({
+    // Desde la ventana «Publica gratis» que la landing abre en un marco (28-10-2026), Google no se puede mostrar ahí
+    // adentro (no se deja enmarcar): la que va a Google es la página entera. El código de la vuelta queda en la cookie
+    // de este mismo sitio, así que /auth/callback lo encuentra igual.
+    const enUnMarco = window.top !== window.self
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback${destino}`,
+        skipBrowserRedirect: enUnMarco,
       },
     })
     if (error) {
       throw error
     }
+    if (enUnMarco && data?.url) window.top?.location.assign(data.url)
   }, [])
 
   /**
@@ -1828,6 +1835,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
    *  cleanup (FCM, Supabase) is fire-and-forget so a hung lock or network
    *  failure can never block the UI from logging out. */
   const signOut = useCallback(async () => {
+    trazarCierre('signOut')
     // El SIGNED_OUT que va a emitir Supabase más abajo es consecuencia de ESTA
     // llamada, no de un token muerto: marcarlo evita el cartel "tu sesión
     // expiró" sobre una salida que el usuario pidió.

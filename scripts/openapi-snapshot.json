@@ -13696,7 +13696,8 @@
               "reportes",
               "comunicacion",
               "director",
-              "retencion"
+              "retencion",
+              "servicios"
             ]
           },
           "actionType": {
@@ -13783,7 +13784,8 @@
               "reportes",
               "comunicacion",
               "director",
-              "retencion"
+              "retencion",
+              "servicios"
             ]
           },
           "taskDescription": {
@@ -14011,7 +14013,8 @@
                     "reportes",
                     "comunicacion",
                     "director",
-                    "retencion"
+                    "retencion",
+                    "servicios"
                   ]
                 },
                 "texto": {
@@ -14183,7 +14186,8 @@
                   "reportes",
                   "comunicacion",
                   "director",
-                  "retencion"
+                  "retencion",
+                  "servicios"
                 ]
               },
               "tags": {
@@ -33520,7 +33524,7 @@
           "result_uri",
           "error_message"
         ],
-        "description": "Job status for GET /api/cotizador/arco/jobs/{job_id}. result_uri is a presigned S3 URL (24h TTL) for Acceso exports; null for other actions. error_message is non-null only on failed status."
+        "description": "Job status for GET /api/cotizador/arco/jobs/{job_id}. result_uri is a short-lived presigned URL (at most 1 h, signed per request while the 24h export window is open) for Acceso exports; null for other actions. error_message is non-null only on failed status."
       },
       "CotizadorConsentRow": {
         "type": "object",
@@ -83428,7 +83432,7 @@
     "/api/cotizador/arco/jobs/{job_id}": {
       "get": {
         "operationId": "cotizadorArcoJobStatus",
-        "summary": "Poll the status of an async ARCO job (D-26-10). Returns current status (pending | running | completed | failed) + result_uri for Acceso exports (presigned S3 URL, 24h TTL). Two-key counsel gate applies here too.",
+        "summary": "Poll the status of an async ARCO job (D-26-10). Returns current status (pending | running | completed | failed) + result_uri for Acceso exports (presigned URL signed per request, at most 1 h, while the 24h export window is open). Two-key counsel gate applies here too.",
         "tags": [
           "cotizador.compliance"
         ],

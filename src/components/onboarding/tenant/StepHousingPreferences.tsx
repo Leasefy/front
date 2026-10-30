@@ -3,7 +3,9 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Check, MapPin, PawPrint, Plus, WifiHigh, Car, Shield, Barbell, Tree, Warehouse, Waves, Sparkle, X } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
-import { Collapse, DatePicker, IconButton, Presence } from '@leasefy/cadence'
+import { Collapse, IconButton, Presence } from '@leasefy/cadence'
+// Nico, 29-10-2026: el calendario con el mes y el año a la mano (el de Cadence sólo tenía flechas).
+import { SelectorDeFecha as DatePicker } from '@/components/ui/SelectorDeFecha'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'

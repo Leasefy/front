@@ -337,7 +337,9 @@ describe('PlanSidebar — el pie nunca tapa el menú (T-0173)', () => {
     expect(nav.className).toContain('overflow-y-auto')
     const pie = container.querySelector('aside [data-testid="pie-de-la-barra"]')!
     expect(pie.className).toContain('shrink-0')
-    expect(pie.className).toContain('bg-bg')
+    // Sólido y con la arena de la barra, no con el papel de la página (Nico, 29-10: en oscuro se veía negro).
+    expect(pie.className).toContain('bg-surface-muted')
+    expect(pie.className).not.toContain('bg-bg')
     expect(nav.nextElementSibling === pie).toBe(true)
   })
 })

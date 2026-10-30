@@ -16,8 +16,6 @@ import { useI18n } from '@/lib/i18n'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { PasosExplicados, type QuienLoHace } from '@/components/ui/pasos-explicados'
 import { useCarteraOverview } from '@/lib/hooks/cobranza/use-cartera-overview'
-import { useStageTransitionsRealtime } from '@/lib/hooks/cobranza/use-stage-transitions-realtime'
-import type { StageTransitionEvent } from '@/lib/hooks/cobranza/use-stage-transitions-realtime'
 import { CobranzaResultadosKpis } from '@/components/inmobiliaria/cobranza/CobranzaResultadosKpis'
 import { CobranzaAnaliticaResumen } from '@/components/inmobiliaria/cobranza/CobranzaAnaliticaResumen'
 import { CobranzaTeTocaATi } from '@/components/inmobiliaria/cobranza/CobranzaTeTocaATi'
@@ -37,10 +35,6 @@ import { Button } from '@/components/ui'
 import { CrossFade, Presence } from '@leasefy/cadence'
 import type { CarteraStage } from '@/lib/cartera'
 import { useTr } from '@/lib/i18n/use-tr'
-
-// PermissionsContext has no tenantId field — backend derives tenant from JWT.
-// Pass empty string; Supabase Realtime will silently not connect until tenant is available.
-const TENANT_PLACEHOLDER = ''
 
 const PAGES_NS = 'inmobiliaria.ai.workspace.pages.cobranza'
 
@@ -139,34 +133,21 @@ export default function CobranzaOverviewPage() {
     document.getElementById(ancla)?.scrollIntoView?.({ block: 'start' })
   }, [ancla, hayPanorama])
 
-  // Local state for realtime-prepended transitions
-  const [realtimeTransitions, setRealtimeTransitions] = useState<StageTransitionEvent[]>([])
-
-  const handleNewTransition = useCallback((transition: StageTransitionEvent) => {
-    setRealtimeTransitions((prev) => [transition, ...prev].slice(0, 25))
-  }, [])
-
-  // Realtime subscription. Sólo nos importa el callback: el punto verde de
-  // «conectado» que vivía en el header se fue con el «Actualizado hace …»
-  // (Nico, 2026-09-03) — no le decía nada a nadie.
-  useStageTransitionsRealtime({
-    tenantId: TENANT_PLACEHOLDER,
-    onNewTransition: handleNewTransition,
-  })
-
-  // Merge realtime + endpoint transitions, dedup by id
+  // Últimas transiciones del overview, sin repetidos por id. Antes se les
+  // sumaban las que llegaban por Supabase Realtime (`use-stage-transitions-
+  // realtime`, T-0183): ese canal apuntaba a una tabla que no está en `public`
+  // ni publicada, así que nunca recibió un evento. El panorama se vuelve a leer
+  // con el fetch de siempre.
   const transitions = useMemo(() => {
-    const endpointTransitions = data?.lastTransitions ?? []
-    const merged = [...realtimeTransitions, ...endpointTransitions]
     const seen = new Set<string>()
-    return merged
+    return (data?.lastTransitions ?? [])
       .filter((item) => {
         if (seen.has(item.id)) return false
         seen.add(item.id)
         return true
       })
       .slice(0, 25)
-  }, [realtimeTransitions, data?.lastTransitions])
+  }, [data?.lastTransitions])
 
   // ── Momento wow (visión #21) — datos del overview para el banner ──────────
   // enMora = suma de counts de S1..SX (S0 = al día, queda fuera).
@@ -271,29 +252,9 @@ export default function CobranzaOverviewPage() {
     )
   }
 
-  // Live-region announcement string for new realtime stage transitions
-  // (Phase 38 plan 38-04c / XR-06 / WCAG 4.1.3). String is i18n-translated;
-  // raw event payloads (debtor PII) never reach this region.
-  const transitionAnnouncement =
-    realtimeTransitions.length > 0
-      ? t('inmobiliaria.ai.cobranza.overview.liveRegion.newTransition', {
-          count: realtimeTransitions.length,
-        })
-      : ''
-
   return (
     <CrossFade swapKey="panorama">
     <div className="p-6 lg:p-8 space-y-6">
-      {/* ARIA live region — announces new stage transitions to screen readers */}
-      <div
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-        className="sr-only"
-      >
-        {transitionAnnouncement}
-      </div>
-
       {/* Header. Sin el «Actualizado hace ahora mismo» de la derecha: la
           página se carga al entrar y no hay botón de refrescar al que ese
           dato le sirva (Nico, 2026-09-03). */}

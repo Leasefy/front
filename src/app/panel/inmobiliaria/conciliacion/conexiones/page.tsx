@@ -54,6 +54,9 @@ import {
 } from '@/components/ui/table'
 import { TablePagination } from '@/components/ui/pagination'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon'
 import { SinDatos } from '@/components/estado/SinDatos'
@@ -435,6 +438,14 @@ function ConexionRow({
 }
 
 const COLUMNAS = ['Conexión', 'Tipo', 'Última sincronización', 'Estado', 'Cambiar estado'] as const
+/** Por qué se ordena cada columna (la de cambiar el estado no se ordena). */
+const CAMPO_DE_LA_COLUMNA: Record<(typeof COLUMNAS)[number], 'nombre' | 'tipo' | 'sincronizacion' | 'estado' | null> = {
+  Conexión: 'nombre',
+  Tipo: 'tipo',
+  'Última sincronización': 'sincronizacion',
+  Estado: 'estado',
+  'Cambiar estado': null,
+}
 
 // ── Page ─────────────────────────────────────────────────────────────────────
 
@@ -481,9 +492,19 @@ function ConciliacionConexiones() {
     () => items.filter((i) => i.status === 'conectado').length,
     [items],
   )
-  // Esta lista no tiene filtros ⇒ sin `resetKey`.
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas».
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(
+    items,
+    {
+      nombre: (i) => i.displayName,
+      tipo: (i) => i.sourceType,
+      sincronizacion: (i) => i.lastSyncAt ?? null,
+      estado: (i) => i.status,
+    },
+    { primero: { sincronizacion: 'desc' } },
+  )
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
-    useTablePagination(items)
+    useTablePagination(ordenadas, { resetKey: `${orden?.campo ?? ''}|${orden?.sentido ?? ''}` })
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
@@ -568,6 +589,21 @@ function ConciliacionConexiones() {
             ) : null}
           </div>
         </div>
+        {items.length > 1 ? (
+          <div className="flex justify-end">
+            <SelectorDeOrden
+              orden={orden}
+              onCambiar={setOrden}
+              className="w-full sm:w-56"
+              formas={[
+                { campo: 'sincronizacion', sentido: 'desc', etiqueta: 'Sincronizada hace menos' },
+                { campo: 'nombre', sentido: 'asc', etiqueta: 'Conexión (A–Z)' },
+                { campo: 'estado', sentido: 'asc', etiqueta: 'Estado' },
+                { campo: 'tipo', sentido: 'asc', etiqueta: 'Tipo' },
+              ]}
+            />
+          </div>
+        ) : null}
         <EstadoDeDatos
           cargando={isLoading && items.length === 0}
           /* ARREGLOS-8 (ARREGLOS-4 Q1 A): el error ENTERO (con el micro caído
@@ -584,11 +620,18 @@ function ConciliacionConexiones() {
           <Table>
             <TableHeader>
               <TableRow>
-                {COLUMNAS.map((c) => (
-                  <TableHead key={c} className="whitespace-nowrap">
-                    {c}
-                  </TableHead>
-                ))}
+                {COLUMNAS.map((c) => {
+                  const campo = CAMPO_DE_LA_COLUMNA[c]
+                  return campo ? (
+                    <EncabezadoOrdenable key={c} campo={campo} orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">
+                      {c}
+                    </EncabezadoOrdenable>
+                  ) : (
+                    <TableHead key={c} className="whitespace-nowrap">
+                      {c}
+                    </TableHead>
+                  )
+                })}
               </TableRow>
             </TableHeader>
             {/* La conexión recién registrada entra; la tabla está paginada

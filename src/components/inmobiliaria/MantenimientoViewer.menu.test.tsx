@@ -318,3 +318,67 @@ describe('Eliminar desde el detalle (sólo el administrador)', () => {
     expect(menu()).toBeNull();
   });
 });
+
+describe('Quién gestiona la reparación en el detalle (Portofino, 29-10-2026)', () => {
+  const cotizacion = {
+    id: 'q-1',
+    solicitudId: 'sol-1',
+    providerName: 'Plomería QA Día S.A.S.',
+    amount: 180_000,
+    description: 'Sifón',
+    estimatedDays: 1,
+    createdAt: '2026-10-04T10:00:00.000Z',
+  };
+  function montarCon(solicitud: SolicitudMantenimiento) {
+    act(() => {
+      root.render(
+        <MantenimientoViewer
+          solicitud={solicitud}
+          isOpen
+          onClose={vi.fn()}
+          onRequestQuote={vi.fn()}
+          onStatusChange={vi.fn()}
+          onApproveQuote={vi.fn()}
+          onCompletada={vi.fn()}
+          onGestionCambio={vi.fn()}
+        />,
+      );
+    });
+  }
+  const $ = (testid: string) => document.body.querySelector<HTMLElement>(`[data-testid="${testid}"]`);
+
+  it('la que gestiona otro: el menú no ofrece cotizar, aprobar, iniciar ni completar (sólo cancelar)', async () => {
+    montarCon(hacerSolicitud({ status: 'quoted', quotes: [cotizacion] as never, gestionadoPor: 'propietario' }));
+    await abrirMenu();
+    for (const id of ['cotizar', 'aprobar', 'iniciar', 'completar']) {
+      expect($(`mantenimiento-detalle-${id}`)).toBeNull();
+    }
+    expect($('mantenimiento-detalle-cancelar')).not.toBeNull();
+  });
+
+  it('en arreglo, gestionada por la administración: el pie no ofrece cerrar con costo final', () => {
+    montarCon(hacerSolicitud({ status: 'in_progress', gestionadoPor: 'administracion' }));
+    const pie = document.body.textContent ?? '';
+    expect(pie).not.toContain('inmobiliaria.mantenimiento.markCompleted');
+    expect(pie).not.toContain('inmobiliaria.mantenimiento.startWork');
+    // …y en su lugar, el seguimiento con «Registrar el siguiente paso».
+    expect($('registrar-el-siguiente-paso')).not.toBeNull();
+  });
+
+  it('dice quién la gestiona arriba, por qué no se cotiza, y esconde «quién paga» y las cotizaciones', () => {
+    montarCon(hacerSolicitud({ status: 'reported', gestionadoPor: 'inquilino' }));
+    expect($('detalle-gestionado-por')!.textContent).toBe('Gestiona: el inquilino');
+    expect($('por-que-no-se-cotiza')!.textContent).toContain('es informativa');
+    expect(document.body.textContent).not.toContain('inmobiliaria.mantenimiento.whoPays');
+    expect(document.body.textContent).not.toContain('inmobiliaria.mantenimiento.quotations');
+  });
+
+  it('la de la inmobiliaria sigue como siempre: cotizaciones, quién paga y sin la marca de arriba', async () => {
+    montarCon(hacerSolicitud({ status: 'reported' }));
+    expect($('detalle-gestionado-por')).toBeNull();
+    expect(document.body.textContent).toContain('inmobiliaria.mantenimiento.whoPays');
+    expect(document.body.textContent).toContain('inmobiliaria.mantenimiento.quotations');
+    await abrirMenu();
+    expect($('mantenimiento-detalle-cotizar')).not.toBeNull();
+  });
+});

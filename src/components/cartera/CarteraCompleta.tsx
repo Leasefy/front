@@ -124,7 +124,8 @@ import {
   ordenarCartera,
   type OrdenDeCartera,
 } from '@/components/cartera/CarteraTable'
-import { TablaDeSiniestros } from '@/components/cartera/EnSiniestro'
+import { ORDEN_DE_SINIESTROS, PRIMERO_DE_SINIESTROS, TablaDeSiniestros } from '@/components/cartera/EnSiniestro'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import { useCarteraReport } from '@/lib/hooks/useInmobiliaria'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
@@ -350,7 +351,11 @@ export function CarteraCompleta() {
   const cuotasMarcadas = useMemo(() => deudas.filter((d) => marcadas.has(d.cuotaId)), [deudas, marcadas])
   const permisosMasivos = usePermissionsContextSafe()
   const pagPropietarios = useTablePagination(propietarios, { resetKey: clave })
-  const pagCasos = useTablePagination(casos, { resetKey: clave })
+  // Los casos se ordenan ENTEROS antes de cortar la página (la tabla recibe sólo la página).
+  const ordenDeCasos = useOrdenDeLaTabla(casos, ORDEN_DE_SINIESTROS, { primero: PRIMERO_DE_SINIESTROS })
+  const pagCasos = useTablePagination(ordenDeCasos.ordenadas, {
+    resetKey: `${clave}|${ordenDeCasos.orden?.campo ?? ''}|${ordenDeCasos.orden?.sentido ?? ''}`,
+  })
   const pag =
     vista === 'deudas' ? pagDeudas : vista === 'propietarios' ? pagPropietarios : pagCasos
   /*
@@ -993,6 +998,8 @@ export function CarteraCompleta() {
           ) : siniestros ? (
             <TablaDeSiniestros
               items={pagCasos.pageItems}
+              orden={ordenDeCasos.orden}
+              onOrdenar={ordenDeCasos.ordenarPor}
               clave={claveDelCuerpo}
               diasParaSiniestro={siniestros.diasParaSiniestro}
               hayFiltros={hayFiltros}

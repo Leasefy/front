@@ -41,6 +41,9 @@ const FUERA = [
   join('app', 'panel', '(landlord)') + sep,
   join('app', 'preview-ds') + sep,
   join('lib', 'data') + sep,
+  // Los datos de ejemplo de las demos (Reportes, 30 s): cifras inventadas que
+  // arman un recaudo plausible a mano; ninguna pantalla real las lee.
+  join('lib', 'demo', 'datos-demo') + sep,
   join('lib', 'api', 'generated') + sep,
   join('lib', 'api', 'landlord.service.ts'),
   join('lib', 'api', 'landlord.types.ts'),

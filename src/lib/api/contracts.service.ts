@@ -1299,6 +1299,11 @@ export interface FilaAMigrar {
   fechaTerminacion?: string;
   /** Las observaciones del contrato, multilínea. Van a las cláusulas. */
   observaciones?: string;
+  /**
+   * Nico 29-10-2026: los servicios públicos del inmueble como los guarda el sistema anterior («EPM 13249728…»).
+   * Opcional; el back guarda la cuenta de EPM del inmueble. Un back anterior lo rechaza: sólo viaja si se mapeó.
+   */
+  serviciosPublicos?: string;
   /** Quién creó el contrato en el sistema anterior. Informativo. */
   creadoPor?: string;
   /** Cuándo se creó allá («2022-04-04 17:33:13»). Informativo. */

@@ -20,6 +20,9 @@ import { Spinner } from '@/components/ui/spinner';
 import { Table, TableHeader, TableBodyAnimado, TableRow, TableRowAnimada, TableHead, TableCell } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -90,7 +93,7 @@ const VUELVE_A: Record<ReturnType<typeof lugarDeRegreso>, string> = {
 const COLUMNS = [
   'colRadicado', 'colSolicitante', 'colTipo', 'colInmueble',
   'colAsignado', 'colEstado', 'colSla',
-];
+] as const;
 
 function PqrsContent() {
   const { t } = useI18n();
@@ -141,12 +144,26 @@ function PqrsContent() {
   }, [pqrsPedida, data]);
 
   const resumen = data?.resumen ?? RESUMEN_PQRS_VACIO;
-  const todas = data?.solicitudes ?? [];
+  const todas = useMemo(() => data?.solicitudes ?? [], [data]);
   const [filtros, setFiltros] = useState<FiltrosDePqrs>(FILTROS_DE_PQRS_VACIOS);
   const hayFiltros = filtros.texto.trim() !== '' || filtros.estado !== 'todos';
   const solicitudes = useMemo(() => filtrarPqrs(todas, filtros), [todas, filtros]);
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas».
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(
+    solicitudes,
+    {
+      colRadicado: (p) => p.radicado,
+      colSolicitante: (p) => p.solicitanteNombre,
+      colTipo: (p) => nombreDelTipo(p),
+      colInmueble: (p) => inmuebleSinRepetir(p.inmuebleLabel) ?? null,
+      colAsignado: (p) => p.asignadoANombre ?? null,
+      colEstado: (p) => ESTADO_LABEL[p.estado],
+      colSla: (p) => p.slaVenceAt ?? null,
+    },
+    { primero: { colRadicado: 'desc' } },
+  );
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
-    useTablePagination(solicitudes);
+    useTablePagination(ordenadas, { resetKey: `${orden?.campo ?? ''}|${orden?.sentido ?? ''}` });
   // Acciones masivas (Nico, 10-10-2026). Con otro filtro, lo marcado se suelta.
   const { marcadas, marcar, quitar: quitarLaSeleccion } = useFilasMarcadas(JSON.stringify(filtros));
   const pqrsMarcadas = useMemo(() => todas.filter((p) => marcadas.has(p.id)), [todas, marcadas]);
@@ -283,6 +300,19 @@ function PqrsContent() {
             className="w-full sm:w-80"
             data-testid="pqrs-buscar"
           />
+          {todas.length > 1 ? (
+            <SelectorDeOrden
+              orden={orden}
+              onCambiar={setOrden}
+              className="w-full sm:w-52"
+              formas={[
+                { campo: 'colSla', sentido: 'asc', etiqueta: 'Vence primero' },
+                { campo: 'colRadicado', sentido: 'desc', etiqueta: 'Más recientes' },
+                { campo: 'colSolicitante', sentido: 'asc', etiqueta: 'Solicitante (A–Z)' },
+                { campo: 'colEstado', sentido: 'asc', etiqueta: 'Estado' },
+              ]}
+            />
+          ) : null}
           {hayFiltros && (
             <span className="text-caption text-fg-muted tabular-nums" data-testid="pqrs-cuantas-filtradas">
               {solicitudes.length} de {todas.length}
@@ -313,9 +343,9 @@ function PqrsContent() {
                   <CasillaDeLaPagina ids={pageItems.map((p) => p.id)} marcadas={marcadas} onMarcar={marcar} queSon="solicitudes" />
                 </TableHead>
                 {COLUMNS.map((c) => (
-                  <TableHead key={c} className="whitespace-nowrap">
+                  <EncabezadoOrdenable key={c} campo={c} orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">
                     {t(k(c))}
-                  </TableHead>
+                  </EncabezadoOrdenable>
                 ))}
               </TableRow>
             </TableHeader>

@@ -77,8 +77,8 @@ export function TopeAprobadoBanner({
         <TopeEnGrande
           className={className}
           rotulo={rotulo}
-          titulo={tf(`${NS}.proceso.titulo`, 'Estamos consultando a las aseguradoras')}
-          texto={tf(`${NS}.proceso.texto`, 'Te avisamos apenas sepamos hasta cuánto podemos respaldarte.')}
+          titulo={tf(`${NS}.proceso.titulo`, 'Estamos leyendo tus documentos')}
+          texto={tf(`${NS}.proceso.texto`, 'Te avisamos apenas sepamos en qué rango de arriendo tienes mejores posibilidades.')}
           accion={
             <Button asChild variant="secondary" size="sm" hideArrow>
               <Link href="/inquilino/aprobacion">{tf(`${NS}.cta.verEstado`, 'Ver estado')}</Link>
@@ -99,10 +99,10 @@ export function TopeAprobadoBanner({
           </div>
           <div className="min-w-0">
             <p className="text-sm font-medium text-fg">
-              {tf(`${NS}.proceso.titulo`, 'Estamos consultando a las aseguradoras')}
+              {tf(`${NS}.proceso.titulo`, 'Estamos leyendo tus documentos')}
             </p>
             <p className="text-sm text-fg-muted mt-0.5">
-              {tf(`${NS}.proceso.texto`, 'Te avisamos apenas sepamos hasta cuánto podemos respaldarte.')}
+              {tf(`${NS}.proceso.texto`, 'Te avisamos apenas sepamos en qué rango de arriendo tienes mejores posibilidades.')}
             </p>
           </div>
         </div>

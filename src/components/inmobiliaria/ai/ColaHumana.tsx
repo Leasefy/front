@@ -72,6 +72,10 @@ import {
 const FILA_DEL_MOTIVO = 'border-b border-border-faint last:border-b-0'
 import { TablePagination } from '@/components/ui/pagination'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden'
+import { useTr } from '@/lib/i18n/use-tr'
 
 // ── Vocabulary ──────────────────────────────────────────────────────────────
 // Exported (F6): the workspace primitives (SalaAgente, AccionSugerida, the
@@ -581,6 +585,7 @@ export function ColaHumana({
   emptyAction,
 }: ColaHumanaProps) {
   const { t } = useI18n()
+  const tr = useTr()
   const sorted = useMemo(
     () =>
       [...items].sort((a, b) => {
@@ -610,8 +615,21 @@ export function ColaHumana({
       [item.titulo, item.accionSugerida?.label, item.accionSugerida?.razon].some((v) => plano(v).includes(q)),
     )
   }, [sorted, busqueda])
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Sin orden elegido, sigue el
+  // de la casa (lo más grave primero); el elegido se aplica a la lista ENTERA antes de cortar la página.
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(
+    visibles,
+    {
+      caso: (i) => i.titulo,
+      severidad: (i) => SEVERIDAD_RANK[i.severidad] ?? null,
+      estado: (i) => estadoLabel(t, i.estado, agente),
+      // La edad del caso: «Antigüedad» de mayor a menor = lo que lleva más esperando.
+      antiguedad: (i) => -new Date(i.createdAt).getTime(),
+    },
+    { primero: { severidad: 'desc', antiguedad: 'desc' } },
+  )
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
-    useTablePagination(visibles, { resetKey: `${agente}|${busqueda}` })
+    useTablePagination(ordenadas, { resetKey: `${agente}|${busqueda}|${orden?.campo ?? ''}|${orden?.sentido ?? ''}` })
 
   // Los cuatro estados, en el orden de la casa: cargando → falló → vacío →
   // hay datos. La carga y el fallo van ANTES que el vacío para que la cola
@@ -644,7 +662,7 @@ export function ColaHumana({
     <CrossFade swapKey="cola">
     <div className="overflow-hidden rounded-lg border border-border bg-card" data-testid="cola-humana">
       {sorted.length > 0 ? (
-        <div className="border-b border-border px-4 py-3">
+        <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative w-full sm:max-w-sm">
             <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" aria-hidden="true" />
             <Input
@@ -657,19 +675,35 @@ export function ColaHumana({
               data-testid="cola-humana-buscar"
             />
           </div>
+          {sorted.length > 1 ? (
+            <SelectorDeOrden
+              orden={orden}
+              onCambiar={setOrden}
+              className="w-full sm:w-56"
+              formas={[
+                { campo: 'severidad', sentido: 'desc', etiqueta: tr('Más urgentes') },
+                { campo: 'antiguedad', sentido: 'desc', etiqueta: tr('Los que más esperan') },
+                { campo: 'antiguedad', sentido: 'asc', etiqueta: tr('Más recientes') },
+                { campo: 'caso', sentido: 'asc', etiqueta: tr('Caso (A–Z)') },
+              ]}
+            />
+          ) : null}
         </div>
       ) : null}
       <Table className="max-md:block">
         <TableHeader className="max-md:hidden">
           <TableRow>
-            {COLUMNAS.map((c) => (
-              <TableHead
-                key={c}
-                className={c === 'acciones' ? 'whitespace-nowrap text-right' : 'whitespace-nowrap'}
-              >
-                {t(`${WORKSPACE_NS}.cola.columnas.${c}`)}
-              </TableHead>
-            ))}
+            {COLUMNAS.map((c) =>
+              c === 'acciones' ? (
+                <TableHead key={c} className="whitespace-nowrap text-right">
+                  {t(`${WORKSPACE_NS}.cola.columnas.${c}`)}
+                </TableHead>
+              ) : (
+                <EncabezadoOrdenable key={c} campo={c} orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">
+                  {t(`${WORKSPACE_NS}.cola.columnas.${c}`)}
+                </EncabezadoOrdenable>
+              ),
+            )}
           </TableRow>
         </TableHeader>
         {/* Resolver un caso lo saca de la cola con su animación; paginar o

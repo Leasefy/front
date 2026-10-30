@@ -22,7 +22,14 @@ vi.mock('next/navigation', () => ({ usePathname: () => ruta.actual }))
 vi.mock('@/lib/auth/use-auth', () => ({ useAuth: () => ({ ...authState, signOut: signOutMock }) }))
 
 import { SesionDeRecuperacionGuard } from './SesionDeRecuperacionGuard'
-import { COOKIE_DE_RECUPERACION, borrarMarcaDeRecuperacion, hayMarcaDeRecuperacion } from '@/lib/auth/sesion-de-recuperacion'
+import {
+  COOKIE_DE_RECUPERACION,
+  borrarMarcaDeRecuperacion,
+  hayMarcaDeRecuperacion,
+  latirRecuperacion,
+  recuperacionEnOtraPestana,
+  soltarRecuperacion,
+} from '@/lib/auth/sesion-de-recuperacion'
 
 let container: HTMLDivElement
 let root: Root
@@ -37,6 +44,7 @@ beforeEach(() => {
   authState.isAuthenticated = true
   ruta.actual = '/'
   borrarMarcaDeRecuperacion()
+  soltarRecuperacion()
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -88,5 +96,40 @@ describe('SesionDeRecuperacionGuard', () => {
     await pintar()
     expect(signOutMock).not.toHaveBeenCalled()
     expect(hayMarcaDeRecuperacion()).toBe(false)
+  })
+
+  /*
+   * 🔴 Victor, 30-10-2026: la pestaña de «Olvidé mi contraseña» queda abierta en
+   * /auth. Al abrir el enlace en otra pestaña, ESA recibe la sesión nueva (las
+   * cookies se comparten), ve la marca y la cerraba: borraba la sesión de
+   * recuperación en Supabase (`session_not_found`) mientras la otra pestaña
+   * todavía la estaba usando.
+   */
+  it('con la recuperación viva en OTRA pestaña no la cierra ni borra la marca', async () => {
+    marcar()
+    latirRecuperacion()
+    ruta.actual = '/auth'
+    await pintar()
+    expect(signOutMock).not.toHaveBeenCalled()
+    expect(hayMarcaDeRecuperacion()).toBe(true)
+  })
+
+  it('si el latido de la otra pestaña ya venció, vuelve a cerrar', async () => {
+    marcar()
+    latirRecuperacion(Date.now() - 60_000)
+    await pintar()
+    expect(signOutMock).toHaveBeenCalledTimes(1)
+    expect(hayMarcaDeRecuperacion()).toBe(false)
+  })
+
+  it('en una pantalla de la recuperación late, y al irse lo suelta y cierra', async () => {
+    marcar()
+    ruta.actual = '/auth/update-password'
+    await pintar()
+    expect(recuperacionEnOtraPestana()).toBe(true)
+    ruta.actual = '/'
+    await pintar()
+    expect(recuperacionEnOtraPestana()).toBe(false)
+    expect(signOutMock).toHaveBeenCalledTimes(1)
   })
 })

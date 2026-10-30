@@ -25,6 +25,7 @@ import {
   tituloParaCompartir,
   type InmuebleParaCompartir,
 } from '@/lib/inmuebles/ficha-para-compartir';
+import { esHostDeAlmacenamientoNuevo } from '@/lib/seguridad/hosts-de-almacenamiento';
 import { nombreDelTipo } from '@/lib/marketplace/busqueda';
 import { ALTO_DE_LA_IMAGEN, ANCHO_DE_LA_IMAGEN } from '@/lib/inmuebles/vista-previa-del-inmueble';
 
@@ -104,7 +105,12 @@ export function fotoPermitida(url: string | null | undefined): boolean {
   }
   if (u.protocol !== 'https:') return false;
   const host = u.hostname;
-  return host.endsWith('.supabase.co') || host === 'utfs.io' || host === 'uploadthing.com';
+  return (
+    host.endsWith('.supabase.co') ||
+    host === 'utfs.io' ||
+    host === 'uploadthing.com' ||
+    esHostDeAlmacenamientoNuevo(host, process.env.NEXT_PUBLIC_ASSETS_HOST)
+  );
 }
 
 async function bajar(url: string): Promise<Buffer | null> {

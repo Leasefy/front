@@ -2,6 +2,7 @@ import path from "path";
 // Plain-ESM data file (not the .ts wrapper): next.config.mjs runs under
 // Node with no TypeScript loader (was Next.js 14.2; still .mjs on 15). See
 // src/lib/landing/legacy-redirects.ts for the typed re-export + rationale.
+import { HOSTS_S3_DATA } from "./src/lib/seguridad/buckets-s3.data.mjs";
 import { LEGACY_PRODUCT_REDIRECTS_DATA } from "./src/lib/landing/legacy-redirects.data.mjs";
 import { RUTAS_POR_CICLO_DE_VIDA_DATA } from "./src/lib/nav/rutas-por-ciclo-de-vida.data.mjs";
 import { RUTAS_UNIFICADAS_DEL_PANEL_DATA } from "./src/lib/nav/rutas-unificadas-del-panel.data.mjs";
@@ -71,6 +72,36 @@ function almacenDelAmbiente() {
   } catch {
     return [];
   }
+}
+
+/**
+ * Almacenamiento nuevo (T-0182), ADITIVO: Supabase sigue en la lista de abajo.
+ *  - CloudFront de los assets públicos, con el host de `NEXT_PUBLIC_ASSETS_HOST`
+ *    (vacío = no se agrega nada).
+ *  - S3 regional, bucket EXACTO (no `leasefy-prod-*`: el comodín cruza puntos y
+ *    los nombres de bucket son globales, así que `leasefy-prod-a.b` podría ser
+ *    de un tercero), para fotos con URL firmada (GET). Mismos buckets que
+ *    `BUCKETS_S3` de la CSP: los dos salen de `src/lib/seguridad/buckets-s3.data.mjs`.
+ *
+ * ⚠ next/image con URL firmada: el optimizador pide la URL COMPLETA y la cache
+ * se indexa por ella (query incluida). Cada firma nueva = entrada nueva, y la
+ * copia optimizada vive en `.next/cache/images` pasado el vencimiento de la
+ * firma y se sirve por `/_next/image` sin autenticación. Fotos de bucket
+ * privado con URL firmada → `<img>`/`unoptimized`; las públicas van por
+ * CloudFront (URL estable, sin query) y sí se optimizan.
+ */
+function almacenNuevo() {
+  const host = (process.env.NEXT_PUBLIC_ASSETS_HOST ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/^https:\/\//, "")
+    .replace(/\/$/, "");
+  return [
+    ...(host && /^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$/.test(host)
+      ? [{ protocol: "https", hostname: host }]
+      : []),
+    ...HOSTS_S3_DATA.map((hostname) => ({ protocol: "https", hostname })),
+  ];
 }
 
 const nextConfig = {
@@ -171,9 +202,29 @@ const nextConfig = {
         hostname: "lh3.googleusercontent.com",
       },
       ...almacenDelAmbiente(),
+      ...almacenNuevo(),
     ],
   },
   async headers() {
+    // La cámara, apagada en todo el sitio salvo en `/firmar/…`: la foto del firmante antes de firmar (Nico,
+    // 28-10-2026: «cámara propia + revisar la cara»). Ahí `camera=(self)`; sin eso el navegador la niega sin preguntar.
+    const permisosDelNavegador = ({ camara }) =>
+      [
+        camara ? "camera=(self)" : "camera=()",
+        "microphone=(self)",
+        "geolocation=()",
+        "browsing-topics=()",
+        "payment=()",
+        "usb=()",
+        "serial=()",
+        "bluetooth=()",
+        "hid=()",
+        "midi=()",
+        "display-capture=()",
+        "magnetometer=()",
+        "gyroscope=()",
+        "accelerometer=()",
+      ].join(", ");
     const securityHeaders = [
       // `SAMEORIGIN` y no `DENY` (23-09): coherente con `frame-ancestors 'self'`
       // de la CSP (que es la que mandan los navegadores modernos; ésta queda
@@ -189,22 +240,7 @@ const nextConfig = {
         // micrófono. Con `microphone=()` el navegador negaba el permiso sin
         // preguntar y los dos botones fallaban en silencio. Lo demás, apagado:
         // nadie de adentro lo usa y un iframe de terceros no lo necesita.
-        value: [
-          "camera=()",
-          "microphone=(self)",
-          "geolocation=()",
-          "browsing-topics=()",
-          "payment=()",
-          "usb=()",
-          "serial=()",
-          "bluetooth=()",
-          "hid=()",
-          "midi=()",
-          "display-capture=()",
-          "magnetometer=()",
-          "gyroscope=()",
-          "accelerometer=()",
-        ].join(", "),
+        value: permisosDelNavegador({ camara: false }),
       },
       // Aísla la ventana de las que abre otro sitio: una página ajena que nos
       // abra con `window.open` no conserva una referencia a la nuestra (tab-
@@ -236,6 +272,11 @@ const nextConfig = {
       {
         source: "/:path*",
         headers: securityHeaders,
+      },
+      {
+        // Va DESPUÉS de `/:path*`: con la misma cabecera, Next se queda con la última que calza.
+        source: "/firmar/:path*",
+        headers: [{ key: "Permissions-Policy", value: permisosDelNavegador({ camara: true }) }],
       },
       {
         // Las rutas propias (`/api/docs/*` sirve documentos de postulaciones

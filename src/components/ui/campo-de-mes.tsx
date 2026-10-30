@@ -14,6 +14,7 @@
  * Habla en `AAAA-MM`, igual que el `<input type="month">` que reemplaza.
  */
 
+import { aniosDelMenu } from '@/components/ui/SelectorDeFecha';
 import { forwardRef, useState } from 'react';
 import { CalendarBlank, CaretLeft, CaretRight } from '@phosphor-icons/react';
 import { Popover, PopoverContent, PopoverTrigger } from '@leasefy/cadence';
@@ -125,9 +126,24 @@ export const CampoDeMes = forwardRef<HTMLButtonElement, CampoDeMesProps>(functio
             >
               <CaretLeft size={14} weight="bold" />
             </button>
-            <span className="font-display text-body-sm font-medium tabular-nums text-fg" aria-live="polite">
-              {anio}
-            </span>
+            {/* Nico, 29-10-2026: el año también se elige de una lista (antes sólo flechas, año por año). */}
+            <select
+              aria-label="Año"
+              value={anio}
+              onChange={(e) => setAnio(Number(e.target.value))}
+              className="h-7 cursor-pointer rounded-md border-0 bg-transparent px-1.5 font-display text-body-sm font-medium tabular-nums text-fg outline-none transition-colors hover:bg-surface-muted focus-visible:ring-2 focus-visible:ring-ring"
+              data-testid="campo-de-mes-anio"
+            >
+              {aniosDelMenu({
+                minDate: anioMin !== null ? new Date(anioMin, 0, 1) : undefined,
+                maxDate: anioMax !== null ? new Date(anioMax, 11, 31) : undefined,
+                incluir: anio,
+              }).map((a) => (
+                <option key={a} value={a}>
+                  {a}
+                </option>
+              ))}
+            </select>
             <button
               type="button"
               aria-label="Año siguiente"

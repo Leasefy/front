@@ -32,11 +32,14 @@ import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden';
 import { TablePagination } from '@/components/ui/pagination';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { cn } from '@/lib/utils';
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
@@ -61,6 +64,12 @@ import {
 } from '@/lib/contratos/incrementos-del-periodo';
 
 const RUTA_DEL_CONTRATO = '/panel/inmobiliaria/contratos';
+
+/**
+ * Glow up (23-10): lo que falta notificar va primero —las que ya pasaron sin constancia, luego las por notificar—; lo
+ * hecho y lo que no sube, al final. Es el orden de las pestañas y el de la columna «Carta» al ordenar.
+ */
+const GRUPOS_EN_ORDEN: GrupoDeLaCarta[] = ['sin-constancia', 'por-notificar', 'notificadas', 'no-suben'];
 
 /** «+5,1 %». */
 function textoDelPorcentaje(c: CartaEnLaBandeja): string | null {
@@ -274,8 +283,23 @@ export function IncrementosDelPeriodo() {
     setBusqueda('');
   };
 
-  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } = useTablePagination(visibles, {
-    resetKey: `${mes}|${grupo}|${situacion}|${busqueda}`,
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». La lista ENTERA, antes de
+  // cortar la página (vale también para las tarjetas del celular).
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(
+    visibles,
+    {
+      contrato: (c) => c.externalId ?? c.code ?? null,
+      inquilino: (c) => c.inquilino ?? null,
+      sube: (c) => c.desde,
+      canon: (c) => (c.estado === 'SIN_INCREMENTO' ? c.canonAnteriorCop : c.canonNuevoCop),
+      vigencia: (c) => c.finDelContrato ?? null,
+      carta: (c) => GRUPOS_EN_ORDEN.indexOf(grupoDeLaCarta(c.estado)),
+    },
+    { primero: { canon: 'desc' } },
+  );
+
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } = useTablePagination(ordenadas, {
+    resetKey: `${mes}|${grupo}|${situacion}|${busqueda}|${orden?.campo ?? ''}|${orden?.sentido ?? ''}`,
   });
 
   const abrir = (c: CartaEnLaBandeja) =>
@@ -288,12 +312,8 @@ export function IncrementosDelPeriodo() {
   const cargando = !error && cargadoPara !== mes;
   const diasAntes = datos?.diasAntes ?? 30;
 
-  /*
-   * Glow up (23-10): lo que falta notificar va primero —las que ya pasaron sin
-   * constancia, luego las por notificar—; lo hecho y lo que no sube, al final.
-   * Mientras carga, sin números (nunca un 0 inventado).
-   */
-  const ORDEN: GrupoDeLaCarta[] = ['sin-constancia', 'por-notificar', 'notificadas', 'no-suben'];
+  /* Las pestañas en el orden de la casa (`GRUPOS_EN_ORDEN`). Mientras carga, sin números (nunca un 0 inventado). */
+  const ORDEN = GRUPOS_EN_ORDEN;
   const pestanas = [
     { valor: 'todas' as const, etiqueta: 'Todas', cuantos: cargando ? null : conteos.todas, fija: true },
     ...ORDEN.map((clave) => ({
@@ -366,17 +386,32 @@ export function IncrementosDelPeriodo() {
                 </SelectContent>
               </Select>
             </div>
-            {/* El ancho va en una caja: la clase de SearchInput le cae al campo, no a su envoltorio. */}
-            <div className="w-full md:w-80">
-              <SearchInput
-                value={busqueda}
-                onChange={(e) => setBusqueda(e.target.value)}
-                onClear={() => setBusqueda('')}
-                placeholder="Contrato, inquilino, cédula o inmueble"
-                aria-label="Buscar incrementos"
-                inputSize="md"
-                data-testid="buscar-incrementos"
-              />
+            <div className="flex w-full flex-col gap-3 sm:flex-row md:w-auto">
+              {todas.length > 1 ? (
+                <SelectorDeOrden
+                  orden={orden}
+                  onCambiar={setOrden}
+                  className="w-full sm:w-52"
+                  formas={[
+                    { campo: 'sube', sentido: 'asc', etiqueta: 'Sube primero' },
+                    { campo: 'carta', sentido: 'asc', etiqueta: 'Por notificar primero' },
+                    { campo: 'canon', sentido: 'desc', etiqueta: 'Canon más alto' },
+                    { campo: 'inquilino', sentido: 'asc', etiqueta: 'Inquilino (A–Z)' },
+                  ]}
+                />
+              ) : null}
+              {/* El ancho va en una caja: la clase de SearchInput le cae al campo, no a su envoltorio. */}
+              <div className="w-full md:w-80">
+                <SearchInput
+                  value={busqueda}
+                  onChange={(e) => setBusqueda(e.target.value)}
+                  onClear={() => setBusqueda('')}
+                  placeholder="Contrato, inquilino, cédula o inmueble"
+                  aria-label="Buscar incrementos"
+                  inputSize="md"
+                  data-testid="buscar-incrementos"
+                />
+              </div>
             </div>
           </div>
 
@@ -467,11 +502,11 @@ export function IncrementosDelPeriodo() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="px-5">Contrato</TableHead>
-                        <TableHead className="whitespace-nowrap">Sube el</TableHead>
-                        <TableHead className="whitespace-nowrap">Canon</TableHead>
-                        <TableHead className="whitespace-nowrap">Vigencia</TableHead>
-                        <TableHead className="whitespace-nowrap">Carta</TableHead>
+                        <EncabezadoOrdenable campo="contrato" orden={orden} onOrdenar={ordenarPor} className="px-5">Contrato</EncabezadoOrdenable>
+                        <EncabezadoOrdenable campo="sube" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Sube el</EncabezadoOrdenable>
+                        <EncabezadoOrdenable campo="canon" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Canon</EncabezadoOrdenable>
+                        <EncabezadoOrdenable campo="vigencia" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Vigencia</EncabezadoOrdenable>
+                        <EncabezadoOrdenable campo="carta" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">Carta</EncabezadoOrdenable>
                         <TableHead className="pr-5 text-right">
                           <span className="sr-only">Acción</span>
                         </TableHead>

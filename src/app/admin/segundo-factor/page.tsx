@@ -191,7 +191,7 @@ function SegundoFactor() {
   }
 
   async function cerrarSesion() {
-    await getSupabase()?.auth.signOut()
+    await getSupabase()?.auth.signOut({ scope: 'local' })
     window.location.href = '/admin/login'
   }
 

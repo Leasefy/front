@@ -25,12 +25,11 @@ import {
 } from '@/components/ui/dialog';
 import { Button, Input, Textarea } from '@/components/ui';
 import { MoneyInput } from '@/components/ui/money-input';
-import { Combobox } from '@/components/ui/combobox';
+import { BuscadorDeProveedor } from '@/components/inmobiliaria/mantenimiento/BuscadorDeProveedor';
 import {
   proveedoresDeMantenimientoApi,
   type ProveedorDeMantenimiento,
 } from '@/lib/api/proveedores-de-mantenimiento.service';
-import { EN_PALABRAS } from '@/components/mantenimientos/especialidades';
 import { useI18n } from '@/lib/i18n';
 import { TipoDeDocumentoDelProveedor } from './mantenimiento/TipoDeDocumentoDelProveedor';
 import {
@@ -195,24 +194,6 @@ export function AgregarCotizacionDialog({
 
   /** Los del oficio de la solicitud primero; luego los demás. */
   const oficio = solicitud ? oficioDelBack(solicitud.type) : '';
-  const ordenados = [...proveedores].sort(
-    (a, b) =>
-      Number(b.especialidades.includes(oficio)) - Number(a.especialidades.includes(oficio)) ||
-      a.nombre.localeCompare(b.nombre, 'es'),
-  );
-  const opcionesDeProveedor = [
-    ...ordenados.map((p) => ({
-      value: p.id,
-      label: [
-        p.nombre,
-        p.especialidades.map((e) => EN_PALABRAS.get(e) ?? e).join(', '),
-        p.calificacion !== null ? `${p.calificacion.toFixed(1)} ★` : null,
-      ]
-        .filter(Boolean)
-        .join(' · '),
-    })),
-    { value: NUEVO, label: '+ Registrar un proveedor nuevo' },
-  ];
   const elegido = proveedores.find((p) => p.id === proveedorId) ?? null;
 
   const escoger = (valor: string | undefined) => {
@@ -436,7 +417,7 @@ export function AgregarCotizacionDialog({
                   />
                   <ErrorDelCampo id="cotizacion-documento-error" mensaje={errores.documento} />
                 </div>
-                <p className="text-xs text-fg-muted sm:col-span-2">
+                <p className="text-caption text-fg-muted sm:col-span-2">
                   Queda en Proveedores; ahí le subes el RUT y la seguridad social.
                 </p>
               </div>
@@ -447,18 +428,19 @@ export function AgregarCotizacionDialog({
                 {t('inmobiliaria.mantenimiento.nuevaCotizacion.proveedor')}{' '}
                 <span className="text-danger">*</span>
               </label>
-              <Combobox
-                data-testid="cotizacion-proveedor-lista"
-                value={proveedorId}
-                onChange={escoger}
-                options={opcionesDeProveedor}
-                placeholder="Escoge un proveedor registrado"
-                searchPlaceholder="Buscar por nombre u oficio"
+              <BuscadorDeProveedor
+                id="cotizacion-proveedor-buscar"
+                proveedores={proveedores}
+                oficio={oficio}
+                valor={proveedorId}
+                onCambiar={escoger}
+                onRegistrarNuevo={() => escoger(NUEVO)}
                 invalid={Boolean(errores.providerName)}
+                describedBy={errores.providerName ? 'cotizacion-proveedor-error' : undefined}
               />
               <ErrorDelCampo id="cotizacion-proveedor-error" mensaje={errores.providerName} />
               {elegido && elegido.avisos.length > 0 && (
-                <p className="text-xs text-warning" data-testid="cotizacion-proveedor-avisos">
+                <p className="text-caption text-warning" data-testid="cotizacion-proveedor-avisos">
                   {elegido.avisos.join(' · ')}
                 </p>
               )}

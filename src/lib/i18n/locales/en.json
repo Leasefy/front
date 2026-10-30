@@ -960,6 +960,8 @@
       "vacioTexto": "It's the list of what's in the property and its condition. Make it and complete it: without it you can't start a lease.",
       "empezar": "Start the inventory",
       "volverAlContrato": "Back to the lease",
+      "cajonDescripcion": "What is in the property and its condition. Add it and complete it right here: what you have of the contract is kept.",
+      "cajonAyuda": "Closing it takes you back to the contract just as you left it.",
       "volverListo": "Done: the inventory is complete. You can continue with the lease.",
       "volverPendiente": "You came from creating a lease: once you complete the inventory, come back to continue."
     },
@@ -1432,6 +1434,7 @@
           "sinLectura": "I couldn't read your agents' status right now. These are the ones the Autopilot can have:"
         },
         "agente": {
+          "servicios": "Reads each utility bill the tenant uploads and proposes «up to date» or a rejection with its reason; also the adjustments to deduct from the owner and the service-cut warning. Rejecting and deducting are always your call.",
           "cobranza": "Calls and writes by WhatsApp and email to tenants with pending payments, within the hours the law allows.",
           "cotizador": "Checks a candidate with the insurers when you ask.",
           "conciliacion": "Matches bank deposits with your charges and issues the receipt for exact matches. Anything doubtful goes to the Inbox.",
@@ -5342,7 +5345,9 @@
         "photoTake": "Take photo",
         "photoChange": "Change photo",
         "photoRemove": "Remove",
-        "photoHelp": "The photo is kept on this phone and uploaded once there is signal. JPG, PNG or WebP, up to 5 MB. Or paste the link of a photo already published:",
+        "photoAttach": "Attach image",
+        "photoDrop": "Or drag the image here.",
+        "photoHelp": "It is kept on this device and uploaded once there is signal. JPG, PNG or WebP, up to 5 MB.",
         "photoUrl": "Photo (link)",
         "photoUrlPlaceholder": "https://…",
         "photoUrlHelp": "A link to the photo. Uploading from here comes later.",
@@ -5465,7 +5470,7 @@
       "property": "Property",
       "change": "Change",
       "searchProperty": "Search property...",
-      "noRentedProperties": "No rented properties yet: maintenance is reported on a property with an active lease.",
+      "noRentedProperties": "No properties yet: maintenance is reported on a property that is already in Leasefy.",
       "noPropertiesFound": "No properties found",
       "maintenanceType": "Maintenance type",
       "priorityLabel": "Priority",
@@ -7262,9 +7267,6 @@
             "cta": {
               "label": "Import portfolio"
             }
-          },
-          "liveRegion": {
-            "newTransition": "{{count}} new stage transition(s)"
           }
         },
         "deudores": {
@@ -8797,6 +8799,7 @@
           "system": "System"
         },
         "agente": {
+          "servicios": "Utilities",
           "cobranza": "Collections",
           "cotizador": "Insurability",
           "conciliacion": "Reconciliation",
@@ -10728,7 +10731,7 @@
       "horariosGuardados": "Visit hours saved",
       "horarioAgenteTitle": "Visit hours",
       "horarioAgenteDesc": "One schedule for all of this agent's properties.",
-      "horarioAgenteGuardado": "Schedule applied to {count} properties",
+      "horarioAgenteGuardado": "Schedule applied to {{count}} properties",
       "horarioAgenteError": "Could not save the schedule",
       "citaTitle": "Schedule a visit",
       "citaProperty": "Property",
@@ -12900,76 +12903,82 @@
   "inquilino": {
     "aprobacion": {
       "eyebrow": "My rental cap",
-      "cargando": "Loading your approval...",
+      "titulo": "My rental cap",
+      "subtitulo": "The rent range where you have the best chances of being accepted.",
+      "cargando": "Loading your cap...",
       "error": {
-        "title": "We could not load your approval"
+        "title": "We could not load your cap"
       },
-      "aprobado": {
-        "badge": "Approved",
-        "label": "You're approved up to",
-        "ayuda": "You can apply to any property with rent up to that amount — and to as many as you want, without paying again.",
-        "sinTope": {
-          "title": "You're approved",
-          "ayuda": "We're still calculating how much we can back you for. We'll let you know as soon as it's ready."
-        },
+      "resultado": {
+        "badge": "Study ready",
+        "label": "The range where you have the best chances of being accepted",
+        "hasta": "Up to",
+        "contexto": "monthly rent",
+        "ayuda": "It is a guide, not a promise: the agency decides on each application. We show you the properties that fit this range first.",
+        "calificacion": "Your Leasefy Rating",
+        "verCalificacion": "See the detail",
+        "condiciones": "To rent in this range you might be asked for",
+        "explicacion": "How we calculated it",
+        "revisiones": "What we are reviewing",
         "cta": "See my properties",
         "ctaSecundaria": "My applications"
       },
-      "aseguradoras": {
-        "title": "We checked several insurers"
+      "sinIngreso": {
+        "title": "We could not verify your income",
+        "desc": "With the documents you uploaded we could not confirm how much you earn, so we cannot show you a range. You can upload other documents, such as a more recent statement, a payslip or an employment letter.",
+        "cta": "Upload other documents"
       },
       "vigencia": {
+        "hasta": "Valid until {fecha}",
         "dias": "Expires in {n} days",
         "manana": "Expires tomorrow",
         "hoy": "Expires today",
         "ayer": "Expired yesterday",
         "vencida": "Expired {n} days ago"
       },
-      "rechazado": {
-        "title": "We can't approve you right now",
-        "desc": "The insurers we checked didn't back your request this time.",
-        "salidas": "What you can do",
-        "perfil": {
-          "title": "Improve your credit profile",
-          "desc": "Catching up on your obligations and lowering your debt load changes the outcome faster than you might think."
-        },
-        "reintentar": {
-          "title": "Try again later",
-          "desc": "This isn't final. Insurers look at your situation again every time you get assessed."
-        },
-        "tercero": {
-          "title": "Someone can apply for you",
-          "desc": "Whoever signs doesn't have to be whoever lives there. A relative or friend can apply and you live in the property: it's legal, and it's how more than half of rentals work in Colombia."
-        }
+      "vencido": {
+        "title": "Your study has expired",
+        "desc": "Your situation changes over time, so a study is valid for six months. Upload your documents again and we will recalculate your range, for free.",
+        "cta": "Start a new study"
       },
       "proceso": {
-        "title": "We're checking with the insurers",
-        "desc": "We're asking every insurer we work with, not just one. This can take a few minutes."
+        "title": "We are reading your documents",
+        "desc": "It usually takes one to two minutes. This screen updates by itself when it is done."
+      },
+      "borrador": {
+        "title": "You have an unfinished study",
+        "desc": "Upload your ID and your bank statement to find out your cap.",
+        "cta": "Continue my study"
+      },
+      "fallo": {
+        "title": "We could not finish your study",
+        "desc": "We could not read your documents.",
+        "cta": "Try again"
       },
       "vacio": {
-        "title": "You don't know your limit yet",
-        "desc": "With your limit you know how much you can rent for, and you apply to as many properties as you want with the same assessment.",
-        "cta": "Find out my limit",
+        "title": "You do not know your cap yet",
+        "desc": "With your cap you know the rent range where you have the best chances of being accepted, and you can apply to as many properties as you like with the same study.",
+        "cta": "Find out my cap",
         "comoFunciona": "How it works"
       },
       "pasos": {
         "uno": {
-          "title": "We assess you",
-          "desc": "We check with every insurer we work with, not just one. That gives you a better chance of being approved."
+          "title": "You upload your documents",
+          "desc": "Your ID and your bank statement. A payslip or employment letter helps too. It is free."
         },
         "dos": {
-          "title": "You choose",
-          "desc": "We show you the properties that fit your approved cap, so you don't waste time on ones that don't."
+          "title": "We calculate your range",
+          "desc": "We read your documents and tell you up to how much rent you have the best chances of being accepted."
         },
         "tres": {
           "title": "You apply",
-          "desc": "You apply to as many as you want with the same assessment, without paying again."
+          "desc": "You apply to the properties you want with the same study, without uploading anything again."
         }
       }
     },
     "postularse": {
       "titulo": "What happens when you apply",
-      "intro": "These properties are within what the insurers approved for you, so you can take them. Applying is the first step of a process, not the end.",
+      "intro": "These properties are within your rent range, so you can take them. Applying is the first step of a process, not the end.",
       "pasos": {
         "postulas": {
           "titulo": "You apply",
@@ -13017,8 +13026,8 @@
       },
       "porMes": "/mo",
       "proceso": {
-        "titulo": "We are checking with the insurers",
-        "texto": "We will let you know as soon as we know how much we can back you for."
+        "titulo": "We are reading your documents",
+        "texto": "We will let you know as soon as we know the rent range where you have the best chances."
       },
       "rechazado": {
         "titulo": "We cannot approve you right now",
@@ -13032,69 +13041,6 @@
       "heroe": {
         "rotulo": "Your rent limit"
       }
-    },
-    "resultado": {
-      "aprobado": {
-        "titulo": "You're approved",
-        "bajada": "The insurers back your lease.",
-        "sigue1": "You can now apply to the properties you like.",
-        "sigue2": "Your approval works for several: no checking again, no paying again.",
-        "sigue3ConSesion": "In the catalog we mark what works for you.",
-        "sigue3SinSesion": "Create your account to save it and apply.",
-        "sigue3Demo": "When the result is real, we highlight what fits you in the catalog."
-      },
-      "condiciones": {
-        "titulo": "You're approved, with conditions",
-        "bajada": "It's a yes. There's just one detail to settle with the insurer.",
-        "queSignifica": "What this usually means",
-        "queSignificaTexto": "They usually ask for a co-signer or an extra deposit. It varies by insurer, and an advisor will tell you which suits you best.",
-        "sigue1": "You can keep browsing properties and apply.",
-        "sigue2": "An advisor will contact you to settle the condition.",
-        "sigue3ConSesion": "Your approval is saved to your account.",
-        "sigue3SinSesion": "Create your account so you don't lose this approval."
-      },
-      "rechazo": {
-        "titulo": "We can't back you right now",
-        "bajada": "The insurers we checked don't back you at this time. It's not final.",
-        "salidas": "What you can do",
-        "otro": {
-          "titulo": "Have someone apply for you",
-          "texto": "It's more common than it seems: many leases are signed by a family member. If someone close to you is approved, they're the holder and you live there."
-        },
-        "codeudor": {
-          "titulo": "Apply with a co-signer",
-          "texto": "A co-signer changes the analysis. An advisor can review your case."
-        },
-        "seguir": {
-          "titulo": "Keep browsing properties",
-          "texto": "You can explore the full catalog while you sort out the above."
-        },
-        "cta": "See available properties"
-      },
-      "cifra": {
-        "hasta": "We back you up to",
-        "hastaNota": "With this cap we show you the properties that work for you.",
-        "para": "Approved for a rent of",
-        "paraNota": "That's the rent you asked about. If something pricier interests you, an advisor will review it.",
-        "calculando": "We're calculating how much we can back. We'll confirm shortly.",
-        "hastaNotaDemo": "With a real cap we would show you the properties that fit you."
-      },
-      "aseguradoras": {
-        "una": "One insurer backs you",
-        "varias": "insurers back you",
-        "condicional": "with conditions"
-      },
-      "queSigue": "What's next",
-      "verCatalogo": "See my catalog",
-      "otraPersona": "Check another person",
-      "otraConsulta": "Make another check",
-      "demo": {
-        "titulo": "Sample result.",
-        "texto": "The approval service isn't published yet, so this data isn't real and isn't saved."
-      },
-      "notaAgencia": "You're seeing the result as the candidate sees it. You can send this same link to anyone else.",
-      "porMes": "/mo",
-      "verPropiedades": "View properties"
     },
     "crearCuenta": {
       "titulo": "Create your account to get in",
@@ -14066,6 +14012,7 @@
     "porVencer": "Not yet due"
   },
   "agentes": {
+    "servicios": {"rol": "Utilities", "historia": "Checks the utility bill each tenant uploads against the property account and proposes what to do with it.", "hace": {"lee": "Reads the bill the tenant uploads, as a photo or PDF", "compara": "Compares it with the property account (EPM, Enel, Vanti or whichever it has), the period, that it says paid and the amount", "propone": "Proposes «up to date» or a rejection with its reason, ready for one click", "ajustes": "Finds billed-concept adjustments and proposes deducting them from the owner", "corte": "Warns about a service cut when a tenant has gone two months without an up-to-date bill"}, "noHace": {"rechaza": "Never rejects a bill or deducts from the owner without a person clicking", "escribe": "Does not message the tenant: Mori does that on WhatsApp"}},
     "equipo": {
       "titulo": "Your agency's team",
       "resumen": "{{agentes}} agents across {{frentes}} areas",

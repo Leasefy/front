@@ -41,8 +41,10 @@ vi.mock('next/navigation', () => ({
 }))
 
 import { SessionRevocationHandler } from '../SessionRevocationHandler'
+import { limpiarCierrePropio, marcarCierrePropio } from '@/lib/auth/cierre-propio'
 
 beforeEach(() => {
+  limpiarCierrePropio()
   captured = null
   mockUser = { id: 'user-1' }
   signOut.mockClear()
@@ -88,6 +90,35 @@ describe('SessionRevocationHandler', () => {
     const dialog = container.querySelector('[role="dialog"]')
     expect(dialog).not.toBeNull()
     expect(dialog?.textContent).toContain('otro dispositivo')
+    act(() => root.unmount())
+    container.remove()
+  })
+
+  it('ignores a revocation while the user is signing out on purpose (no modal, no second signOut)', () => {
+    const { root, container } = mount()
+    marcarCierrePropio() // revocarSesion() started: explicit sign-out or idle logout
+    act(() => {
+      captured!.onRevoked()
+    })
+    expect(signOut).not.toHaveBeenCalled()
+    expect(container.querySelector('[role="dialog"]')).toBeNull()
+    act(() => root.unmount())
+    container.remove()
+  })
+
+  it('reacts again once a user signs back in (the flag is cleared)', () => {
+    mockUser = null
+    const { root, container } = mount()
+    marcarCierrePropio()
+    mockUser = { id: 'user-1' }
+    act(() => {
+      root.render(<SessionRevocationHandler />)
+    })
+    act(() => {
+      captured!.onRevoked()
+    })
+    expect(signOut).toHaveBeenCalledTimes(1)
+    expect(container.querySelector('[role="dialog"]')).not.toBeNull()
     act(() => root.unmount())
     container.remove()
   })

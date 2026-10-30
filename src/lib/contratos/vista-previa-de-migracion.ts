@@ -81,6 +81,7 @@ const ORDEN: CampoDeContrato[] = [
   'estadoContrato',
   'fechaTerminacion',
   'observaciones',
+  'serviciosPublicos',
   'fechaCreacionOrigen',
   'creadoPor',
 ]
@@ -140,6 +141,8 @@ function valorLegible(
     case 'observaciones':
       // Multilínea en el archivo real: en una tabla, una sola línea.
       return origen.observaciones?.replace(/\s+/g, ' ').trim() || null
+    case 'serviciosPublicos':
+      return origen.serviciosPublicos?.replace(/\s+/g, ' ').trim() || null
     case 'fechaCreacionOrigen':
       return origen.fechaCreacion ?? null
     case 'creadoPor':

@@ -270,7 +270,7 @@ describe('RespuestaConForma', () => {
     pintar(<RespuestaConForma entidades={[{ ...JUAN, cambiarDatos: true }]} turnoId="t-1" />);
     const cambiar = [...container.querySelectorAll('button')].find((b) => b.textContent === 'Cambiar datos…')!;
     act(() => cambiar.click());
-    expect(contexto.sendMessage).toHaveBeenCalledWith('Quiero cambiar datos de Juan Camilo López', {
+    expect(contexto.sendMessage).toHaveBeenCalledWith('Quiero cambiar datos: Juan Camilo López', {
       intencion: { accion: 'cambiar_datos', entidad: { tipo: 'persona', id: 'p-1' } },
     });
     expect(container.querySelector('a[href]')).toBeNull();

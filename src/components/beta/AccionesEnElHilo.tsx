@@ -172,6 +172,9 @@ function AccionesDeLaFicha({ acciones, turnoId }: { acciones: AccionDelHilo[]; t
     >
       {disponibles.length > 0 ? (
         <QuickActionChips
+          // Lab 30-10: el chip del DS mide 30 px fijos; con un título largo («Cambiar la comisión de
+          // administración del contrato #10 (hoy 7 %)») parte línea y a 390 px el texto se salía del borde.
+          className="[&>button]:h-auto [&>button]:min-h-[30px] [&>button]:max-w-full [&>button]:py-1 [&>button]:text-left"
           aria-label={t('beta.enElChat.acciones.titulo')}
           chips={disponibles.map((a) => ({
             id: `${a.id}|${a.entidad.id}`,

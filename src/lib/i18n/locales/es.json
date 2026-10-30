@@ -12763,7 +12763,7 @@
         "no": "No, no lo hagas",
         "deshacer": "Deshacer: {{etiqueta}}",
         "verFicha": "Ver la ficha de {{titulo}}",
-        "cambiarDatos": "Quiero cambiar datos de {{titulo}}",
+        "cambiarDatos": "Quiero cambiar datos: {{titulo}}",
         "reintentar": "Reintentar: {{titulo}}"
       },
       "verFicha": "Ver ficha",

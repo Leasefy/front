@@ -12899,6 +12899,20 @@
           "noSeguir": "No sigas con el plan"
         }
       },
+      "programado": {
+        "titulo": "Lo programado",
+        "region": "Tus órdenes programadas",
+        "activa": "Activa",
+        "pausada": "En pausa",
+        "terminada": "Ya no vuelve",
+        "proxima": "Próxima vez",
+        "ultimo": "Último disparo",
+        "nunca": "Todavía no ha tocado",
+        "espera": "Espera tu clic",
+        "hayListas": "Hay algo listo esperando tu clic: tócalo y te lo muestro para que lo confirmes.",
+        "vieja": "Esta lista es de antes: pídeme «¿qué tengo programado?» para verla al día.",
+        "nada": "Nada se hace sin tu clic: cuando toca, lo dejo listo aquí."
+      },
       "lote": {
         "estado": {
           "propuesto": "Espera tu respuesta",

@@ -23,6 +23,7 @@ import {
 } from '@/lib/chat/tarjetas-de-ejecucion';
 import type { TarjetaDePlan } from '@/lib/chat/plan-del-chat';
 import type { TarjetaDeLote } from '@/lib/chat/lote-del-chat';
+import type { TarjetaDeLoProgramado } from '@/lib/chat/programado-del-chat';
 import { invalidar } from '@/lib/api/refresco-de-datos';
 import { RECURSO_DE_PROCESOS } from '@/lib/api/procesos.service';
 import {
@@ -1345,6 +1346,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         plan?: TarjetaDePlan | null;
         /** La tarjeta del lote (29-10, sólo por el stream). */
         lote?: TarjetaDeLote | null;
+        /** La tarjeta de lo programado (29-10, sólo por el stream). */
+        programado?: TarjetaDeLoProgramado | null;
         /** El proceso largo que anunció el stream antes del `done` (`proceso_iniciado`). */
         procesoIniciado?: EventoProcesoIniciado | null;
         /** `directo:*` = el micro contestó con la ficha, sin modelo: se muestra de una. */
@@ -1394,11 +1397,13 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       const plan = resp.plan ?? null;
       // La tarjeta del lote (29-10): la misma acción para varios, en segundo plano.
       const lote = resp.lote ?? null;
+      // La tarjeta de lo programado (29-10).
+      const programado = resp.programado ?? null;
       // «Lo que pensó» (02-10): sólo si el micro lo mandó con la forma esperada.
       const razonamiento = leerRazonamiento(resp.razonamiento);
       // El pensamiento en vivo, plegado en «Cómo lo pensó» (02-10).
       const pensamientoDelTurno = resp.pensamiento ?? null;
-      const actua = acciones.length > 0 || confirmacion || resultado || formulario || ejecucion || ensayo || plan || lote;
+      const actua = acciones.length > 0 || confirmacion || resultado || formulario || ejecucion || ensayo || plan || lote || programado;
       if (
         snapshot ||
         bloques.length > 0 ||
@@ -1432,6 +1437,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
                           ...(ensayo ? { ensayo } : {}),
                           ...(plan ? { plan } : {}),
                           ...(lote ? { lote } : {}),
+                          ...(programado ? { programado } : {}),
                           ...(razonamiento ? { razonamiento } : {}),
                           ...(pensamientoDelTurno ? { pensamiento: pensamientoDelTurno } : {}),
                         }
@@ -1575,6 +1581,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       ensayo: boolean;
       plan: TarjetaDePlan | null;
       lote: TarjetaDeLote | null;
+      programado: TarjetaDeLoProgramado | null;
       procesoIniciado: EventoProcesoIniciado | null;
       camino?: string;
       razonamiento?: unknown;
@@ -1604,6 +1611,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
           ensayo?: boolean;
           plan?: TarjetaDePlan | null;
           lote?: TarjetaDeLote | null;
+          programado?: TarjetaDeLoProgramado | null;
           camino?: string;
           razonamiento?: unknown;
         } | null;
@@ -1889,6 +1897,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
               ensayo: f.ensayo,
               plan: f.plan,
               lote: f.lote,
+              programado: f.programado ?? null,
               ...(f.camino ? { camino: f.camino } : {}),
               ...(f.razonamiento !== undefined ? { razonamiento: f.razonamiento } : {}),
             };
@@ -1947,6 +1956,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         plan: final?.plan ?? null,
         // La tarjeta del lote (29-10).
         lote: final?.lote ?? null,
+        // La tarjeta de lo programado (29-10).
+        programado: final?.programado ?? null,
         procesoIniciado: collected.procesoIniciado,
         ...(final?.camino ? { camino: final.camino } : {}),
         ...(final?.razonamiento !== undefined ? { razonamiento: final.razonamiento } : {}),

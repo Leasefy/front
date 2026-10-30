@@ -33,6 +33,7 @@ import { CamposEnElChat, datosDeLosCampos, valoresIniciales } from './CamposEnEl
 import { TarjetaDeEjecucion, useMandar } from './TarjetaDeEjecucion';
 import { TarjetaDePlan } from './TarjetaDePlan';
 import { TarjetaDeLote } from './TarjetaDeLote';
+import { TarjetaDeLoProgramado } from './TarjetaDeLoProgramado';
 
 /**
  * AccionesEnElHilo — la parte del hilo que ACTÚA (Nico, 23-09-2026, 22:51:
@@ -70,8 +71,8 @@ export function AccionesEnElHilo({ message, className }: { message: ChatMessage;
     return i < 0 ? [] : lista.slice(i + 1);
   }, [messages, message.id]);
 
-  const { acciones, confirmacion, resultado, formulario, ejecucion, plan, lote } = message;
-  if (!acciones?.length && !confirmacion && !resultado && !formulario && !ejecucion && !plan && !lote) return null;
+  const { acciones, confirmacion, resultado, formulario, ejecucion, plan, lote, programado } = message;
+  if (!acciones?.length && !confirmacion && !resultado && !formulario && !ejecucion && !plan && !lote && !programado) return null;
 
   return (
     <div className={cn('space-y-3', className)} data-testid="acciones-en-el-hilo">
@@ -82,6 +83,8 @@ export function AccionesEnElHilo({ message, className }: { message: ChatMessage;
       {plan && <TarjetaDePlan plan={plan} message={message} posteriores={posteriores} />}
       {/* (29-10) La misma acción para varios: UNA tarjeta, un «Sí, hazlo», el avance en segundo plano. */}
       {lote && <TarjetaDeLote lote={lote} message={message} posteriores={posteriores} />}
+      {/* (29-10) «¿Qué tengo programado?»: cada orden con botones que son mensajes del hilo. */}
+      {programado && <TarjetaDeLoProgramado tarjeta={programado} posteriores={posteriores} />}
       {ejecucion ? (
         <TarjetaDeEjecucion tarjeta={ejecucion} message={message} posteriores={posteriores} />
       ) : (

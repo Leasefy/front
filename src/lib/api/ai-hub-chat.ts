@@ -37,6 +37,7 @@ import {
 } from '@/lib/chat/tarjetas-de-ejecucion';
 import { leerTarjetaDePlan, type TarjetaDePlan } from '@/lib/chat/plan-del-chat';
 import { leerTarjetaDeLote, type TarjetaDeLote } from '@/lib/chat/lote-del-chat';
+import { leerTarjetaDeLoProgramado, type TarjetaDeLoProgramado } from '@/lib/chat/programado-del-chat';
 import { leerPasoDelPensamiento, type PasoDelPensamiento } from '@/lib/chat/pensamiento';
 import { agentFetch } from './agent-fetch';
 import { ApiError, errorDeDemasiadasSolicitudes } from '@/lib/api/client';
@@ -378,6 +379,8 @@ export interface ChatStreamHandlers {
      * un lote o el micro es de antes.
      */
     lote: TarjetaDeLote | null;
+    /** (29-10) La tarjeta de lo programado («¿qué tengo programado?»), o `null`. */
+    programado?: TarjetaDeLoProgramado | null;
     /**
      * Por dónde lo contestó el micro. `directo:*` = el camino directo (la ficha,
      * sin el modelo): es un DATO, se muestra de una, sin teclearlo (23-09).
@@ -568,6 +571,8 @@ export function handleSSEEvent(
         plan: leerTarjetaDePlan(obj.plan),
         // Aditivo (29-10): un `done` sin lote (o de un micro viejo) → `null`.
         lote: leerTarjetaDeLote(obj.lote),
+        // Aditivo (29-10): «¿qué tengo programado?»; un `done` sin ella (o de un micro viejo) → `null`.
+        programado: leerTarjetaDeLoProgramado(obj.programado),
         ...(typeof obj.camino === 'string' && obj.camino ? { camino: obj.camino } : {}),
         ...(obj.razonamiento !== undefined && obj.razonamiento !== null ? { razonamiento: obj.razonamiento } : {}),
       });

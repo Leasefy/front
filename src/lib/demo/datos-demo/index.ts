@@ -12,6 +12,7 @@ import { FACTURACION_DEMO } from './facturacion';
 import { MANTENIMIENTOS_DEMO } from './mantenimientos';
 import { NOMINA_DEMO } from './nomina';
 import { PAGOS_DEMO } from './pagos';
+import { PROPIETARIOS_DEMO } from './propietarios';
 import { REPORTES_DEMO } from './reportes';
 import { SERVICIOS_PUBLICOS_DEMO } from './servicios-publicos';
 import { SOLICITUDES_DEMO } from './solicitudes';
@@ -26,6 +27,8 @@ const LECTURAS: readonly LecturaDeLaDemo[] = [
   ...SERVICIOS_PUBLICOS_DEMO,
   ...CONTRATOS_DEMO,
   ...SOLICITUDES_DEMO,
+  // Antes que Mantenimientos: responde los inmuebles de un propietario de la demo (ver `./propietarios.ts`).
+  ...PROPIETARIOS_DEMO,
   ...MANTENIMIENTOS_DEMO,
   ...REPORTES_DEMO,
   ...DOCUMENTOS_DEMO,
@@ -36,7 +39,7 @@ const LECTURAS: readonly LecturaDeLaDemo[] = [
 ];
 
 /** Las secciones del panel (su clave en `arquitectura-del-panel.ts`) que ya tienen datos de ejemplo. */
-const SECCIONES_CON_DATOS_DE_EJEMPLO: ReadonlySet<string> = new Set(['servicios-publicos', 'contratos', 'solicitudes', 'mantenimientos', 'reportes', 'documentos', 'facturacion', 'nomina', 'contabilidad', 'pagos']);
+const SECCIONES_CON_DATOS_DE_EJEMPLO: ReadonlySet<string> = new Set(['servicios-publicos', 'contratos', 'solicitudes', 'mantenimientos', 'reportes', 'documentos', 'facturacion', 'nomina', 'contabilidad', 'pagos', 'propietarios']);
 
 export function hayDatosDeEjemplo(claveDelModulo: string | null | undefined): boolean {
   return Boolean(claveDelModulo && SECCIONES_CON_DATOS_DE_EJEMPLO.has(claveDelModulo));

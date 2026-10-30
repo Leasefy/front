@@ -157,6 +157,14 @@ const DE_LA_INMOBILIARIA: Record<string, DemoDelModulo> = {
     capturas: [cap('demo-pagos', 'Pagos con datos de ejemplo'), cap('erp-dispersiones', 'Giros a propietarios')],
     video: video('pagos', 'Recorrido por Pagos con datos de ejemplo: la deuda del mes, cuota por cuota, por vencer, en plazo, en cartera y pagada'),
   },
+  // Nico 30-10-2026 («la sección de demo de propietario no vi ningún video»): antes caía en la de Pagos (la deuda del mes).
+  propietarios: {
+    titulo: 'Tus propietarios, al día y bien girados',
+    promesa: 'Cada propietario con sus inmuebles, lo que recibe al mes y su giro: sabes a quién se le debe y desde cuándo.',
+    puntos: ['Los giros atrasados primero', 'Lo que recibe cada uno, ya descontado', 'Su ficha con inmuebles y cuenta'],
+    capturas: [cap('demo-propietarios', 'Propietarios con datos de ejemplo'), cap('erp-dispersiones', 'Giros a propietarios')],
+    video: video('propietarios', 'Recorrido por Propietarios con datos de ejemplo: los giros atrasados, la lista completa y la ficha de un propietario'),
+  },
 };
 
 const GENERAL: DemoDelModulo = {
@@ -171,7 +179,6 @@ const ALIAS: Record<string, string> = {
   'agente-de-pagos': 'pagos',
   juridico: 'cobranza',
   inquilinos: 'estudio',
-  propietarios: 'pagos',
   proveedores: 'mantenimientos',
   'desempeno-ia': 'reportes',
   'calidad-publicaciones': 'matching',

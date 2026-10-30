@@ -16,6 +16,7 @@ import {
   type FilaDelPortal,
 } from '@/lib/nav/portal-del-inquilino';
 import { PlanHeader } from '@/components/ui/plan/PlanHeader';
+import { ChatDelPortal } from '@/components/portales/chat/ChatDelPortal';
 import { SidebarProvider, useSidebar } from '@/lib/context/SidebarContext';
 import { TenantProfileProvider, useTenantProfile } from '@/lib/context/TenantProfileContext';
 import { useUnreadMessages } from '@/lib/hooks/useMessages';
@@ -182,6 +183,8 @@ function InquilinoLayoutInner({ children }: { children: React.ReactNode }) {
           <ArriendaHoyDelPortalProvider value={arrienda}>{children}</ArriendaHoyDelPortalProvider>
         </main>
       </div>
+      {/* Ori del portal (29-10-2026): sólo a quien arrienda; sin modelo, sólo lo suyo. */}
+      {arrienda === true && <ChatDelPortal portal="inquilino" />}
       {/* El <Toaster> es único y vive en el layout raíz (src/app/layout.tsx), fuera de
           <ProtectedRoute>: aquí adentro se perdía todo toast emitido mientras el guard
           resuelve. No montes otro: sonner duplica el toast por cada Toaster montado. */}

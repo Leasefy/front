@@ -73,3 +73,54 @@ export function rutaParaEntrarConLaNueva(destino: string): string {
   if (destino && destino !== '/') sp.set('returnUrl', destino)
   return `/auth?${sp.toString()}`
 }
+
+/*
+ * ── El latido de la pantalla de recuperación ────────────────────────────────
+ *
+ * 🔴 Victor, 30-10-2026 (producción): pidió «Olvidé mi contraseña» y dejó esa
+ * pestaña abierta en `/auth`. Abrió el enlace en otra pestaña. Las cookies de
+ * sesión son compartidas, así que la pestaña de `/auth` también recibió la
+ * sesión nueva, vio la marca de recuperación y —por no estar en una pantalla
+ * de la recuperación— la CERRÓ: `POST /auth/v1/logout?scope=local`, que borra
+ * la sesión en Supabase. La pestaña del enlace seguía usándola y todo daba
+ * `session_not_found` («Tu sesión se cerró»).
+ *
+ * La marca dice «hay una sesión de recuperación», no «ESTA pestaña la
+ * abandonó». Para saber si otra pestaña todavía está terminando, la pantalla
+ * de la recuperación deja un latido en `localStorage` (compartido entre
+ * pestañas) mientras está abierta, y lo suelta al irse. Sin latido —o vencido,
+ * por una pestaña cerrada de golpe— el guarda cierra la sesión como siempre.
+ */
+export const CLAVE_DEL_LATIDO = 'leasefy_recuperacion_viva'
+
+/** Cada cuánto late la pantalla de la recuperación. */
+export const PERIODO_DEL_LATIDO_MS = 5_000
+
+/** Un latido más viejo que esto es de una pestaña que ya no está. */
+export const VIGENCIA_DEL_LATIDO_MS = 20_000
+
+export function latirRecuperacion(ahora: number = Date.now()): void {
+  try {
+    localStorage.setItem(CLAVE_DEL_LATIDO, String(ahora))
+  } catch {
+    // Sin localStorage no hay latido: el guarda cae a su comportamiento de siempre.
+  }
+}
+
+export function soltarRecuperacion(): void {
+  try {
+    localStorage.removeItem(CLAVE_DEL_LATIDO)
+  } catch {
+    // ídem
+  }
+}
+
+/** ¿Hay una pantalla de la recuperación abierta (en cualquier pestaña)? */
+export function recuperacionEnOtraPestana(ahora: number = Date.now()): boolean {
+  try {
+    const ultimo = Number(localStorage.getItem(CLAVE_DEL_LATIDO))
+    return Number.isFinite(ultimo) && ultimo > 0 && ahora - ultimo < VIGENCIA_DEL_LATIDO_MS
+  } catch {
+    return false
+  }
+}

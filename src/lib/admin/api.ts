@@ -101,7 +101,7 @@ export async function adminApi<T>(path: string, opts: ApiOptions = {}): Promise<
   })
 
   if (res.status === 401) {
-    await getSupabase()?.auth.signOut()
+    await getSupabase()?.auth.signOut({ scope: 'local' })
     redirectTo('/admin/login')
     throw new ApiError(401, 'Sesión expirada')
   }
@@ -159,7 +159,7 @@ export async function adminApiBlob(path: string, opts: ApiOptions = {}): Promise
   })
 
   if (res.status === 401) {
-    await getSupabase()?.auth.signOut()
+    await getSupabase()?.auth.signOut({ scope: 'local' })
     redirectTo('/admin/login')
     throw new ApiError(401, 'Sesión expirada')
   }

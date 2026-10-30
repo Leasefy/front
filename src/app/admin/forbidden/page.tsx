@@ -13,7 +13,7 @@ import { MarcoDeAcceso, TituloDeAcceso } from '@/components/admin/acceso/MarcoDe
  */
 export default function AdminForbiddenPage() {
   async function signOut() {
-    await getSupabase()?.auth.signOut()
+    await getSupabase()?.auth.signOut({ scope: 'local' })
     window.location.href = '/admin/login'
   }
 

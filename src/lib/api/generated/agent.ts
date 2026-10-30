@@ -17287,22 +17287,31 @@ export interface components {
         TraducirBody: {
             textos: string[];
         };
+        PortalChatOpcion: {
+            /** @enum {string} */
+            accion: "aprobar_reparacion" | "rechazar_reparacion" | "la_hago_yo" | "aprobar_sobrecosto" | "rechazar_sobrecosto";
+            boton: string;
+            pideMotivo: boolean;
+            principal: boolean;
+        };
         PortalChatTarjeta: {
             /** @enum {string} */
-            accion: "radicar_pqrs" | "pedir_certificado" | "pagar_en_linea";
+            accion: "radicar_pqrs" | "pedir_certificado" | "pagar_en_linea" | "bajar_extracto" | "decidir_reparacion" | "decidir_sobrecosto" | "cambiar_cuenta";
             titulo: string;
             detalle: string;
             /** @enum {string} */
-            boton: "Sí, hazlo";
+            boton: "Sí, hazlo" | "Descargar extracto" | "Abrir el formulario";
             datos: {
                 [key: string]: string;
             };
+            opciones?: components["schemas"]["PortalChatOpcion"][];
         } | null;
         PortalChatPedidoResponse: {
             /** @enum {string} */
-            pedido: "cuanto_debo" | "mis_giros" | "link_de_pago" | "certificado" | "radicar_pqrs" | "ver_pqrs" | "ajeno" | "no_entiendo";
+            pedido: "cuanto_debo" | "mis_giros" | "link_de_pago" | "certificado" | "radicar_pqrs" | "ver_pqrs" | "extracto" | "reparaciones" | "cambiar_cuenta" | "mi_contrato" | "proximo_pago" | "ajeno" | "no_entiendo";
             texto: string;
             tarjeta: components["schemas"]["PortalChatTarjeta"];
+            otrasTarjetas?: (components["schemas"]["PortalChatTarjeta"] & Record<string, never>)[];
         };
         PortalChatError: {
             error: string;
@@ -17311,6 +17320,8 @@ export interface components {
             texto: string;
             /** @enum {string} */
             portal: "inquilino" | "propietario";
+            /** @enum {string} */
+            cuenta?: "inquilino" | "propietario";
         };
         PortalChatHacerResponse: {
             hecho: boolean;
@@ -17323,6 +17334,8 @@ export interface components {
             datos: {
                 [key: string]: string;
             };
+            /** @enum {string} */
+            cuenta?: "inquilino" | "propietario";
         };
         /** @description Per-carrier quote result (Phase 20 D-20-15 8-carrier set). */
         AseguradoraQuote: {

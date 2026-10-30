@@ -8,6 +8,21 @@ vi.mock('@/lib/api/agent-fetch', () => ({ agentFetch: (...a: unknown[]) => agent
 const subirAdjunto = vi.fn();
 vi.mock('@/lib/api/pqrs.service', () => ({ pqrsApi: { subirAdjunto: (...a: unknown[]) => subirAdjunto(...a) } }));
 
+vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'));
+const bajarExtracto = vi.fn();
+const pedirCambioDeCuenta = vi.fn();
+vi.mock('@/lib/api/portal-del-propietario.service', () => ({
+  portalDelPropietarioApi: {
+    bajarExtracto: (...a: unknown[]) => bajarExtracto(...a),
+    pedirCambioDeCuenta: (...a: unknown[]) => pedirCambioDeCuenta(...a),
+  },
+}));
+const cabecerasDeLaCuenta = vi.fn((): Record<string, string> => ({}));
+vi.mock('@/lib/auth/cuenta-activa', async (original) => ({
+  ...(await original<typeof import('@/lib/auth/cuenta-activa')>()),
+  cabecerasDeLaCuenta: () => cabecerasDeLaCuenta(),
+}));
+
 import { ChatDelPortal, navegacionDelPago } from './ChatDelPortal';
 
 const json = (status: number, cuerpo: unknown) =>
@@ -206,5 +221,144 @@ describe('ChatDelPortal — Ori dentro del portal, sin modelo', () => {
     });
     await hasta(() => document.body.querySelector('[role="alert"]'));
     expect(subirAdjunto).not.toHaveBeenCalled();
+  });
+
+  describe('el propietario hace lo suyo desde el chat (29-10)', () => {
+    const ID = '00000000-0000-4000-8000-000000000001';
+    const EXTRACTO = {
+      accion: 'bajar_extracto',
+      titulo: 'Extracto de septiembre de 2026',
+      detalle: 'Tu giro de Portofino: $ 2.300.000, va en camino.',
+      boton: 'Descargar extracto',
+      datos: { giroId: ID, mes: '2026-09' },
+    };
+    const reparacion = (id: string, titulo: string) => ({
+      accion: 'decidir_reparacion',
+      titulo,
+      detalle: 'Apto 301: $ 350.000.',
+      boton: 'Sí, hazlo',
+      datos: { id, titulo },
+      opciones: [
+        { accion: 'aprobar_reparacion', boton: 'Aprobar', pideMotivo: false, principal: true },
+        { accion: 'rechazar_reparacion', boton: 'Rechazar', pideMotivo: true, principal: false },
+        { accion: 'la_hago_yo', boton: 'La hago yo', pideMotivo: false, principal: false },
+      ],
+    });
+    const CUENTA = {
+      accion: 'cambiar_cuenta',
+      titulo: 'Cambiar la cuenta donde te giran',
+      detalle: 'Hoy Portofino te gira a Bancolombia ****1234.',
+      boton: 'Abrir el formulario',
+      datos: { propietarioId: ID, inmobiliaria: 'Portofino' },
+    };
+    beforeEach(() => {
+      bajarExtracto.mockReset();
+      pedirCambioDeCuenta.mockReset();
+      cabecerasDeLaCuenta.mockReturnValue({});
+    });
+
+    it('«Mándame el extracto» → «Descargar extracto» lo baja con la sesión de la persona, sin /hacer', async () => {
+      bajarExtracto.mockResolvedValueOnce(undefined);
+      agentFetch.mockResolvedValueOnce(json(200, { pedido: 'extracto', texto: 'Te dejo listo el extracto.', tarjeta: EXTRACTO }));
+      await abrir('propietario');
+      await clic('Mándame el extracto');
+      await hasta(() => texto().includes('Extracto de septiembre de 2026'));
+      expect(boton('Ahora no')).toBeNull();
+      await clic('Descargar extracto');
+      await hasta(() => texto().includes('quedó en tus descargas'));
+      expect(bajarExtracto).toHaveBeenCalledWith({ id: ID, mes: '2026-09' });
+      expect(agentFetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('una tarjeta por reparación; «Rechazar» pide el porqué (opcional) y manda ESA decisión con él', async () => {
+      const otro = '00000000-0000-4000-8000-000000000002';
+      agentFetch
+        .mockResolvedValueOnce(
+          json(200, {
+            pedido: 'reparaciones',
+            texto: 'Tienes 2 reparaciones por aprobar. Nada se decide sin tu clic.',
+            tarjeta: reparacion(ID, 'Fuga en el baño'),
+            otrasTarjetas: [reparacion(otro, 'Chapa de la cocina')],
+          }),
+        )
+        .mockResolvedValueOnce(json(200, { hecho: true, texto: 'Listo, la rechazaste: no se te descuenta nada.' }));
+      await abrir('propietario');
+      await clic('¿Qué reparaciones tengo por aprobar?');
+      await hasta(() => texto().includes('Chapa de la cocina'));
+      expect(document.body.querySelectorAll('[role="region"][data-estado="pendiente"]')).toHaveLength(2);
+      expect(agentFetch).toHaveBeenCalledTimes(1);
+      await clic('Rechazar');
+      const motivo = await hasta(() => document.body.querySelector('textarea[id$="-motivo"]') as HTMLTextAreaElement | null);
+      await act(async () => {
+        Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!.call(motivo, 'Está muy cara');
+        motivo.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      await clic('Rechazar');
+      await hasta(() => texto().includes('la rechazaste'));
+      const [url, init] = agentFetch.mock.calls[1];
+      expect(url).toBe('http://micro.test/api/portal/chat/hacer');
+      expect(JSON.parse(init.body)).toEqual({ accion: 'rechazar_reparacion', datos: { id: ID, titulo: 'Fuga en el baño', motivo: 'Está muy cara' } });
+    });
+
+    it('«Aprobar» va de una, sin porqué', async () => {
+      agentFetch
+        .mockResolvedValueOnce(json(200, { pedido: 'reparaciones', texto: 'Te dejo lista la reparación.', tarjeta: reparacion(ID, 'Fuga en el baño') }))
+        .mockResolvedValueOnce(json(200, { hecho: true, texto: 'Listo, la aprobaste.' }));
+      await abrir('propietario');
+      await escribir('aprueba la reparación del baño');
+      await clic('Enviar');
+      await clic('Aprobar');
+      await hasta(() => texto().includes('la aprobaste'));
+      expect(JSON.parse(agentFetch.mock.calls[1][1].body)).toEqual({ accion: 'aprobar_reparacion', datos: { id: ID, titulo: 'Fuga en el baño' } });
+    });
+
+    it('«Quiero cambiar mi cuenta» abre el formulario controlado DENTRO del chat; nunca /hacer', async () => {
+      pedirCambioDeCuenta.mockResolvedValueOnce({ cambio: {} });
+      agentFetch.mockResolvedValueOnce(json(200, { pedido: 'cambiar_cuenta', texto: 'Te dejo el formulario para cambiarla.', tarjeta: CUENTA }));
+      await abrir('propietario');
+      await clic('Quiero cambiar mi cuenta');
+      expect(document.body.querySelector('[data-testid="formulario-cambio-de-cuenta"]')).toBeNull();
+      await clic('Abrir el formulario');
+      await hasta(() => document.body.querySelector('[data-testid="formulario-cambio-de-cuenta"]'));
+      expect(boton('Abrir el formulario')).toBeNull();
+      await clic('Pedir el cambio');
+      await hasta(() => texto().includes('Elige el banco y el tipo'));
+      expect(pedirCambioDeCuenta).not.toHaveBeenCalled();
+      await clic('Cancelar');
+      await hasta(() => boton('Abrir el formulario'));
+      expect(agentFetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('si escribió un número de cuenta, el formulario llega abierto', async () => {
+      agentFetch.mockResolvedValueOnce(
+        json(200, { pedido: 'cambiar_cuenta', texto: 'Por seguridad no tomo números de cuenta escritos en el chat.', tarjeta: { ...CUENTA, datos: { ...CUENTA.datos, abrir: 'si' } } }),
+      );
+      await abrir('propietario');
+      await escribir('mi nueva cuenta es 123 456 7890');
+      await clic('Enviar');
+      await hasta(() => document.body.querySelector('[data-testid="formulario-cambio-de-cuenta"]'));
+    });
+
+    it('quien tiene dos cuentas: el chat le dice al micro desde cuál pregunta y desde cuál decide', async () => {
+      cabecerasDeLaCuenta.mockReturnValue({ 'x-cuenta': 'propietario' });
+      agentFetch
+        .mockResolvedValueOnce(json(200, { pedido: 'reparaciones', texto: 'Te dejo lista la reparación.', tarjeta: reparacion(ID, 'Fuga') }))
+        .mockResolvedValueOnce(json(200, { hecho: true, texto: 'Listo: la haces tú.' }));
+      await abrir('propietario');
+      await clic('¿Qué reparaciones tengo por aprobar?');
+      await clic('La hago yo');
+      await hasta(() => texto().includes('la haces tú'));
+      expect(JSON.parse(agentFetch.mock.calls[0][1].body)).toMatchObject({ portal: 'propietario', cuenta: 'propietario' });
+      expect(JSON.parse(agentFetch.mock.calls[1][1].body)).toMatchObject({ accion: 'la_hago_yo', cuenta: 'propietario' });
+    });
+
+    it('la cuenta de OTRO portal no viaja (sólo la del portal desde el que pregunta)', async () => {
+      cabecerasDeLaCuenta.mockReturnValue({ 'x-cuenta': 'inquilino' });
+      agentFetch.mockResolvedValueOnce(json(200, { pedido: 'mis_giros', texto: 'Tu giro va en camino.', tarjeta: null }));
+      await abrir('propietario');
+      await clic('¿Cuándo y cuánto me giran?');
+      await hasta(() => texto().includes('va en camino'));
+      expect(JSON.parse(agentFetch.mock.calls[0][1].body)).toEqual({ texto: '¿Cuándo y cuánto me giran?', portal: 'propietario' });
+    });
   });
 });

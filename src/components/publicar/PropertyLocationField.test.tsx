@@ -64,7 +64,7 @@ vi.mock('@/components/map/LocationPicker', () => ({
   },
 }));
 
-import { PropertyLocationField } from './PropertyLocationField';
+import { PropertyLocationField, type PropertyLocationValue } from './PropertyLocationField';
 
 let container: HTMLDivElement;
 let root: Root;
@@ -86,7 +86,7 @@ afterEach(() => {
 });
 
 function render(props: Partial<React.ComponentProps<typeof PropertyLocationField>> = {}) {
-  const onChange = props.onChange ?? vi.fn();
+  const onChange = (props.onChange ?? vi.fn()) as ReturnType<typeof vi.fn<(partial: PropertyLocationValue) => void>>;
   act(() => {
     root.render(
       <PropertyLocationField

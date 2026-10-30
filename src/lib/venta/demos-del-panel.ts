@@ -195,7 +195,8 @@ const DEL_PROPIETARIO: Record<string, DemoDelModulo> = {
     titulo: 'Tu contrato en regla, firmado en línea',
     promesa: 'Contrato legal, firma electrónica y renovación con el IPC, sin papeles.',
     puntos: ['Contrato con la ley 820', 'Firma con código al celular', 'Renovación a tiempo'],
-    capturas: [cap('erp-renovaciones', 'Renovaciones de contratos')],
+    capturas: [cap('demo-propietario-contratos', 'Tus contratos con datos de ejemplo'), cap('erp-renovaciones', 'Renovaciones de contratos')],
+    video: video('propietario-contratos', 'Recorrido por tus contratos con datos de ejemplo: los activos, el que espera al inquilino y el detalle con las firmas'),
   },
   cobro: {
     titulo: 'El arriendo te llega solo',

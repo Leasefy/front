@@ -29,6 +29,11 @@ const FILAS: ReadonlyArray<[string, number, string, string, string, string, numb
   ['demo-ct-7', 107, 'Felipe Zuluaga', '1020456789', 'Ana Lucía Vélez', 'Cra 80 # 33-15, apto 210', 1_400_000, '2023-04-01', '2025-03-31', 'EXPIRED'],
 ];
 
+/** Las firmas (Nico 30-10: en la demo del propietario el contrato activo salía «Pendiente» de firmar). */
+function firma(nombre: string, id: string, el: string, rol: 'LANDLORD' | 'TENANT') {
+  return { signedAt: el, signerName: nombre, signerId: id, ipAddress: '0.0.0.0', userAgent: 'demo', codigoVerificado: true, signerRole: rol };
+}
+
 function contratos(): BackendContract[] {
   return FILAS.map(([id, code, inquilino, documento, propietario, direccion, canon, inicio, fin, status]) => ({
     ...BASE,
@@ -48,6 +53,8 @@ function contratos(): BackendContract[] {
     endDate: fin,
     signedAt: status === 'PENDING_TENANT' ? null : `${inicio}T12:00:00.000Z`,
     activatedAt: status === 'ACTIVE' ? `${inicio}T12:00:00.000Z` : null,
+    landlordSignature: firma(propietario, `${id}-propietario`, `${inicio}T10:00:00.000Z`, 'LANDLORD'),
+    tenantSignature: status === 'PENDING_TENANT' ? null : firma(inquilino, `${id}-inquilino`, `${inicio}T11:00:00.000Z`, 'TENANT'),
   })) as BackendContract[];
 }
 

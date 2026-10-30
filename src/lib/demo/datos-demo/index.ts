@@ -52,7 +52,7 @@ export function hayDatosDeEjemplo(claveDelModulo: string | null | undefined): bo
  * Las del propietario independiente en lo gratis (Nico 30-10-2026: «la posibilidad de… ver cómo quedaría pintada cada
  * sección»), por su clave de demo (`claveDeDemoDelPropietario`).
  */
-const SECCIONES_DEL_PROPIETARIO_CON_DATOS: ReadonlySet<string> = new Set(['giros']);
+const SECCIONES_DEL_PROPIETARIO_CON_DATOS: ReadonlySet<string> = new Set(['giros', 'contratos']);
 
 export function hayDatosDeEjemploDelPropietario(clave: string | null | undefined): boolean {
   return Boolean(clave && SECCIONES_DEL_PROPIETARIO_CON_DATOS.has(clave));

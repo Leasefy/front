@@ -50,6 +50,11 @@ const escope = desdeEslint('eslint-scope');
 
 /** Globales del navegador (y del runtime de Next/webpack) que un chunk usa sin declarar. */
 const GLOBALES_DEL_NAVEGADOR = [
+  // 29-10-2026: objetos del navegador que el revisor no conocía (ninguno es un nombre nuestro; los usan three.js,
+  // el dictado, el portapapeles, el realtime de Supabase, framer-motion y la landing anterior). Todos van con
+  // `typeof X` o en código que sólo corre en el navegador.
+  'WebGLRenderingContext', 'SuppressedError', 'CloseEvent', 'NodeList', 'MediaRecorder', 'SVGGraphicsElement',
+  'ScrollTimeline', 'ClipboardItem', 'scrollY',
   'window', 'document', 'navigator', 'location', 'self', 'globalThis', 'localStorage', 'sessionStorage',
   'fetch', 'Headers', 'Request', 'Response', 'FormData', 'URL', 'URLSearchParams', 'Blob', 'File', 'FileReader',
   'HTMLElement', 'Element', 'Node', 'NodeFilter', 'Event', 'CustomEvent', 'MutationObserver', 'ResizeObserver',

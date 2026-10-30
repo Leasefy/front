@@ -32895,6 +32895,7 @@
               "bajar_extracto",
               "decidir_reparacion",
               "decidir_sobrecosto",
+              "avisar_que_quedo",
               "cambiar_cuenta",
               "retirar_postulacion",
               "reclamar_postulacion"
@@ -32949,6 +32950,7 @@
               "ver_pqrs",
               "extracto",
               "reparaciones",
+              "ya_quedo",
               "cambiar_cuenta",
               "mi_contrato",
               "proximo_pago",

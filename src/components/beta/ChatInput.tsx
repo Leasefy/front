@@ -7,9 +7,12 @@ import { ChatTemplatesMenu } from './ChatTemplates';
 import { CajaDeLlegada } from './llegada/CajaDeLlegada';
 import { AvisoDePreguntas } from './AvisoDePreguntas';
 import { PreguntasDelMes } from './PreguntasDelMes';
+import { useAdjuntosDelCompositor } from '@/lib/chat/use-adjuntos-del-compositor';
+import type { AdjuntoDelMensaje } from '@/lib/chat/adjuntos';
 
 interface ChatInputProps {
-  onSend: (text: string) => void;
+  /** El texto y los archivos que ya subieron (29-10-2026: adjuntos en el chat). */
+  onSend: (text: string, adjuntos?: AdjuntoDelMensaje[]) => void;
   /** Hay un turno corriendo: se puede escribir, pero todavía no enviar. */
   disabled?: boolean;
   className?: string;
@@ -38,6 +41,8 @@ export function ChatInput({ onSend, disabled = false, className, topSlot }: Chat
   const { t } = useI18n();
   const [plantillas, setPlantillas] = useState(false);
   const cerrar = useCallback(() => setPlantillas(false), []);
+  // Los archivos que van con el próximo mensaje (suben apenas se agregan).
+  const adjuntos = useAdjuntosDelCompositor();
 
   return (
     // pb resolves to 1rem (= pb-4) on desktop; on devices with a home
@@ -51,6 +56,7 @@ export function ChatInput({ onSend, disabled = false, className, topSlot }: Chat
           ejemplos={[]}
           placeholder={t('beta.chat.placeholder')}
           onEnviar={onSend}
+          adjuntos={adjuntos}
           onPlantillas={() => setPlantillas((v) => !v)}
           plantillasAbiertas={plantillas}
           menuDePlantillas={

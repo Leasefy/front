@@ -12720,6 +12720,7 @@
       },
       "formulario": {
         "elige": "Choose an option",
+        "archivoAdjunto": "The files you sent to the chat",
         "seguir": "Done, continue"
       },
       "mensaje": {

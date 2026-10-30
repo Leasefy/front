@@ -297,8 +297,13 @@ export function leerResultado(v: unknown): ResultadoEnElHilo | null {
   };
 }
 
-export type TipoDeCampo = 'moneda' | 'fecha' | 'mes' | 'numero' | 'texto' | 'texto_largo' | 'opcion';
-const TIPOS_DE_CAMPO: TipoDeCampo[] = ['moneda', 'fecha', 'mes', 'numero', 'texto', 'texto_largo', 'opcion'];
+/**
+ * `adjunto` (29-10-2026): los archivos que la persona mandó al chat y que la
+ * acción usa. No se escribe: viaja tal cual (sus ids) y se ve con su nombre
+ * (`ayuda`).
+ */
+export type TipoDeCampo = 'moneda' | 'fecha' | 'mes' | 'numero' | 'texto' | 'texto_largo' | 'opcion' | 'adjunto';
+const TIPOS_DE_CAMPO: TipoDeCampo[] = ['moneda', 'fecha', 'mes', 'numero', 'texto', 'texto_largo', 'opcion', 'adjunto'];
 
 export interface CampoDelFormulario {
   clave: string;

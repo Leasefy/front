@@ -16,6 +16,7 @@
  */
 
 import { leerBloques, leerEntidades, type BloqueDeRespuesta, type EntidadDelChat } from '@/lib/chat/bloques';
+import type { AdjuntoDelMensaje } from '@/lib/chat/adjuntos';
 import {
   leerAcciones,
   leerConfirmacion,
@@ -622,13 +623,22 @@ export function isAgentConfigured(): boolean {
   return Boolean(process.env.NEXT_PUBLIC_AGENT_URL);
 }
 
-function buildBody(message: string, history?: ChatHistoryEntry[], intencion?: IntencionDelChat | null): string {
+function buildBody(
+  message: string,
+  history?: ChatHistoryEntry[],
+  intencion?: IntencionDelChat | null,
+  adjuntos?: readonly AdjuntoDelMensaje[],
+): string {
   return JSON.stringify({
     message,
     ...(history && history.length > 0 ? { history } : {}),
     // Lo que pidió el botón, con forma: el micro lo atiende por su camino
     // directo (la ficha) sin adivinar el texto.
     ...(intencion ? { intencion } : {}),
+    // (29-10-2026) Los archivos del mensaje, ya subidos: el micro los lee por su id.
+    ...(adjuntos && adjuntos.length > 0
+      ? { adjuntos: adjuntos.map(({ id, nombre, tipo, tamano }) => ({ id, nombre, tipo, tamano })) }
+      : {}),
   });
 }
 
@@ -715,6 +725,8 @@ export async function streamChatTurn(args: {
   message: string;
   history?: ChatHistoryEntry[];
   intencion?: IntencionDelChat | null;
+  /** (29-10-2026) Los archivos del mensaje. */
+  adjuntos?: readonly AdjuntoDelMensaje[];
   signal?: AbortSignal;
   handlers: ChatStreamHandlers;
 }): Promise<void> {
@@ -725,7 +737,7 @@ export async function streamChatTurn(args: {
       'content-type': 'application/json',
       accept: 'text/event-stream',
     },
-    body: buildBody(args.message, args.history, args.intencion),
+    body: buildBody(args.message, args.history, args.intencion, args.adjuntos),
     ...(args.signal ? { signal: args.signal } : {}),
   });
   if (!res.ok) throw await falloDelAgente(res);

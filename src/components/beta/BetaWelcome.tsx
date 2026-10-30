@@ -12,6 +12,8 @@ import { useI18n } from '@/lib/i18n';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
 import { CHAT_TEMPLATES, CHAT_TEMPLATES_DEL_AUXILIAR, ChatTemplatesMenu, esAuxiliarDeCartera } from './ChatTemplates';
 import { CajaDeLlegada } from './llegada/CajaDeLlegada';
+import { useAdjuntosDelCompositor } from '@/lib/chat/use-adjuntos-del-compositor';
+import type { AdjuntoDelMensaje } from '@/lib/chat/adjuntos';
 import { AvisoDePreguntas } from './AvisoDePreguntas';
 import { ConversacionesRecientes } from './llegada/ConversacionesRecientes';
 import { FranjaDeMigracion } from './llegada/FranjaDeMigracion';
@@ -23,7 +25,8 @@ import { BotonDelEquipo } from '@/components/agentes/BotonDelEquipo';
 // ============================================================================
 
 interface BetaWelcomeProps {
-  onPromptClick?: (prompt: string) => void;
+  /** El texto y, desde la caja, los archivos que ya subieron (29-10-2026). */
+  onPromptClick?: (prompt: string, adjuntos?: AdjuntoDelMensaje[]) => void;
   /** @deprecated la llegada dibuja su propia caja (`CajaDeLlegada`); se conserva por compatibilidad. */
   inputSlot?: React.ReactNode;
   className?: string;
@@ -86,6 +89,8 @@ export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
   const { filteredSummaries, switchConversation, deleteConversation } = useBetaChatContext();
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [recientesAbiertas, setRecientesAbiertas] = useState(false);
+  // Los archivos de la primera pregunta (29-10-2026: adjuntos en el chat).
+  const adjuntos = useAdjuntosDelCompositor();
 
   // CF-01: el auxiliar de cartera ve la llegada de SU chat (sólo cartera).
   const esAuxiliar = esAuxiliarDeCartera(useContext(AuthContext)?.agencyRole);
@@ -211,7 +216,8 @@ export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
           {/* La caja — `z-10`: el menú y el panel de conversaciones pasan por encima de los atajos */}
           <motion.div {...entrada(2)} className="relative z-10 mt-9 w-full sm:mt-10">
             <CajaDeLlegada
-              onEnviar={(texto) => onPromptClick?.(texto)}
+              onEnviar={(texto, listos) => (listos?.length ? onPromptClick?.(texto, listos) : onPromptClick?.(texto))}
+              adjuntos={adjuntos}
               onPlantillas={() => setTemplatesOpen((v) => !v)}
               plantillasAbiertas={templatesOpen}
               menuDePlantillas={

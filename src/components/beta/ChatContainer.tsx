@@ -537,7 +537,7 @@ function ConversacionDelChat({ className }: ChatContainerProps) {
               Manus): sólo mientras hay trabajo; al terminar desaparece y el
               hilo queda como registro. */}
           <ChatInput
-            onSend={sendMessage}
+            onSend={(texto, adjuntos) => sendMessage(texto, adjuntos?.length ? { adjuntos } : undefined)}
             disabled={isBusy}
             topSlot={
               turnSteps.length > 0 ? (
@@ -554,7 +554,7 @@ function ConversacionDelChat({ className }: ChatContainerProps) {
       ) : (
         /* Empty state — Manus-style: greeting + hero input + pills, all centered */
         <div data-lenis-prevent className="relative flex-1 overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <BetaWelcome onPromptClick={sendMessage} />
+          <BetaWelcome onPromptClick={(texto, adjuntos) => sendMessage(texto, adjuntos?.length ? { adjuntos } : undefined)} />
         </div>
       )}
     </div>

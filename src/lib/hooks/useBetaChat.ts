@@ -78,6 +78,7 @@ import {
   type BackendAccionPropuesta,
 } from '@/lib/api/ai-hub-acciones';
 import { enviarFeedbackDeChat } from '@/lib/api/ai-hub-feedback';
+import { textoSinPalabras, type AdjuntoDelMensaje } from '@/lib/chat/adjuntos';
 import { leerRazonamiento } from '@/lib/agentes/agente-que-habla';
 import { ApiError } from '@/lib/api/client';
 import { mensajeDeDemasiadasSolicitudes } from '@/lib/api/demasiadas-solicitudes';
@@ -355,7 +356,14 @@ export interface UseBetaChatReturn {
    * hilo, con forma (23-09, «todo en el chat»): viaja con el texto y el micro
    * lo atiende sin adivinar.
    */
-  sendMessage: (text: string, opciones?: { intencion?: IntencionDelChat | null }) => void;
+  sendMessage: (
+    text: string,
+    opciones?: {
+      intencion?: IntencionDelChat | null;
+      /** (29-10-2026) Los archivos que ya subieron con este mensaje: el micro los lee por su id. */
+      adjuntos?: AdjuntoDelMensaje[];
+    },
+  ) => void;
   isThinking: boolean;
   isStreaming: boolean;
   streamingContent: string;
@@ -1518,6 +1526,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       signal: AbortSignal;
       /** Lo que pidió el botón, con forma (23-09): el micro lo atiende directo. */
       intencion?: IntencionDelChat | null;
+      /** (29-10-2026) Los archivos del mensaje. */
+      adjuntos?: AdjuntoDelMensaje[];
     }): Promise<{
       responseText: string;
       suggestedActions: BackendSuggestedAction[];
@@ -1578,6 +1588,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         message: args.message,
         history: args.history,
         intencion: args.intencion ?? null,
+        ...(args.adjuntos?.length ? { adjuntos: args.adjuntos } : {}),
         signal: args.signal,
         handlers: {
           onSnapshot: (s) => {
@@ -1917,8 +1928,10 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
   // ========================================================================
 
   const sendMessage = useCallback(
-    (text: string, opciones?: { intencion?: IntencionDelChat | null }) => {
-      const trimmed = text.trim();
+    (text: string, opciones?: { intencion?: IntencionDelChat | null; adjuntos?: AdjuntoDelMensaje[] }) => {
+      const adjuntos = opciones?.adjuntos ?? [];
+      // Sólo archivos, sin palabras: el texto dice qué se mandó (el micro igual lee cada uno).
+      const trimmed = text.trim() || (adjuntos.length > 0 ? textoSinPalabras(adjuntos) : '');
       const intencion = opciones?.intencion ?? null;
       if (!trimmed || isThinking || isStreaming || isAgentsRunning || !activeConversationId) return;
 
@@ -1952,6 +1965,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         // Queda en el mensaje: así la tarjeta de «¿Lo hago?» sabe que ya se
         // contestó y «Rehacer» vuelve a pedir lo mismo.
         ...(intencion ? { intencion } : {}),
+        ...(adjuntos.length > 0 ? { adjuntos } : {}),
       };
       const assistantId = generateId();
       const assistantMessage: ChatMessage = {
@@ -2048,6 +2062,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
             conversationId,
             signal,
             intencion,
+            ...(adjuntos.length > 0 ? { adjuntos } : {}),
           });
           if (signal.aborted) return;
           // Llegó la respuesta: el pensamiento se cierra y se pliega en «Cómo lo pensó».
@@ -2062,6 +2077,19 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
             (errorDelStream.status === 402 || errorDelStream.status === 429)
           ) {
             finalizeError(assistantId, conversationId, mensajeDeFalloDelChat(errorDelStream));
+            return;
+          }
+          // Con archivos no hay respaldo: el POST de una vez no los lee, y
+          // contestar sin ellos sería fingir que se leyeron (29-10-2026).
+          if (adjuntos.length > 0) {
+            setActiveAgentBlock(null);
+            setIsAgentsRunning(false);
+            aplicarPensamiento(null);
+            finalizeError(
+              assistantId,
+              conversationId,
+              `${mensajeDeFalloDelChat(errorDelStream)} Los archivos quedaron guardados: vuelve a mandarlos en un momento.`
+            );
             return;
           }
           // Stream failed (route missing, proxy buffering, mid-stream drop) →

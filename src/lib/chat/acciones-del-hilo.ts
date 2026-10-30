@@ -26,6 +26,7 @@
 
 import type { EntidadDelChat, TipoDeEntidad } from '@/lib/chat/bloques';
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
+import { AREAS_DE_PLATA, type AreaDePlata } from '@/lib/plata/con-centavos';
 
 // ── La intención (espejo de `ai-hub/en-el-chat/intencion.ts` del micro) ─────
 
@@ -90,10 +91,36 @@ export interface EntidadDeLaIntencion {
 export type AccionSobreUnPlan = 'hacer_plan' | 'cancelar_plan' | 'seguir_plan';
 export const ACCIONES_SOBRE_UN_PLAN: AccionSobreUnPlan[] = ['hacer_plan', 'cancelar_plan', 'seguir_plan'];
 
+/**
+ * (29-10) Lo que se hace sobre un LOTE: «Sí, hazlo», «No» / «Detener»,
+ * «Reintentar los que fallaron», «Seguir ahora». Con «Sí, hazlo» viajan los
+ * que la persona quitó (`quitar`), los que eligió entre homónimos
+ * (`elegidos`: el nombre por resolver y UNA de sus opciones) y lo que llenó
+ * una vez para todos (`datos`).
+ */
+export type AccionSobreUnLote = 'hacer_lote' | 'cancelar_lote' | 'reintentar_lote' | 'seguir_lote';
+export const ACCIONES_SOBRE_UN_LOTE: AccionSobreUnLote[] = ['hacer_lote', 'cancelar_lote', 'reintentar_lote', 'seguir_lote'];
+
+export interface ElegidoDelLote {
+  i: number;
+  tipo: string;
+  id: string;
+}
+
+export type IntencionSobreUnLote = {
+  accion: AccionSobreUnLote;
+  loteId: string;
+  quitar?: number[];
+  elegidos?: ElegidoDelLote[];
+  datos?: Record<string, string | number>;
+};
+
 export type IntencionDelChat =
-  | { accion: 'ver' | 'cobranza'; entidad: EntidadDeLaIntencion }
+  // 30-10 (D2): `cambiar_datos` = «Cambiar datos…» de la tarjeta (las modificaciones que la ficha permite).
+  | { accion: 'ver' | 'cobranza' | 'cambiar_datos'; entidad: EntidadDeLaIntencion }
   | { accion: 'confirmar' | 'cancelar' | 'deshacer'; propuestaId: string }
   | { accion: AccionSobreUnPlan; planId: string; datos?: Record<string, string | number> }
+  | IntencionSobreUnLote
   | { accion: string; entidad: EntidadDeLaIntencion; datos?: Record<string, string | number> };
 
 function esObjeto(v: unknown): v is Record<string, unknown> {
@@ -123,9 +150,41 @@ export function datosDelPlan(v: unknown): Record<string, string | number> {
   return datos;
 }
 
+const CLAVE_DEL_DATO_DEL_LOTE = /^[A-Za-z][A-Za-z0-9_]{0,39}$/;
+
+/** La intención sobre un lote, con sólo lo que el micro acepta (lo demás se descarta). */
+export function leerIntencionSobreUnLote(v: unknown): IntencionSobreUnLote | null {
+  if (!esObjeto(v) || !(ACCIONES_SOBRE_UN_LOTE as string[]).includes(String(v.accion))) return null;
+  const loteId = texto(v.loteId);
+  if (!loteId) return null;
+  const salida: IntencionSobreUnLote = { accion: v.accion as AccionSobreUnLote, loteId };
+  if (Array.isArray(v.quitar)) {
+    const quitar = v.quitar.filter((n): n is number => typeof n === 'number' && Number.isInteger(n) && n >= 1).slice(0, 5000);
+    if (quitar.length) salida.quitar = quitar;
+  }
+  if (Array.isArray(v.elegidos)) {
+    const elegidos = v.elegidos
+      .filter((e): e is Record<string, unknown> => esObjeto(e))
+      .flatMap((e) => (typeof e.i === 'number' && Number.isInteger(e.i) && texto(e.tipo) && texto(e.id) ? [{ i: e.i, tipo: String(e.tipo), id: String(e.id) }] : []))
+      .slice(0, 100);
+    if (elegidos.length) salida.elegidos = elegidos;
+  }
+  if (esObjeto(v.datos)) {
+    const datos: Record<string, string | number> = {};
+    for (const [k, d] of Object.entries(v.datos)) {
+      if (!CLAVE_DEL_DATO_DEL_LOTE.test(k)) continue;
+      if (typeof d === 'string' && d.length <= 1000) datos[k] = d;
+      else if (typeof d === 'number' && Number.isFinite(d)) datos[k] = d;
+    }
+    if (Object.keys(datos).length) salida.datos = datos;
+  }
+  return salida;
+}
+
 export function leerIntencion(v: unknown): IntencionDelChat | null {
   if (!esObjeto(v) || typeof v.accion !== 'string') return null;
   const accion = v.accion;
+  if ((ACCIONES_SOBRE_UN_LOTE as string[]).includes(accion)) return leerIntencionSobreUnLote(v);
   if (accion === 'confirmar' || accion === 'cancelar' || accion === 'deshacer') {
     const propuestaId = texto(v.propuestaId);
     return propuestaId ? { accion, propuestaId } : null;
@@ -213,6 +272,22 @@ export interface AccionDelHilo {
   lectura: boolean;
   /** Desde cuándo se podrá (`YYYY-MM-DD`), si el porqué lo dice. */
   desde: string | null;
+  /**
+   * 30-10: lo que la frase ya dijo para esta acción (el canon del otrosí). Va
+   * con el clic y el formulario sale lleno. Ausente = vacío, como siempre.
+   */
+  datos?: Record<string, string>;
+}
+
+/** Los datos de un botón: claves como las de la intención y valores en texto (lo demás no viaja). */
+function leerDatosDelBoton(v: unknown): Record<string, string> | undefined {
+  if (!esObjeto(v)) return undefined;
+  const datos = Object.fromEntries(
+    Object.entries(v).filter(
+      ([clave, valor]) => /^[A-Za-z][A-Za-z0-9_]{0,39}$/.test(clave) && typeof valor === 'string' && valor.length <= 500,
+    ),
+  ) as Record<string, string>;
+  return Object.keys(datos).length ? datos : undefined;
 }
 
 export function leerAcciones(v: unknown): AccionDelHilo[] {
@@ -233,6 +308,7 @@ export function leerAcciones(v: unknown): AccionDelHilo[] {
       riesgo: leerRiesgo(a.riesgo),
       lectura: a.lectura === true,
       desde: typeof a.desde === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(a.desde) ? a.desde : null,
+      ...(leerDatosDelBoton(a.datos) ? { datos: leerDatosDelBoton(a.datos) } : {}),
     });
   }
   return salida;
@@ -297,8 +373,13 @@ export function leerResultado(v: unknown): ResultadoEnElHilo | null {
   };
 }
 
-export type TipoDeCampo = 'moneda' | 'fecha' | 'mes' | 'numero' | 'texto' | 'texto_largo' | 'opcion';
-const TIPOS_DE_CAMPO: TipoDeCampo[] = ['moneda', 'fecha', 'mes', 'numero', 'texto', 'texto_largo', 'opcion'];
+/**
+ * `adjunto` (29-10-2026): los archivos que la persona mandó al chat y que la
+ * acción usa. No se escribe: viaja tal cual (sus ids) y se ve con su nombre
+ * (`ayuda`).
+ */
+export type TipoDeCampo = 'moneda' | 'fecha' | 'mes' | 'numero' | 'texto' | 'texto_largo' | 'opcion' | 'adjunto';
+const TIPOS_DE_CAMPO: TipoDeCampo[] = ['moneda', 'fecha', 'mes', 'numero', 'texto', 'texto_largo', 'opcion', 'adjunto'];
 
 export interface CampoDelFormulario {
   clave: string;
@@ -308,7 +389,21 @@ export interface CampoDelFormulario {
   opciones: Array<{ valor: string; etiqueta: string }>;
   ayuda: string | null;
   valor: string | null;
+  /**
+   * 29-10 (modificar): cómo se escribe el dato («correo», «celular»…), para
+   * el teclado del celular. Sin esto, el de su tipo.
+   */
+  formato?: FormatoDelCampo;
+  /**
+   * R10 (30-10, pregunta 45 de Nico): una `moneda` que puede ir al centavo: las
+   * áreas de plata cuya llave lo decide (`GET /config/plata`). Sin esto, pesos
+   * enteros, y una coma con centavos se frena (antes «200.000,50» era 20.000.050).
+   */
+  areasDePlata?: AreaDePlata[];
 }
+
+export type FormatoDelCampo = 'correo' | 'celular' | 'documento' | 'porcentaje' | 'dia_del_mes' | 'dias' | 'cuenta' | 'direccion' | 'entero' | 'texto';
+const FORMATOS_DEL_CAMPO: FormatoDelCampo[] = ['correo', 'celular', 'documento', 'porcentaje', 'dia_del_mes', 'dias', 'cuenta', 'direccion', 'entero', 'texto'];
 
 export interface FormularioEnElHilo {
   accion: string;
@@ -344,6 +439,13 @@ export function leerCampos(v: unknown): CampoDelFormulario[] {
         : [],
       ayuda: texto(c.ayuda),
       valor: typeof c.valor === 'string' ? c.valor : null,
+      ...(FORMATOS_DEL_CAMPO.includes(c.formato as FormatoDelCampo) ? { formato: c.formato as FormatoDelCampo } : {}),
+      ...(tipo === 'moneda' && Array.isArray(c.areasDePlata)
+        ? (() => {
+            const areas = c.areasDePlata.filter((a): a is AreaDePlata => (AREAS_DE_PLATA as readonly string[]).includes(a as string));
+            return areas.length ? { areasDePlata: areas } : {};
+          })()
+        : {}),
     });
   }
   return campos;
@@ -400,6 +502,22 @@ export function respuestaDelPlan(
   return null;
 }
 
+/**
+ * (29-10) ¿La persona ya respondió ESTA tarjeta del lote? Lo primero que dijo
+ * sobre ese lote DESPUÉS de la tarjeta (la respuesta llega en un mensaje nuevo
+ * con su tarjeta al día; ésta queda como «respondida»).
+ */
+export function respuestaDelLote(
+  loteId: string,
+  posteriores: ReadonlyArray<{ role: string; intencion?: IntencionDelChat }>,
+): AccionSobreUnLote | null {
+  for (const m of posteriores) {
+    const i = m.intencion;
+    if (m.role === 'user' && i && 'loteId' in i && i.loteId === loteId) return i.accion;
+  }
+  return null;
+}
+
 /** El texto del mensaje de la persona cuando llena el formulario («Registrar un pago: $500.000 · Transferencia · 2026-09-22»). */
 export function textoDelFormulario(f: FormularioEnElHilo, valores: Record<string, string>): string {
   const partes = f.campos
@@ -407,11 +525,16 @@ export function textoDelFormulario(f: FormularioEnElHilo, valores: Record<string
       const v = (valores[c.clave] ?? '').trim();
       if (!v) return null;
       if (c.tipo === 'opcion') return c.opciones.find((o) => o.valor === v)?.etiqueta ?? v;
+      // 29-10-2026: el archivo del chat se dice por su nombre, nunca por su id.
+      if (c.tipo === 'adjunto') return c.ayuda ?? null;
       // 07-10: «5 de octubre de 2026», no «2026-10-05», en lo que la persona «dijo».
       if (c.tipo === 'fecha' && /^\d{4}-\d{2}-\d{2}$/.test(v)) return fechaCivilLarga(v);
       if (c.tipo === 'moneda') {
-        const n = Number(v.replace(/[^\d]/g, ''));
-        return Number.isFinite(n) && n > 0 ? `$${n.toLocaleString(localeDeLasCifras())}` : v;
+        // R10: el valor del campo ya es el número (con sus centavos, si los lleva).
+        const n = Number(v);
+        return Number.isFinite(n) && n > 0
+          ? `$${n.toLocaleString(localeDeLasCifras(), { maximumFractionDigits: 2, minimumFractionDigits: Number.isInteger(n) ? 0 : 2 })}`
+          : v;
       }
       return v;
     })

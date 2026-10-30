@@ -4997,6 +4997,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/ai-hub/chat/lotes/{loteId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * La tarjeta de hoy de un lote del chat (la misma acción para varios): su avance y su resumen
+         * @description Devuelve la tarjeta de un lote del chat de quien pregunta, con el avance de la corrida en segundo plano. Si el lote esperaba la sesión o el horario de ley y ya se puede, o quedó a medias, sigue con la sesión de quien pregunta (idempotente). Cualquier miembro; sólo sus propios lotes.
+         */
+        get: operations["getAiHubChatLote"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/ai-hub/chat/aprender/{turnoId}": {
         parameters: {
             query?: never;
@@ -9231,6 +9251,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/portal/chat/pedido": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Chat del portal — reconoce el pedido (sin modelo) y responde con lo de la persona */
+        post: operations["postPortalChatPedido"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/chat/hacer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Chat del portal — el clic en «Sí, hazlo» */
+        post: operations["postPortalChatHacer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cotizador/quote": {
         parameters: {
             query?: never;
@@ -9617,6 +9671,21 @@ export interface components {
             tope: number | null;
             agenteDueno: string;
         };
+        AiHubChatModificacion: {
+            sobre: string;
+            cambios: {
+                clave: string;
+                etiqueta: string;
+                antes: string | null;
+                despues: string;
+                sensible: boolean;
+            }[];
+            desde: string;
+            efectos: string[];
+            noCambia: string[];
+            deshacer: string;
+            aviso: string | null;
+        } | null;
         AiHubChatTarjetaPropuesta: {
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -9644,6 +9713,7 @@ export interface components {
             ensayo: boolean;
             /** @enum {string|null} */
             siNoFueraEnsayo: "ejecutar" | "gracia" | "programar" | "clic" | null;
+            modificacion?: components["schemas"]["AiHubChatModificacion"];
         };
         AiHubChatTarjetaEnCurso: {
             /**
@@ -9663,6 +9733,13 @@ export interface components {
             accion: string;
             propuestaId?: string;
             planId?: string;
+            loteId?: string;
+            quitar?: number[];
+            elegidos?: {
+                i: number;
+                tipo: string;
+                id: string;
+            }[];
             entidad?: {
                 tipo: string;
                 id: string;
@@ -9739,7 +9816,7 @@ export interface components {
             clave: string;
             etiqueta: string;
             /** @enum {string} */
-            tipo: "moneda" | "fecha" | "mes" | "numero" | "texto" | "texto_largo" | "opcion";
+            tipo: "moneda" | "fecha" | "mes" | "numero" | "texto" | "texto_largo" | "opcion" | "adjunto";
             requerido: boolean;
             opciones: {
                 valor: string;
@@ -9810,10 +9887,125 @@ export interface components {
             procesoId: string;
             ejecucionId: string;
         };
+        AiHubChatItemDelLote: {
+            n: number;
+            etiqueta: string;
+            detalle: string | null;
+            accion: string | null;
+            /** @enum {string} */
+            estado: "listo" | "quitado" | "pendiente" | "en_curso" | "hecho" | "fallido" | "omitido";
+            resumen: string | null;
+            quitable: boolean;
+            revisado: boolean;
+        };
+        AiHubChatTarjetaLote: {
+            /** @enum {string} */
+            tipo: "lote";
+            loteId: string;
+            titulo: string;
+            cita: string;
+            verbo: string;
+            descripcion: string;
+            /** @enum {string} */
+            estado: "propuesto" | "ejecutando" | "programado" | "en_pausa" | "hecho" | "cancelado" | "vencido";
+            /** @enum {string} */
+            modo: "manual" | "copiloto" | "automatico";
+            pregunta: string;
+            porQue: string;
+            venceEn: string;
+            riesgo: components["schemas"]["AiHubChatRiesgoDeLaAccion"];
+            cifra: number | null;
+            items: components["schemas"]["AiHubChatItemDelLote"][];
+            noEntran: {
+                porQue: string;
+                cuantos: number;
+                quienes: string[];
+            }[];
+            porResolver: {
+                nombre: string;
+                /** @enum {string} */
+                motivo: "ambiguo" | "no_aparece" | "no_se_pudo_buscar";
+                opciones: {
+                    etiqueta: string;
+                    detalle: string | null;
+                    entidad: {
+                        tipo: string;
+                        id: string;
+                    };
+                }[];
+            }[];
+            quedan: number;
+            tope: number;
+            progreso: {
+                total: number;
+                hechos: number;
+                fallidos: number;
+                omitidos: number;
+                pendientes: number;
+                quitados: number;
+            };
+            espera: {
+                /** @enum {string} */
+                tipo: "horario" | "sin_sesion" | "limite" | "proceso";
+                porQue: string;
+                hasta: string | null;
+            } | null;
+            resumen: string | null;
+            fallas: {
+                porQue: string;
+                cuantos: number;
+            }[];
+            campos: components["schemas"]["AiHubChatCampoDelPlan"][];
+            hacer: {
+                etiqueta: string;
+                intencion: components["schemas"]["AiHubChatIntencionDelBoton"];
+            } | null;
+            cancelar: {
+                etiqueta: string;
+                intencion: components["schemas"]["AiHubChatIntencionDelBoton"];
+            } | null;
+            reintentar: {
+                etiqueta: string;
+                intencion: components["schemas"]["AiHubChatIntencionDelBoton"];
+            } | null;
+            seguir: {
+                etiqueta: string;
+                intencion: components["schemas"]["AiHubChatIntencionDelBoton"];
+            } | null;
+            ensayo: boolean;
+        } | null;
+        AiHubChatTarjetaProgramado: {
+            programadas: {
+                id: string;
+                cuando: string;
+                que: string;
+                /** @enum {string} */
+                estado: "activa" | "pausada" | "terminada";
+                proxima: string | null;
+                proximaDicha: string;
+                ultimoDisparo: {
+                    en: string;
+                    detalle: string;
+                } | null;
+                esperaClic: {
+                    desde: string;
+                    texto: string;
+                } | null;
+                botones: {
+                    /** @enum {string} */
+                    tipo: "pausar" | "reanudar" | "cancelar" | "hacer_ahora";
+                    etiqueta: string;
+                    mensaje: string;
+                }[];
+            }[];
+            hayListas: boolean;
+        } | null;
         AiHubChatPiezasNuevasDelDone: {
             ejecucion: Omit<components["schemas"]["AiHubChatTarjetaDeEjecucion"], "tipo"> & (components["schemas"]["AiHubChatTarjetaPropuesta"] | components["schemas"]["AiHubChatTarjetaEnCurso"] | components["schemas"]["AiHubChatTarjetaResultado"] | components["schemas"]["AiHubChatTarjetaProgramada"] | components["schemas"]["AiHubChatTarjetaError"] | null);
             ensayo: boolean;
             plan?: components["schemas"]["AiHubChatTarjetaPlan"] & (Record<string, never> | null);
+            lote?: components["schemas"]["AiHubChatTarjetaLote"];
+            programado?: components["schemas"]["AiHubChatTarjetaProgramado"];
         };
         DashboardSummaryResponse: {
             /** Format: uuid */
@@ -13008,6 +13200,13 @@ export interface components {
             tarjeta: components["schemas"]["AiHubChatTarjetaDeEjecucion"];
         };
         AiHubChatEjecucionError: {
+            error: string;
+            code?: string;
+        };
+        AiHubChatLoteRespuesta: {
+            tarjeta: components["schemas"]["AiHubChatTarjetaLote"] & Record<string, never>;
+        };
+        AiHubChatLoteError: {
             error: string;
             code?: string;
         };
@@ -17089,6 +17288,58 @@ export interface components {
         };
         TraducirBody: {
             textos: string[];
+        };
+        PortalChatOpcion: {
+            /** @enum {string} */
+            accion: "aprobar_reparacion" | "rechazar_reparacion" | "la_hago_yo" | "aprobar_sobrecosto" | "rechazar_sobrecosto";
+            boton: string;
+            pideMotivo: boolean;
+            principal: boolean;
+        };
+        PortalChatTarjeta: {
+            /** @enum {string} */
+            accion: "radicar_pqrs" | "pedir_certificado" | "pagar_en_linea" | "bajar_extracto" | "bajar_certificado_de_ingresos" | "decidir_reparacion" | "decidir_sobrecosto" | "avisar_que_quedo" | "cambiar_cuenta" | "retirar_postulacion" | "reclamar_postulacion" | "pedir_visita" | "mover_visita" | "cancelar_visita" | "borrar_documento";
+            titulo: string;
+            detalle: string;
+            /** @enum {string} */
+            boton: "Sí, hazlo" | "Descargar extracto" | "Abrir el formulario" | "Descargar certificado";
+            datos: {
+                [key: string]: string;
+            };
+            opciones?: components["schemas"]["PortalChatOpcion"][];
+        } | null;
+        PortalChatPedidoResponse: {
+            /** @enum {string} */
+            pedido: "cuanto_debo" | "mis_giros" | "link_de_pago" | "certificado" | "certificado_de_ingresos" | "radicar_pqrs" | "ver_pqrs" | "extracto" | "reparaciones" | "ya_quedo" | "cambiar_cuenta" | "mi_contrato" | "proximo_pago" | "ajeno" | "no_entiendo" | "mi_postulacion" | "mis_postulaciones" | "que_me_pidieron" | "que_me_falta" | "mis_visitas" | "por_que_me_rechazaron" | "sigue_disponible" | "retirar_postulacion" | "reactivar_postulacion" | "reclamo_postulacion" | "pedir_visita" | "mover_visita" | "cancelar_visita" | "borrar_documento";
+            texto: string;
+            tarjeta: components["schemas"]["PortalChatTarjeta"];
+            otrasTarjetas?: (components["schemas"]["PortalChatTarjeta"] & Record<string, never>)[];
+        };
+        PortalChatError: {
+            error: string;
+        };
+        PortalChatPedidoBody: {
+            texto: string;
+            /** @enum {string} */
+            portal: "inquilino" | "propietario" | "postulante";
+            /** @enum {string} */
+            cuenta?: "inquilino" | "propietario";
+        };
+        PortalChatHacerResponse: {
+            hecho: boolean;
+            texto: string;
+            /** Format: uuid */
+            pqrsId?: string;
+            /** Format: uuid */
+            documentoId?: string;
+        };
+        PortalChatHacerBody: {
+            accion: string;
+            datos: {
+                [key: string]: string;
+            };
+            /** @enum {string} */
+            cuenta?: "inquilino" | "propietario";
         };
         /** @description Per-carrier quote result (Phase 20 D-20-15 8-carrier set). */
         AseguradoraQuote: {
@@ -26267,6 +26518,56 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AiHubChatEjecucionError"];
+                };
+            };
+        };
+    };
+    getAiHubChatLote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                loteId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La tarjeta al día */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatLoteRespuesta"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatLoteError"];
+                };
+            };
+            /** @description Otra inmobiliaria, o ensayo sin su token */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatLoteError"];
+                };
+            };
+            /** @description No existe, no es tuyo, o este servidor todavía no guarda lotes (falta la migración de los planes) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatLoteError"];
                 };
             };
         };
@@ -40702,6 +41003,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TraducirError"];
+                };
+            };
+        };
+    };
+    postPortalChatPedido: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PortalChatPedidoBody"];
+            };
+        };
+        responses: {
+            /** @description Respuesta o tarjeta */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalChatPedidoResponse"];
+                };
+            };
+            /** @description Sin sesión o sesión no verificada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalChatError"];
+                };
+            };
+        };
+    };
+    postPortalChatHacer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PortalChatHacerBody"];
+            };
+        };
+        responses: {
+            /** @description Lo que pasó */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalChatHacerResponse"];
+                };
+            };
+            /** @description Sin sesión o sesión no verificada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalChatError"];
                 };
             };
         };

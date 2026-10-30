@@ -16,6 +16,7 @@
  */
 
 import { leerBloques, leerEntidades, type BloqueDeRespuesta, type EntidadDelChat } from '@/lib/chat/bloques';
+import type { AdjuntoDelMensaje } from '@/lib/chat/adjuntos';
 import {
   leerAcciones,
   leerConfirmacion,
@@ -35,6 +36,8 @@ import {
   type TarjetaDeEjecucion,
 } from '@/lib/chat/tarjetas-de-ejecucion';
 import { leerTarjetaDePlan, type TarjetaDePlan } from '@/lib/chat/plan-del-chat';
+import { leerTarjetaDeLote, type TarjetaDeLote } from '@/lib/chat/lote-del-chat';
+import { leerTarjetaDeLoProgramado, type TarjetaDeLoProgramado } from '@/lib/chat/programado-del-chat';
 import { leerPasoDelPensamiento, type PasoDelPensamiento } from '@/lib/chat/pensamiento';
 import { agentFetch } from './agent-fetch';
 import { ApiError, errorDeDemasiadasSolicitudes } from '@/lib/api/client';
@@ -371,6 +374,14 @@ export interface ChatStreamHandlers {
      */
     plan: TarjetaDePlan | null;
     /**
+     * (29-10) La tarjeta del LOTE: la misma acción para varios, con UNA
+     * confirmación y el avance en segundo plano. `null` si el turno no armó
+     * un lote o el micro es de antes.
+     */
+    lote: TarjetaDeLote | null;
+    /** (29-10) La tarjeta de lo programado («¿qué tengo programado?»), o `null`. */
+    programado?: TarjetaDeLoProgramado | null;
+    /**
      * Por dónde lo contestó el micro. `directo:*` = el camino directo (la ficha,
      * sin el modelo): es un DATO, se muestra de una, sin teclearlo (23-09).
      */
@@ -558,6 +569,10 @@ export function handleSSEEvent(
         ensayo: obj.ensayo === true,
         // Aditivo (24-09, paquete H): un `done` sin plan (o de un micro viejo) → `null`.
         plan: leerTarjetaDePlan(obj.plan),
+        // Aditivo (29-10): un `done` sin lote (o de un micro viejo) → `null`.
+        lote: leerTarjetaDeLote(obj.lote),
+        // Aditivo (29-10): «¿qué tengo programado?»; un `done` sin ella (o de un micro viejo) → `null`.
+        programado: leerTarjetaDeLoProgramado(obj.programado),
         ...(typeof obj.camino === 'string' && obj.camino ? { camino: obj.camino } : {}),
         ...(obj.razonamiento !== undefined && obj.razonamiento !== null ? { razonamiento: obj.razonamiento } : {}),
       });
@@ -622,13 +637,22 @@ export function isAgentConfigured(): boolean {
   return Boolean(process.env.NEXT_PUBLIC_AGENT_URL);
 }
 
-function buildBody(message: string, history?: ChatHistoryEntry[], intencion?: IntencionDelChat | null): string {
+function buildBody(
+  message: string,
+  history?: ChatHistoryEntry[],
+  intencion?: IntencionDelChat | null,
+  adjuntos?: readonly AdjuntoDelMensaje[],
+): string {
   return JSON.stringify({
     message,
     ...(history && history.length > 0 ? { history } : {}),
     // Lo que pidió el botón, con forma: el micro lo atiende por su camino
     // directo (la ficha) sin adivinar el texto.
     ...(intencion ? { intencion } : {}),
+    // (29-10-2026) Los archivos del mensaje, ya subidos: el micro los lee por su id.
+    ...(adjuntos && adjuntos.length > 0
+      ? { adjuntos: adjuntos.map(({ id, nombre, tipo, tamano }) => ({ id, nombre, tipo, tamano })) }
+      : {}),
   });
 }
 
@@ -707,6 +731,26 @@ export async function fetchEjecucion(args: {
 }
 
 /**
+ * La tarjeta de HOY de un LOTE del chat (29-10):
+ * `GET /api/agency/:agencyId/ai-hub/chat/lotes/:loteId` → `{ tarjeta }`.
+ *
+ * La pide la tarjeta MIENTRAS el lote corre en segundo plano (el avance «N de
+ * M») y al volver a un hilo con un lote en pausa o programado: si ya se puede
+ * seguir, el micro lo retoma con la sesión de la persona (tomarlo es
+ * idempotente). `null` si el micro no lo tiene (404: no es tuyo, o es un micro
+ * de antes); un fallo de red o un 5xx lanza (`ApiError`).
+ */
+export async function fetchLote(args: { agencyId: string; loteId: string; signal?: AbortSignal }): Promise<TarjetaDeLote | null> {
+  const url = `${agentBaseUrl()}/api/agency/${args.agencyId}/ai-hub/chat/lotes/${encodeURIComponent(args.loteId)}`;
+  const res = await agentFetch(url, { method: 'GET', ...(args.signal ? { signal: args.signal } : {}) });
+  if (res.status === 404) return null;
+  if (!res.ok) throw await falloDelAgente(res);
+  const cuerpo: unknown = await res.json().catch(() => null);
+  const tarjeta = cuerpo && typeof cuerpo === 'object' ? (cuerpo as Record<string, unknown>).tarjeta : null;
+  return leerTarjetaDeLote(tarjeta);
+}
+
+/**
  * Streaming turn over SSE. Calls the handlers in order as events arrive. Throws
  * if the request can't be opened (the caller falls back to postChatTurn).
  */
@@ -715,6 +759,8 @@ export async function streamChatTurn(args: {
   message: string;
   history?: ChatHistoryEntry[];
   intencion?: IntencionDelChat | null;
+  /** (29-10-2026) Los archivos del mensaje. */
+  adjuntos?: readonly AdjuntoDelMensaje[];
   signal?: AbortSignal;
   handlers: ChatStreamHandlers;
 }): Promise<void> {
@@ -725,7 +771,7 @@ export async function streamChatTurn(args: {
       'content-type': 'application/json',
       accept: 'text/event-stream',
     },
-    body: buildBody(args.message, args.history, args.intencion),
+    body: buildBody(args.message, args.history, args.intencion, args.adjuntos),
     ...(args.signal ? { signal: args.signal } : {}),
   });
   if (!res.ok) throw await falloDelAgente(res);

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 
 import { Progress, StatusBadge, type SemanticTone } from '@leasefy/cadence';
 import {
   ArrowCounterClockwise,
+  ArrowRight,
   CalendarBlank,
   CaretDown,
   CheckCircle,
@@ -24,6 +25,8 @@ import { CasillasDeCodigo } from '@/components/ui/casillas-de-codigo';
 import { useAuth } from '@/lib/auth/use-auth';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
 import { useI18n } from '@/lib/i18n';
+import { useTr } from '@/lib/i18n/use-tr';
+import { bajarLaDescargaDelChat } from '@/lib/chat/descarga-del-chat';
 import { formatCurrency, formatDate, formatNumber } from '@/lib/format';
 import { getSupabase } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
@@ -39,6 +42,7 @@ import {
   type BotonDeLaTarjeta,
   type DatoDeLaVistaPrevia,
   type DobleControlDeLaEjecucion,
+  type ModificacionDeLaEjecucion,
   type RiesgoDeLaEjecucion,
   type RiesgoNombrado,
   type TablaDeLaVistaPrevia,
@@ -53,6 +57,7 @@ import {
 import { esEstadoFinal, useProcesoDelChat } from '@/lib/chat/use-proceso-del-chat';
 import type { ChatMessage } from '@/lib/types/beta-chat';
 import { CajaDelChat } from './CajaDelChat';
+import { DescargaEnElChat } from './DescargaEnElChat';
 import { FILAS_A_LA_VISTA, filasQueSeOcultan } from './RespuestaConForma';
 
 /**
@@ -232,6 +237,8 @@ function TarjetaDePropuesta({ t: p, posteriores, ensayo }: PropsComunes & { t: T
         {p.frase} <strong className="font-medium">{p.pregunta}</strong>
       </p>
       {p.porQue && <p className="mt-1.5 font-body text-[14px] leading-snug text-fg-muted">{p.porQue}</p>}
+      {/* 29-10: lo que se modifica, ANTES → DESPUÉS, antes de decidir. */}
+      {p.modificacion && <LoQueCambia m={p.modificacion} />}
       {/* §4.1: la frase, lo que va a quedar, lo que implica… y justo encima
           de «Hacerlo», los riesgos, para decidir con ellos a la vista. */}
       {p.vistaPrevia && <VistaPrevia vista={p.vistaPrevia} />}
@@ -250,6 +257,101 @@ function TarjetaDePropuesta({ t: p, posteriores, ensayo }: PropsComunes & { t: T
         </p>
       )}
     </CajaDelChat>
+  );
+}
+
+// ── Lo que cambia: antes → después (29-10) ──────────────────────────────────
+
+/** Una cifra, un porcentaje o una cuenta enmascarada se leen en mono (tabulares). */
+const PARECE_CIFRA = /^[\s$•−\-\d.,%]+(\s*(%|días?|m²))?$/;
+
+function ValorDelCambio({ valor, cuando }: { valor: string; cuando: 'antes' | 'despues' }) {
+  return (
+    <span
+      className={cn(
+        'min-w-0 break-words',
+        cuando === 'antes' ? 'text-fg-subtle' : 'text-fg',
+        PARECE_CIFRA.test(valor) && 'font-mono tabular-nums',
+      )}
+    >
+      {valor}
+    </span>
+  );
+}
+
+function ListaDeFrases({ titulo, frases, callada }: { titulo: string; frases: string[]; callada?: boolean }) {
+  if (frases.length === 0) return null;
+  return (
+    <div className="mt-3">
+      <h4 className="font-mono text-[11px] uppercase tracking-[0.08em] text-fg-subtle">{titulo}</h4>
+      <ul className={cn('mt-1 space-y-1 font-body text-[14px] leading-snug', callada ? 'text-fg-muted' : 'text-fg')}>
+        {frases.map((f) => (
+          <li key={f} className="flex items-start gap-2">
+            <span aria-hidden className="mt-[0.55em] size-1 shrink-0 rounded-full bg-fg-subtle" />
+            <span className="min-w-0">{f}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/**
+ * Lo que la acción MODIFICA, campo por campo: cómo está hoy y cómo queda, desde
+ * cuándo rige, qué cambia con eso y qué no, y si se puede volver a lo de antes.
+ * Lo sensible ya viene enmascarado del micro («•••• 7890»).
+ */
+export function LoQueCambia({ m }: { m: ModificacionDeLaEjecucion }) {
+  const { t } = useI18n();
+  return (
+    <section
+      aria-label={t('beta.enElChat.tarjeta.modificacion.titulo')}
+      data-testid="modificacion"
+      className="mt-4 border-t border-border-faint pt-3"
+    >
+      <h3 className="font-mono text-[11px] uppercase tracking-[0.08em] text-fg-subtle">
+        {t('beta.enElChat.tarjeta.modificacion.titulo')}
+      </h3>
+      {m.sobre && <p className="mt-1 font-body text-[14px] leading-snug text-fg-muted">{m.sobre}</p>}
+      <ul className="mt-1 divide-y divide-border-faint">
+        {m.cambios.map((c) => (
+          <li
+            key={c.clave}
+            data-clave={c.clave}
+            className="grid gap-0.5 py-2 font-body text-[14px] sm:grid-cols-[minmax(0,11rem)_minmax(0,1fr)] sm:items-baseline sm:gap-4"
+          >
+            <span className="min-w-0 break-words text-fg-muted">{c.etiqueta}</span>
+            <span className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+              <span className="sr-only">{t('beta.enElChat.tarjeta.modificacion.antes')}: </span>
+              <ValorDelCambio valor={c.antes ?? t('beta.enElChat.tarjeta.modificacion.sinLeer')} cuando="antes" />
+              <ArrowRight aria-hidden className="size-3.5 shrink-0 self-center text-fg-subtle" />
+              <span className="sr-only">{t('beta.enElChat.tarjeta.modificacion.despues')}: </span>
+              <ValorDelCambio valor={c.despues} cuando="despues" />
+            </span>
+          </li>
+        ))}
+      </ul>
+      {m.desde && (
+        <p className="mt-2 flex items-start gap-2 font-body text-[14px] leading-snug text-fg">
+          <CalendarBlank className="mt-0.5 size-4 shrink-0 text-fg-muted" aria-hidden />
+          {m.desde}
+        </p>
+      )}
+      {m.aviso && (
+        <p data-testid="aviso-de-la-modificacion" className="mt-2 flex items-start gap-2 font-body text-[14px] leading-snug text-fg">
+          <WarningCircle weight="duotone" className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden />
+          {m.aviso}
+        </p>
+      )}
+      <ListaDeFrases titulo={t('beta.enElChat.tarjeta.modificacion.conEsto')} frases={m.efectos} />
+      <ListaDeFrases titulo={t('beta.enElChat.tarjeta.modificacion.noCambia')} frases={m.noCambia} callada />
+      {m.deshacer && (
+        <p className="mt-3 flex items-start gap-2 font-body text-[13px] leading-snug text-fg-muted">
+          <ArrowCounterClockwise className="mt-0.5 size-4 shrink-0" aria-hidden />
+          {m.deshacer}
+        </p>
+      )}
+    </section>
   );
 }
 
@@ -591,6 +693,7 @@ const ESPERA_ENTRE_INTENTOS_MS = 2000;
 
 function TarjetaDeResultadoDelHilo({ t: r, messageId, posteriores, ensayo, repite }: PropsComunes & { t: TarjetaResultado }) {
   const { t } = useI18n();
+  const tr = useTr();
   const { mandar, ocupado } = useMandar();
   const { refrescarEjecucion } = useBetaChatContext();
   const p = PRESENTACION_DEL_RESULTADO[r.estado];
@@ -675,6 +778,15 @@ function TarjetaDeResultadoDelHilo({ t: r, messageId, posteriores, ensayo, repit
   // Con el resumen en el texto de arriba, la fila ES el contenido («Se envía
   // en 0:45 · Deshacer»): un pie bajo un cuerpo vacío sería un filete suelto.
   const conResumen = !repite && !!r.resumen;
+  // D1 (30-10): el archivo que dejó la acción se baja aquí mismo, con tu sesión.
+  const descarga = r.descarga ? (
+    <DescargaEnElChat
+      sinBorde
+      etiqueta={tr('Descargar {nombre}', { nombre: r.descarga.nombre })}
+      accion={tr('bajar el archivo')}
+      bajar={() => bajarLaDescargaDelChat(r.descarga!)}
+    />
+  ) : null;
 
   // Volver a una tarjeta en gracia cuya cuenta ya terminó (recargar, cambiar
   // de conversación): se pide su versión de hoy una vez.
@@ -700,12 +812,17 @@ function TarjetaDeResultadoDelHilo({ t: r, messageId, posteriores, ensayo, repit
       data-estado={r.estado}
       titulo={r.titulo}
       conteo={<Estado tono={p.tono} pulso={p.pulso} texto={t(`beta.enElChat.tarjeta.estado.${r.estado}`)} ensayo={ensayo} />}
-      pie={conResumen && fila ? <Pie>{fila}</Pie> : undefined}
+      pie={conResumen && (fila || descarga) ? <Pie>{descarga}{fila}</Pie> : undefined}
     >
       {conResumen ? (
         <div className="flex items-start gap-2.5">
           {p.icono}
           <p className="min-w-0 font-body text-[15px] leading-relaxed text-fg">{r.resumen}</p>
+        </div>
+      ) : descarga && !fila ? (
+        <div className="flex items-center gap-2.5">
+          {p.icono}
+          {descarga}
         </div>
       ) : (
         <div className="flex items-center gap-2.5">

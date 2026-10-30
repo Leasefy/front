@@ -1,13 +1,15 @@
 'use client';
 
-import { CurrencyInput } from '@leasefy/cadence';
+import { Paperclip } from '@phosphor-icons/react';
 import { Input, Textarea } from '@/components/ui';
+import { CampoDePlata } from '@/components/ui/campo-de-plata';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SelectorDeMes } from '@/components/finanzas/SelectorDeMes';
 import { mesActual } from '@/lib/recaudo/meses';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import type { CampoDelFormulario } from '@/lib/chat/acciones-del-hilo';
+import type { InputHTMLAttributes } from 'react';
 import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 
 /**
@@ -54,6 +56,32 @@ export function datosDeLosCampos(
   return datos;
 }
 
+/**
+ * 29-10 (modificar): el teclado y el autocompletado según el FORMATO del dato.
+ * Sin formato, el de su tipo (un número abre el teclado decimal).
+ */
+export function tecladoDelFormato(c: CampoDelFormulario): Pick<
+  InputHTMLAttributes<HTMLInputElement>,
+  'type' | 'inputMode' | 'autoComplete'
+> {
+  switch (c.formato) {
+    case 'correo':
+      return { type: 'email', inputMode: 'email', autoComplete: 'email' };
+    case 'celular':
+      return { type: 'tel', inputMode: 'tel', autoComplete: 'tel' };
+    case 'cuenta':
+      return { inputMode: 'numeric', autoComplete: 'off' };
+    case 'direccion':
+      return { autoComplete: 'street-address' };
+    case 'dia_del_mes':
+    case 'dias':
+    case 'entero':
+      return { inputMode: 'numeric' };
+    default:
+      return c.tipo === 'numero' ? { inputMode: 'decimal' } : {};
+  }
+}
+
 export function CamposEnElChat({
   campos,
   valores,
@@ -73,15 +101,31 @@ export function CamposEnElChat({
     <div className="grid gap-3 sm:grid-cols-2">
       {campos.map((c) => {
         const id = `campo-${idBase}-${c.clave}`;
-        const ancho = c.tipo === 'texto_largo' ? 'sm:col-span-2' : '';
+        const ancho = c.tipo === 'texto_largo' || c.tipo === 'adjunto' ? 'sm:col-span-2' : '';
+        // (29-10-2026) Los archivos que mandó la persona: no se escriben, se
+        // ven con su nombre y viajan tal cual.
+        if (c.tipo === 'adjunto') {
+          return (
+            <div key={c.clave} className={cn('space-y-1.5', ancho)} data-testid={`campo-adjunto-${c.clave}`}>
+              <span className="block font-body text-[14px] font-medium text-fg">{c.etiqueta}</span>
+              <p className="flex items-start gap-2 rounded-md bg-surface-muted px-3 py-2 font-body text-[13px] text-fg">
+                <Paperclip size={16} aria-hidden className="mt-px shrink-0 text-fg-muted" />
+                <span className="min-w-0 break-words">{c.ayuda ?? t('beta.enElChat.formulario.archivoAdjunto')}</span>
+              </p>
+            </div>
+          );
+        }
         return (
           <div key={c.clave} className={cn('space-y-1.5', ancho)}>
             <label htmlFor={id} className="block font-body text-[14px] font-medium text-fg">
               {c.etiqueta}
             </label>
             {c.tipo === 'moneda' ? (
-              <CurrencyInput
+              // R10 (30-10): el campo de plata del panel: sin área, pesos enteros y la coma se
+              // frena (antes «200.000,50» quedaba en 20.000.050); con área y su llave, centavos.
+              <CampoDePlata
                 id={id}
+                areas={c.areasDePlata ?? []}
                 disabled={deshabilitados}
                 value={valores[c.clave] ? Number(valores[c.clave]) : undefined}
                 onChange={(v) => onCambiar(c.clave, Number.isFinite(v) ? String(v) : '')}
@@ -121,7 +165,8 @@ export function CamposEnElChat({
               <Input
                 id={id}
                 disabled={deshabilitados}
-                inputMode={c.tipo === 'numero' ? 'decimal' : undefined}
+                // 29-10: el teclado del celular según cómo se escribe el dato (correo, celular, cuenta…).
+                {...tecladoDelFormato(c)}
                 value={valores[c.clave] ?? ''}
                 onChange={(e) => onCambiar(c.clave, c.tipo === 'numero' ? soloNumero(e.target.value) : e.target.value)}
               />

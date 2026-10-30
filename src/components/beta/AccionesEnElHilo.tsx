@@ -32,6 +32,8 @@ import { CajaDelChat } from './CajaDelChat';
 import { CamposEnElChat, datosDeLosCampos, valoresIniciales } from './CamposEnElChat';
 import { TarjetaDeEjecucion, useMandar } from './TarjetaDeEjecucion';
 import { TarjetaDePlan } from './TarjetaDePlan';
+import { TarjetaDeLote } from './TarjetaDeLote';
+import { TarjetaDeLoProgramado } from './TarjetaDeLoProgramado';
 
 /**
  * AccionesEnElHilo — la parte del hilo que ACTÚA (Nico, 23-09-2026, 22:51:
@@ -49,6 +51,8 @@ import { TarjetaDePlan } from './TarjetaDePlan';
  *   · Los datos que faltan, pedidos en el hilo.
  *   · Desde el 24-09, la tarjeta del PLAN (`TarjetaDePlan`): varias acciones
  *     pedidas en una frase, con un solo «Hacer todo» y el avance paso a paso.
+ *   · Desde el 29-10, la tarjeta del LOTE (`TarjetaDeLote`): la misma acción
+ *     para 1, 3 o 100, con un solo «Sí, hazlo» y el avance en segundo plano.
  *   · Desde el 24-09, la tarjeta del EJECUTOR (`TarjetaDeEjecucion`):
  *     propuesta con vista previa, en curso, resultado con la gracia de
  *     «Deshacer», programada y error explicado. Con ella a la vista, la
@@ -67,8 +71,8 @@ export function AccionesEnElHilo({ message, className }: { message: ChatMessage;
     return i < 0 ? [] : lista.slice(i + 1);
   }, [messages, message.id]);
 
-  const { acciones, confirmacion, resultado, formulario, ejecucion, plan } = message;
-  if (!acciones?.length && !confirmacion && !resultado && !formulario && !ejecucion && !plan) return null;
+  const { acciones, confirmacion, resultado, formulario, ejecucion, plan, lote, programado } = message;
+  if (!acciones?.length && !confirmacion && !resultado && !formulario && !ejecucion && !plan && !lote && !programado) return null;
 
   return (
     <div className={cn('space-y-3', className)} data-testid="acciones-en-el-hilo">
@@ -77,6 +81,10 @@ export function AccionesEnElHilo({ message, className }: { message: ChatMessage;
       )}
       {/* (24-09, paquete H) Varias acciones pedidas en una frase: UNA tarjeta, un «Hacer todo». */}
       {plan && <TarjetaDePlan plan={plan} message={message} posteriores={posteriores} />}
+      {/* (29-10) La misma acción para varios: UNA tarjeta, un «Sí, hazlo», el avance en segundo plano. */}
+      {lote && <TarjetaDeLote lote={lote} message={message} posteriores={posteriores} />}
+      {/* (29-10) «¿Qué tengo programado?»: cada orden con botones que son mensajes del hilo. */}
+      {programado && <TarjetaDeLoProgramado tarjeta={programado} posteriores={posteriores} />}
       {ejecucion ? (
         <TarjetaDeEjecucion tarjeta={ejecucion} message={message} posteriores={posteriores} />
       ) : (
@@ -164,6 +172,9 @@ function AccionesDeLaFicha({ acciones, turnoId }: { acciones: AccionDelHilo[]; t
     >
       {disponibles.length > 0 ? (
         <QuickActionChips
+          // Lab 30-10: el chip del DS mide 30 px fijos; con un título largo («Cambiar la comisión de
+          // administración del contrato #10 (hoy 7 %)») parte línea y a 390 px el texto se salía del borde.
+          className="[&>button]:h-auto [&>button]:min-h-[30px] [&>button]:max-w-full [&>button]:py-1 [&>button]:text-left"
           aria-label={t('beta.enElChat.acciones.titulo')}
           chips={disponibles.map((a) => ({
             id: `${a.id}|${a.entidad.id}`,
@@ -180,7 +191,8 @@ function AccionesDeLaFicha({ acciones, turnoId }: { acciones: AccionDelHilo[]; t
               tipo: a.entidad.tipo,
               id: a.entidad.id,
             });
-            mandar(a.titulo, { accion: a.id, entidad: a.entidad });
+            // 30-10: con lo que la frase ya dijo (el canon del otrosí), el formulario sale lleno.
+            mandar(a.titulo, { accion: a.id, entidad: a.entidad, ...(a.datos ? { datos: a.datos } : {}) });
           }}
         />
       ) : (

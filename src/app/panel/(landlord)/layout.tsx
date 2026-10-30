@@ -7,6 +7,7 @@ import { DecisionProvider } from '@/lib/context/DecisionContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PlanSidebar, NavItem, ProfileCompletionStep } from '@/components/ui/plan/PlanSidebar';
 import { PlanHeader } from '@/components/ui/plan/PlanHeader';
+import { ChatDelPortal } from '@/components/portales/chat/ChatDelPortal';
 import { SidebarProvider, useSidebar } from '@/lib/context/SidebarContext';
 import { I18nProvider, useI18n } from '@/lib/i18n';
 import { useMySubscription } from '@/lib/hooks/useSubscription';
@@ -261,6 +262,9 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
         </main>
         </PropietarioDeInmobiliariaProvider>
       </div>
+      {/* Ori del portal (29-10-2026): sólo al propietario con inmobiliaria (el independiente usa el
+          panel); sin modelo y sólo con lo suyo. */}
+      {deInmobiliaria && !administrados.cargando && <ChatDelPortal portal="propietario" />}
 
       {/* El <Toaster> es único y vive en el layout raíz (src/app/layout.tsx), fuera de
           <ProtectedRoute>: aquí adentro se perdía todo toast emitido mientras el guard

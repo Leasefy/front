@@ -36,10 +36,13 @@
  * inventa «Deshacer» ni «Cancelar»).
  */
 
+import { leerDescargaDelChat, type DescargaDelChat } from './descarga-del-chat';
 import {
+  ACCIONES_SOBRE_UN_LOTE,
   ACCIONES_SOBRE_UN_PLAN,
   datosDelPlan,
   leerEntidadDeLaIntencion,
+  leerIntencionSobreUnLote,
   type AccionSobreUnPlan,
   type IntencionDelChat,
   type ModoDelChat,
@@ -71,6 +74,31 @@ export interface VistaPreviaDeLaEjecucion {
   recortada: boolean;
   /** Por qué no hay vista previa, en una frase. */
   explicacion: string | null;
+}
+
+/**
+ * 29-10-2026 (el chat MODIFICA datos): lo que cambia, campo por campo, ANTES →
+ * DESPUÉS (`AiHubChatModificacion` del micro). Lo sensible (la cuenta) llega
+ * enmascarado en los dos lados.
+ */
+export interface CambioDeLaModificacion {
+  clave: string;
+  etiqueta: string;
+  /** Cómo está hoy; `null` = el micro no lo pudo leer. */
+  antes: string | null;
+  despues: string;
+  sensible: boolean;
+}
+
+export interface ModificacionDeLaEjecucion {
+  sobre: string;
+  cambios: CambioDeLaModificacion[];
+  desde: string;
+  efectos: string[];
+  noCambia: string[];
+  deshacer: string;
+  /** Lo que se pidió y la ruta no respeta tal cual («desde noviembre» → desde hoy). */
+  aviso: string | null;
 }
 
 export interface DobleControlDeLaEjecucion {
@@ -115,6 +143,12 @@ export interface TarjetaPropuesta extends BaseDeLaTarjeta {
   dobleControl: DobleControlDeLaEjecucion | null;
   ensayo: boolean;
   siNoFueraEnsayo: string | null;
+  /**
+   * (29-10, aditivo) Sólo las que modifican datos: antes → después. La llave
+   * siempre está (el micro la declara); sin modificación, `undefined` —el
+   * micro no la manda—.
+   */
+  modificacion: ModificacionDeLaEjecucion | undefined;
 }
 
 export interface TarjetaEnCurso extends BaseDeLaTarjeta {
@@ -134,6 +168,8 @@ export interface TarjetaResultado extends BaseDeLaTarjeta {
   resumen: string;
   gracia: { hasta: string; segundos: number } | null;
   deshacer: BotonDeLaTarjeta | null;
+  /** (30-10, D1) El archivo que dejó la acción, para bajarlo ahí mismo; sin archivo, `undefined`. */
+  descarga: DescargaDelChat | undefined;
 }
 
 export interface TarjetaProgramada extends BaseDeLaTarjeta {
@@ -199,6 +235,8 @@ const CLAVE_DE_DATO = /^[A-Za-z][A-Za-z0-9_]{0,39}$/;
 export function leerIntencionDelBoton(v: unknown): IntencionDelChat | null {
   if (!esObjeto(v) || typeof v.accion !== 'string') return null;
   const accion = v.accion;
+  // (29-10) «Sí, hazlo», «No» / «Detener», «Reintentar», «Seguir» sobre un lote.
+  if ((ACCIONES_SOBRE_UN_LOTE as string[]).includes(accion)) return leerIntencionSobreUnLote(v);
   if (accion === 'confirmar' || accion === 'cancelar' || accion === 'deshacer') {
     const propuestaId = texto(v.propuestaId);
     return propuestaId ? { accion, propuestaId } : null;
@@ -260,6 +298,38 @@ function leerVistaPrevia(v: unknown): VistaPreviaDeLaEjecucion | null {
   };
 }
 
+const textos = (v: unknown): string[] =>
+  Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && x.trim() !== '') : [];
+
+/** El antes → después de una modificación; `null` si no viene o no trae ningún cambio entendible. */
+export function leerModificacion(v: unknown): ModificacionDeLaEjecucion | null {
+  if (!esObjeto(v) || !Array.isArray(v.cambios)) return null;
+  const cambios: CambioDeLaModificacion[] = [];
+  for (const c of v.cambios) {
+    if (!esObjeto(c)) continue;
+    const clave = texto(c.clave);
+    const despues = texto(c.despues);
+    if (!clave || !despues) continue;
+    cambios.push({
+      clave,
+      etiqueta: texto(c.etiqueta) ?? clave,
+      antes: texto(c.antes),
+      despues,
+      sensible: c.sensible === true,
+    });
+  }
+  if (cambios.length === 0) return null;
+  return {
+    sobre: textoONulo(v.sobre) ?? '',
+    cambios,
+    desde: textoONulo(v.desde) ?? '',
+    efectos: textos(v.efectos),
+    noCambia: textos(v.noCambia),
+    deshacer: textoONulo(v.deshacer) ?? '',
+    aviso: texto(v.aviso),
+  };
+}
+
 function leerDobleControl(v: unknown): DobleControlDeLaEjecucion | null {
   if (!esObjeto(v)) return null;
   if (v.laOtraMitad !== 'la_puedes_hacer_tu' && v.laOtraMitad !== 'otra_persona') return null;
@@ -318,6 +388,7 @@ export function leerTarjetaDeEjecucion(v: unknown): TarjetaDeEjecucion | null {
         dobleControl: leerDobleControl(v.dobleControl),
         ensayo: v.ensayo === true,
         siNoFueraEnsayo: texto(v.siNoFueraEnsayo),
+        modificacion: leerModificacion(v.modificacion) ?? undefined,
       };
     }
     case 'en_curso':
@@ -341,6 +412,8 @@ export function leerTarjetaDeEjecucion(v: unknown): TarjetaDeEjecucion | null {
         resumen: textoONulo(v.resumen) ?? '',
         gracia: hasta && !Number.isNaN(Date.parse(hasta)) ? { hasta, segundos: numero(g?.segundos) ?? 60 } : null,
         deshacer: leerBoton(v.deshacer),
+        // Como `modificacion`: la llave siempre está; sin archivo (o no hecha), `undefined`.
+        descarga: estado === 'hecha' ? (leerDescargaDelChat(v.descarga) ?? undefined) : undefined,
       };
     }
     case 'programada': {
@@ -569,6 +642,9 @@ const CON_TILDE: Readonly<Record<string, string>> = {
   renovacion: 'renovación',
   automatica: 'automática',
   automatico: 'automático',
+  // Lab 30-10 (la exógena): «Anio», «Cuantias menores».
+  anio: 'año',
+  cuantias: 'cuantías',
 };
 /** Siglas que se escriben en mayúsculas dentro de la etiqueta. */
 const SIGLAS: ReadonlyArray<[RegExp, string]> = [
@@ -616,10 +692,14 @@ export function textoLegible(v: string): string {
   return palabras.charAt(0).toUpperCase() + palabras.slice(1);
 }
 
+/** Lab 30-10: «anio: 2025» es un año, no una cifra («2.025»). */
+const CLAVE_DE_ANIO = /(^|\.)(anio|ano|year)$|(Anio|Ano|Year)$/;
+
 function formatoDe(clave: string, valor: unknown): FormatoDeDato | null {
   if (typeof valor === 'boolean') return 'booleano';
   if (typeof valor === 'number') {
     if (!Number.isFinite(valor)) return null;
+    if (CLAVE_DE_ANIO.test(clave) && Number.isInteger(valor) && valor >= 1900 && valor <= 2200) return 'texto';
     return esClaveDePlata(clave) ? 'moneda' : 'numero';
   }
   if (typeof valor === 'string') {
@@ -657,6 +737,14 @@ function tablaDe(clave: string, lista: unknown[]): TablaDeLaVistaPrevia | null {
   };
 }
 
+/** «Canon nuevo» → «canon nuevo», pero una sigla se queda («NIT», «IVA»). */
+function enMinuscula(etiqueta: string): string {
+  return etiqueta
+    .split(' ')
+    .map((p) => (/^[A-ZÁÉÍÓÚÑ]{2,}$|^Rete(ICA|IVA)$/.test(p) ? p : p.toLowerCase()))
+    .join(' ');
+}
+
 export function vistaPreviaLegible(datos: unknown): VistaPreviaLegible {
   const salida: VistaPreviaLegible = { datos: [], tablas: [] };
   if (datos === null || datos === undefined) return salida;
@@ -687,7 +775,7 @@ export function vistaPreviaLegible(datos: unknown): VistaPreviaLegible {
     } else if (esObjeto(v)) {
       // Un nivel adentro («contrato · canon»); más hondo ya no se lee en un chat.
       for (const [k2, v2] of Object.entries(v)) {
-        if (esEscalar(v2)) agregarDato(`${k}.${k2}`, `${etiquetaDeLaClave(k)} · ${etiquetaDeLaClave(k2).toLowerCase()}`, v2);
+        if (esEscalar(v2)) agregarDato(`${k}.${k2}`, `${etiquetaDeLaClave(k)} · ${enMinuscula(etiquetaDeLaClave(k2))}`, v2);
       }
     } else {
       agregarDato(k, etiquetaDeLaClave(k), v);

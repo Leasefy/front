@@ -32,6 +32,7 @@ import {
   programada,
   propuestaDeRenovacion,
   propuestaDelLote,
+  propuestaDeModificacion,
 } from './tarjetas-de-ejecucion.fixtures';
 import {
   ESTADOS_DEL_RESULTADO,
@@ -42,6 +43,7 @@ import {
   hitoDeLaCuenta,
   leerEventoProcesoIniciado,
   leerIntencionDelBoton,
+  leerModificacion,
   leerTarjetaDeEjecucion,
   relojDeLaCuenta,
   riesgosNombrados,
@@ -63,6 +65,8 @@ function variantes(): Record<string, EsquemaDelMicro> {
 const EJEMPLOS = {
   propuesta: propuestaDeRenovacion(),
   propuestaDelLote: propuestaDelLote(),
+  // 29-10: la modificación (antes → después).
+  propuestaDeModificacion: propuestaDeModificacion(),
   enCurso: enCurso(),
   enGracia: enGracia('2026-09-24T14:01:00.000Z'),
   hecha: hecha(true),
@@ -74,7 +78,8 @@ describe('los ejemplos son lo que el micro manda (esquema del snapshot, estricto
   it('el contrato trae la ruta de la tarjeta al día y las piezas nuevas del `done`', () => {
     expect(rutaDeLaEjecucion, 'GET …/ejecuciones/{id} no está en el contrato').not.toBeNull();
     expect(rutaDeLaEjecucion.ruta.respuesta?.properties?.tarjeta).toBeDefined();
-    expect(Object.keys(piezasDelDone.properties!).sort()).toEqual(['ejecucion', 'ensayo', 'plan']);
+    // (29-10) `lote`: la tarjeta del lote, aditiva como el plan.
+    expect(Object.keys(piezasDelDone.properties!).sort()).toEqual(['ejecucion', 'ensayo', 'lote', 'plan', 'programado']);
   });
 
   it.each(Object.entries(EJEMPLOS))('%s cabe en `done.ejecucion` y en la respuesta de GET …/ejecuciones/{id}', (_, ejemplo) => {
@@ -231,6 +236,15 @@ describe('la vista previa, legible', () => {
     expect(JSON.stringify(v)).not.toContain(CONTRATO_24);
   });
 
+  it('lab 30-10: un año no lleva punto de mil y «Anio»/«Cuantias» van con tilde', () => {
+    const v = vistaPreviaLegible({ anio: 2025, cuantiasMenores: { nit: '222222222' }, filas: 2025 });
+    expect(v.datos.map((d) => [d.etiqueta, d.formato])).toEqual([
+      ['Año', 'texto'],
+      ['Cuantías menores · NIT', 'texto'],
+      ['Filas', 'numero'],
+    ]);
+  });
+
   it('una lista suelta es una tabla; lo que no se entiende no se muestra', () => {
     expect(vistaPreviaLegible([{ nombre: 'Mateo Pérez', saldoCop: 1_550_000 }]).tablas[0].columnas.map((c) => c.formato)).toEqual([
       'texto',
@@ -285,5 +299,30 @@ describe('la vista previa, legible', () => {
       ['Creado', 'fecha'],
       ['Banco · nombre', 'texto'],
     ]);
+  });
+});
+
+describe('la modificación: antes → después (29-10)', () => {
+  it('se lee entera, con su aviso, y una propuesta sin ella trae `null`', () => {
+    const t = leerTarjetaDeEjecucion(propuestaDeModificacion());
+    expect(t?.tipo).toBe('propuesta');
+    if (t?.tipo !== 'propuesta') return;
+    expect(t.modificacion?.cambios).toEqual([
+      { clave: 'comisionPorcentaje', etiqueta: 'Comisión de administración', antes: '9 %', despues: '8 %', sensible: false },
+    ]);
+    expect(t.modificacion?.aviso).toMatch(/^Pediste que rija desde noviembre/);
+    const sin = leerTarjetaDeEjecucion(propuestaDeRenovacion());
+    expect(sin?.tipo === 'propuesta' && sin.modificacion).toBeUndefined();
+  });
+
+  it('un cambio sin clave o sin «después» no se pinta; sin ningún cambio entendible, no hay bloque', () => {
+    expect(leerModificacion({ cambios: [{ clave: 'x' }, { despues: 'y' }] })).toBeNull();
+    expect(leerModificacion({ cambios: [{ clave: 'correo', despues: 'a@b.co', antes: '' }] })?.cambios[0]).toEqual({
+      clave: 'correo',
+      etiqueta: 'correo',
+      antes: null,
+      despues: 'a@b.co',
+      sensible: false,
+    });
   });
 });

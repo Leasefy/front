@@ -12717,6 +12717,7 @@
       },
       "formulario": {
         "elige": "Choose an option",
+        "archivoAdjunto": "The files you sent to the chat",
         "seguir": "Done, continue"
       },
       "mensaje": {
@@ -12724,9 +12725,11 @@
         "no": "No, don’t do it",
         "deshacer": "Undo: {{etiqueta}}",
         "verFicha": "Show the record of {{titulo}}",
+        "cambiarDatos": "I want to change details: {{titulo}}",
         "reintentar": "Retry: {{titulo}}"
       },
       "verFicha": "Show record",
+      "cambiarDatos": "Change details…",
       "enlaceExterno": "opens in another tab ({{destino}})",
       "verElResto": "See the rest",
       "tarjeta": {
@@ -12768,6 +12771,14 @@
           "verMenos": "Show less",
           "si": "Yes",
           "no": "No"
+        },
+        "modificacion": {
+          "titulo": "What changes",
+          "antes": "Before",
+          "despues": "After",
+          "sinLeer": "Couldn’t read it",
+          "conEsto": "What this does",
+          "noCambia": "What stays the same"
         },
         "dobleControl": {
           "otraPersona": "Someone else approves this.",
@@ -12850,6 +12861,81 @@
           "no": "No, don’t do the plan",
           "seguir": "Continue from step {{n}}",
           "noSeguir": "Don’t continue the plan"
+        }
+      },
+      "programado": {
+        "titulo": "Scheduled",
+        "region": "Your scheduled orders",
+        "activa": "Active",
+        "pausada": "Paused",
+        "terminada": "Won't run again",
+        "proxima": "Next run",
+        "ultimo": "Last run",
+        "nunca": "Hasn't run yet",
+        "espera": "Waiting for your click",
+        "hayListas": "Something is ready and waiting for your click: tap it and I'll show it to you to confirm.",
+        "vieja": "This list is from before: ask me \"what do I have scheduled?\" to see it up to date.",
+        "nada": "Nothing runs without your click: when it's time, I leave it ready here."
+      },
+      "lote": {
+        "estado": {
+          "propuesto": "Waiting for your answer",
+          "contestado": "Answered",
+          "ejecutando": "In progress",
+          "programado": "Scheduled",
+          "en_pausa": "Paused",
+          "hecho": "Done",
+          "cancelado": "Not done",
+          "vencido": "Expired"
+        },
+        "item": {
+          "listo": "Included",
+          "quitado": "Removed",
+          "pendiente": "Queued",
+          "en_curso": "In progress",
+          "hecho": "Done",
+          "fallido": "Failed",
+          "omitido": "Skipped"
+        },
+        "loQuePediste": "What you asked: “{{cita}}”",
+        "lista": "Who",
+        "elResto": "The rest of the batch",
+        "verTodos": "See the {{n}} remaining",
+        "verMenos": "See less",
+        "quitar": "Remove {{nombre}} from the batch",
+        "volverAPoner": "Put {{nombre}} back in the batch",
+        "paraTodos": "For everyone",
+        "avance": "Progress",
+        "progreso": "{{hechos}} of {{total}}",
+        "noEntran": "Not included today ({{n}}): why",
+        "fallas": "What failed ({{n}})",
+        "porResolver": {
+          "titulo": "Names to confirm",
+          "ambiguo": "“{{nombre}}” has {{n}} matches: pick one.",
+          "noAparece": "“{{nombre}}” isn't in your agency.",
+          "noSePudo": "I couldn't look up “{{nombre}}” right now.",
+          "ninguno": "None of these"
+        },
+        "revisarAlHacerlo": "I'll check the record of {{n}} right before doing it; if any can't be done, I'll tell you why.",
+        "quedan": "These are the first {{tope}}. When it's done, ask me again for the next {{n}}.",
+        "hacer": "Yes, do it for {{n}}",
+        "no": "No",
+        "llenaLoQueFalta": "Fill in what's missing for everyone before doing it.",
+        "yaRespondiste": {
+          "hacer_lote": "You said yes: progress is in the reply below.",
+          "cancelar_lote": "You said no.",
+          "reintentar_lote": "You asked to retry: progress is in the reply below.",
+          "seguir_lote": "You asked to continue: progress is in the reply below."
+        },
+        "vencido": "This batch expired: ask me again and I'll build it with today's data.",
+        "ensayo": "Dry run: the batch is complete, but nothing is saved or done.",
+        "mensaje": {
+          "hacer": "Yes, do it for {{n}}",
+          "no": "No, don't run the batch",
+          "detener": "Stop the batch",
+          "reintentar": "Retry the ones that failed",
+          "seguir": "Continue the batch",
+          "noSeguir": "Don't continue the batch"
         }
       }
     },

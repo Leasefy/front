@@ -360,6 +360,11 @@ export interface ChatMessage {
    * (`formulario`). Ver `src/lib/chat/acciones-del-hilo.ts`.
    */
   intencion?: import('@/lib/chat/acciones-del-hilo').IntencionDelChat;
+  /**
+   * (29-10-2026, adjuntos en el chat) En un mensaje de la PERSONA, los archivos
+   * que mandó con él (ya subidos: el micro los lee por su id).
+   */
+  adjuntos?: import('@/lib/chat/adjuntos').AdjuntoDelMensaje[];
   acciones?: import('@/lib/chat/acciones-del-hilo').AccionDelHilo[];
   confirmacion?: import('@/lib/chat/acciones-del-hilo').ConfirmacionEnElHilo;
   resultado?: import('@/lib/chat/acciones-del-hilo').ResultadoEnElHilo;
@@ -378,6 +383,14 @@ export interface ChatMessage {
    * `src/lib/chat/plan-del-chat.ts`.
    */
   plan?: import('@/lib/chat/plan-del-chat').TarjetaDePlan;
+  /**
+   * (29-10) La tarjeta del LOTE: la misma acción para varios con UNA
+   * confirmación, que corre en segundo plano. Se pone al día con
+   * `GET …/lotes/{id}` en su mismo mensaje. Ver `src/lib/chat/lote-del-chat.ts`.
+   */
+  lote?: import('@/lib/chat/lote-del-chat').TarjetaDeLote;
+  /** (29-10) La tarjeta de lo programado: cada orden con sus botones, que son mensajes del hilo. */
+  programado?: import('@/lib/chat/programado-del-chat').TarjetaDeLoProgramado;
   /** El turno corrió en modo ensayo del servidor: nada se ejecutó ni se programó. */
   ensayo?: boolean;
   /**

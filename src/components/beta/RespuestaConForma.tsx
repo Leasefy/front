@@ -396,6 +396,26 @@ export function TarjetaDeEntidad({
   const tocaRenovar = vigente?.diasParaVencer != null && vigente.diasParaVencer <= 90 && !vigente.renovacion;
   const esPersonaDelContrato = entidad.tipo === 'inquilino' || entidad.tipo === 'coarrendatario';
   const tipoDeFicha = tipoDeFichaDeLaEntidad(entidad);
+  // 30-10 (D2, pregunta 4 «ambas»): sólo si la ficha le deja cambiar algún
+  // dato a quien pregunta. Abre EN EL HILO las modificaciones que se pueden,
+  // cada una con su formulario. Sale también con la lista de acciones debajo:
+  // esa lista no trae las modificaciones (se piden aquí o con palabras).
+  const botonDeCambiarDatos =
+    tipoDeFicha && entidad.cambiarDatos ? (
+      <Button
+        size="sm"
+        variant="outline"
+        hideArrow
+        disabled={ocupado}
+        onClick={() =>
+          sendMessage(t('beta.enElChat.mensaje.cambiarDatos', { titulo: entidad.titulo }), {
+            intencion: { accion: 'cambiar_datos', entidad: { tipo: tipoDeFicha, id: entidad.id } },
+          })
+        }
+      >
+        {t('beta.enElChat.cambiarDatos')}
+      </Button>
+    ) : null;
 
   return (
     <ChatEntityCard
@@ -408,7 +428,7 @@ export function TarjetaDeEntidad({
       eyebrow={papeles}
       status={semaforo ? <StatusBadge tone={semaforo.tono}>{t(semaforo.clave, semaforo.vars)}</StatusBadge> : undefined}
       actions={
-        sinAtajos ? undefined : (
+        sinAtajos ? (botonDeCambiarDatos ?? undefined) : (
           <>
             {/* 23-09 («todo en el chat»): cada atajo es un mensaje de la
                 persona CON su intención; el micro lo atiende con la ficha,
@@ -428,6 +448,7 @@ export function TarjetaDeEntidad({
                 {t('beta.enElChat.verFicha')}
               </Button>
             )}
+            {botonDeCambiarDatos}
             <Button
               size="sm"
               variant="outline"

@@ -66,6 +66,44 @@ export function propuestaDeRenovacion(venceEn = '2099-01-01T00:00:00.000Z') {
   };
 }
 
+/**
+ * 29-10: cambiar la comisión de un contrato (💸), con su antes → después, desde
+ * cuándo rige, qué cambia y qué no, y el aviso de «desde noviembre».
+ */
+export function propuestaDeModificacion(venceEn = '2099-01-01T00:00:00.000Z') {
+  return {
+    tipo: 'propuesta' as const,
+    ejecucionId: EJECUCION,
+    accion: 'modificar_comision_del_contrato',
+    titulo: 'Cambiar la comisión de administración del contrato #24 (hoy 9 %)',
+    frase: 'Voy a cambiar la comisión de administración del contrato #24 (Mateo Pérez) a 8 %.',
+    pregunta: '¿Lo hago?',
+    porQue: 'Lo pediste con palabras: antes de hacerlo, mira qué entendí.',
+    modo: 'copiloto' as const,
+    riesgo: { ...RIESGO_NINGUNO, muevePlata: true, agenteDueno: 'contratos' },
+    vistaPrevia: null,
+    venceEn,
+    siConfirmas: { sale: 'ahora' as const, ejecutarDesde: null, cuando: null },
+    dobleControl: null,
+    ensayo: false,
+    siNoFueraEnsayo: null,
+    modificacion: {
+      sobre: 'el contrato #24 (Mateo Pérez)',
+      cambios: [
+        { clave: 'comisionPorcentaje', etiqueta: 'Comisión de administración', antes: '9 %', despues: '8 %', sensible: false },
+      ],
+      desde: 'Desde hoy, en las cuotas del propietario que todavía no vencen.',
+      efectos: [
+        'Se recalculan las 4 cuotas del propietario que vencen desde hoy que no tienen plata encima.',
+        'Se escribe también en el mandato del inmueble (es de donde sale la comisión de cada giro).',
+      ],
+      noCambia: ['Lo ya vencido, lo ya pagado, lo que ya está en una liquidación o en un giro y las facturas ya emitidas no cambian.'],
+      deshacer: 'Puedes volver a lo de antes durante 15 minutos con «Volver a lo de antes».',
+      aviso: 'Pediste que rija desde noviembre de 2026: la plataforma lo aplica desde hoy, en las cuotas del propietario que todavía no vencen. Si lo quieres exactamente desde noviembre de 2026, pídemelo ese día.',
+    },
+  };
+}
+
 /** El lote de giros (💸 👥 📦) fuera de horario, con doble control de P-4 para un administrador. */
 export function propuestaDelLote(laOtraMitad: 'la_puedes_hacer_tu' | 'otra_persona' = 'la_puedes_hacer_tu') {
   return {

@@ -74,6 +74,20 @@ describe('las piezas del `done`', () => {
     ]);
   });
 
+  it('30-10: el botón trae lo que la frase ya dijo (el canon del otrosí); lo que no es texto no viaja', () => {
+    const [a] = leerAcciones([
+      {
+        id: 'hacer_otrosi',
+        titulo: 'Hacer un otrosí al contrato #24',
+        entidad: { tipo: 'contrato', id: UUID },
+        disponible: true,
+        datos: { canon: '2500000', mes: '2027-01', 'no vale': 'x', diaDePago: 15 },
+      },
+    ]);
+    expect(a!.datos).toEqual({ canon: '2500000', mes: '2027-01' });
+    expect(leerAcciones([{ id: 'x_y', titulo: 'X', entidad: { tipo: 'contrato', id: UUID }, datos: {} }])[0]).not.toHaveProperty('datos');
+  });
+
   it('confirmación, resultado y formulario: tolerantes, nunca lanzan', () => {
     expect(leerConfirmacion({ propuestaId: 'p', frase: 'Voy a…', modo: 'raro' })).toMatchObject({ modo: 'copiloto', pregunta: '¿Lo hago?' });
     expect(leerConfirmacion({ frase: 'sin id' })).toBeNull();
@@ -141,6 +155,23 @@ describe('las piezas del `done`', () => {
     expect(textoDelFormulario(f, { tipo: 'BONIFICACION', desde: '2026-10-05', valorCop: '150000' })).toBe(
       'Registrar una novedad de nómina: Bonificación — en pesos · 5 de octubre de 2026 · $150.000',
     );
+  });
+
+  it('R10: una moneda al centavo trae sus áreas de plata (sólo las que existen) y se «dice» con sus centavos', () => {
+    const f = leerFormulario({
+      accion: 'registrar_asiento_manual',
+      entidad: { tipo: 'agencia', id: UUID },
+      titulo: 'Registrar un asiento manual',
+      campos: [
+        { clave: 'valorDebito', tipo: 'moneda', requerido: true, areasDePlata: ['contabilidad_facturacion_y_exogena', 'inventada'] },
+        { clave: 'valorCop', tipo: 'moneda', requerido: true, areasDePlata: ['inventada'] },
+        { clave: 'nota', tipo: 'texto', requerido: false, areasDePlata: ['nomina'] },
+      ],
+    })!;
+    expect(f.campos[0]).toMatchObject({ areasDePlata: ['contabilidad_facturacion_y_exogena'] });
+    expect(f.campos[1]).not.toHaveProperty('areasDePlata');
+    expect(f.campos[2]).not.toHaveProperty('areasDePlata');
+    expect(textoDelFormulario(f, { valorDebito: '200000.5', valorCop: '150000' })).toBe('Registrar un asiento manual: $200.000,50 · $150.000');
   });
 
   it('una propuesta está contestada cuando un mensaje POSTERIOR de la persona la nombra', () => {

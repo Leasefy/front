@@ -308,7 +308,15 @@ export interface CampoDelFormulario {
   opciones: Array<{ valor: string; etiqueta: string }>;
   ayuda: string | null;
   valor: string | null;
+  /**
+   * 29-10 (modificar): cómo se escribe el dato («correo», «celular»…), para
+   * el teclado del celular. Sin esto, el de su tipo.
+   */
+  formato?: FormatoDelCampo;
 }
+
+export type FormatoDelCampo = 'correo' | 'celular' | 'documento' | 'porcentaje' | 'dia_del_mes' | 'dias' | 'cuenta' | 'direccion' | 'entero' | 'texto';
+const FORMATOS_DEL_CAMPO: FormatoDelCampo[] = ['correo', 'celular', 'documento', 'porcentaje', 'dia_del_mes', 'dias', 'cuenta', 'direccion', 'entero', 'texto'];
 
 export interface FormularioEnElHilo {
   accion: string;
@@ -344,6 +352,7 @@ export function leerCampos(v: unknown): CampoDelFormulario[] {
         : [],
       ayuda: texto(c.ayuda),
       valor: typeof c.valor === 'string' ? c.valor : null,
+      ...(FORMATOS_DEL_CAMPO.includes(c.formato as FormatoDelCampo) ? { formato: c.formato as FormatoDelCampo } : {}),
     });
   }
   return campos;

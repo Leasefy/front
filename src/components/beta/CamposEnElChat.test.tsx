@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { datosDeLosCampos, soloNumero } from './CamposEnElChat';
+import { datosDeLosCampos, soloNumero, tecladoDelFormato } from './CamposEnElChat';
 import type { CampoDelFormulario } from '@/lib/chat/acciones-del-hilo';
 
 const meses: CampoDelFormulario = {
@@ -50,5 +50,28 @@ describe('soloNumero', () => {
     expect(soloNumero('12')).toBe('12');
     expect(soloNumero('1,5')).toBe('1,5');
     expect(soloNumero('1.2.3')).toBe('1.23');
+  });
+});
+
+// 29-10 (modificar desde el chat): el teclado del celular según cómo se escribe el dato.
+describe('tecladoDelFormato', () => {
+  const campo = (formato: CampoDelFormulario['formato'], tipo: CampoDelFormulario['tipo'] = 'texto'): CampoDelFormulario => ({
+    ...meses,
+    clave: 'x',
+    tipo,
+    formato,
+  });
+
+  it('correo, celular, cuenta y dirección abren su teclado y su autocompletado', () => {
+    expect(tecladoDelFormato(campo('correo'))).toEqual({ type: 'email', inputMode: 'email', autoComplete: 'email' });
+    expect(tecladoDelFormato(campo('celular'))).toEqual({ type: 'tel', inputMode: 'tel', autoComplete: 'tel' });
+    expect(tecladoDelFormato(campo('cuenta'))).toEqual({ inputMode: 'numeric', autoComplete: 'off' });
+    expect(tecladoDelFormato(campo('direccion'))).toEqual({ autoComplete: 'street-address' });
+  });
+
+  it('sin formato, el de su tipo (un número abre el decimal, como siempre)', () => {
+    expect(tecladoDelFormato(meses)).toEqual({ inputMode: 'decimal' });
+    expect(tecladoDelFormato(campo(undefined))).toEqual({});
+    expect(tecladoDelFormato(campo('dia_del_mes', 'numero'))).toEqual({ inputMode: 'numeric' });
   });
 });

@@ -1,7 +1,7 @@
 {
   "_comentario": "Generado por scripts/contrato-del-chat-del-micro.mjs desde el openapi-snapshot.json del micro. No editar a mano: regenerar.",
-  "sacadoDe": "micro@fd26f8b3/openapi-snapshot.json",
-  "cuando": "2026-09-24",
+  "sacadoDe": "micro@6923b60b/openapi-snapshot.json",
+  "cuando": "2026-10-30",
   "rutas": {
     "POST /api/agency/{agencyId}/ai-hub/chat/senales": {
       "archivo": "src/server/routes/agency-ai-hub-chat-senales.ts",
@@ -470,6 +470,83 @@
                       "gracia",
                       "programar",
                       "clic"
+                    ]
+                  },
+                  "modificacion": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "properties": {
+                      "sobre": {
+                        "type": "string"
+                      },
+                      "cambios": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "clave": {
+                              "type": "string"
+                            },
+                            "etiqueta": {
+                              "type": "string"
+                            },
+                            "antes": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "despues": {
+                              "type": "string"
+                            },
+                            "sensible": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "clave",
+                            "etiqueta",
+                            "antes",
+                            "despues",
+                            "sensible"
+                          ]
+                        }
+                      },
+                      "desde": {
+                        "type": "string"
+                      },
+                      "efectos": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "noCambia": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "deshacer": {
+                        "type": "string"
+                      },
+                      "aviso": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "sobre",
+                      "cambios",
+                      "desde",
+                      "efectos",
+                      "noCambia",
+                      "deshacer",
+                      "aviso"
                     ]
                   }
                 },
@@ -1207,6 +1284,83 @@
                         "programar",
                         "clic"
                       ]
+                    },
+                    "modificacion": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "sobre": {
+                          "type": "string"
+                        },
+                        "cambios": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "clave": {
+                                "type": "string"
+                              },
+                              "etiqueta": {
+                                "type": "string"
+                              },
+                              "antes": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "despues": {
+                                "type": "string"
+                              },
+                              "sensible": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "clave",
+                              "etiqueta",
+                              "antes",
+                              "despues",
+                              "sensible"
+                            ]
+                          }
+                        },
+                        "desde": {
+                          "type": "string"
+                        },
+                        "efectos": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "noCambia": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "deshacer": {
+                          "type": "string"
+                        },
+                        "aviso": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "sobre",
+                        "cambios",
+                        "desde",
+                        "efectos",
+                        "noCambia",
+                        "deshacer",
+                        "aviso"
+                      ]
                     }
                   },
                   "required": [
@@ -1929,6 +2083,83 @@
                         "gracia",
                         "programar",
                         "clic"
+                      ]
+                    },
+                    "modificacion": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "sobre": {
+                          "type": "string"
+                        },
+                        "cambios": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "clave": {
+                                "type": "string"
+                              },
+                              "etiqueta": {
+                                "type": "string"
+                              },
+                              "antes": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "despues": {
+                                "type": "string"
+                              },
+                              "sensible": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "clave",
+                              "etiqueta",
+                              "antes",
+                              "despues",
+                              "sensible"
+                            ]
+                          }
+                        },
+                        "desde": {
+                          "type": "string"
+                        },
+                        "efectos": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "noCambia": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "deshacer": {
+                          "type": "string"
+                        },
+                        "aviso": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "sobre",
+                        "cambios",
+                        "desde",
+                        "efectos",
+                        "noCambia",
+                        "deshacer",
+                        "aviso"
                       ]
                     }
                   },

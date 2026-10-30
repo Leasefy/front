@@ -12807,6 +12807,14 @@
           "si": "Sí",
           "no": "No"
         },
+        "modificacion": {
+          "titulo": "Lo que cambia",
+          "antes": "Antes",
+          "despues": "Después",
+          "sinLeer": "No pude leerlo",
+          "conEsto": "Con esto",
+          "noCambia": "No cambia"
+        },
         "dobleControl": {
           "otraPersona": "Esto lo aprueba otra persona.",
           "laPuedesHacerTu": "Eres administrador: puedes aprobarlo tú (queda en la bitácora que fuiste la misma persona)."

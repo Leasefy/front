@@ -2145,7 +2145,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
    * historial la respuesta que estamos rehaciendo. El efecto de abajo dispara
    * cuando el estado recortado ya aterrizó.
    */
-  const regeneracionPendienteRef = useRef<{ texto: string; intencion: IntencionDelChat | null } | null>(null);
+  const regeneracionPendienteRef = useRef<{ texto: string; intencion: IntencionDelChat | null; adjuntos?: AdjuntoDelMensaje[] } | null>(null);
 
   /**
    * Rehace la última respuesta del asistente.
@@ -2192,7 +2192,9 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       );
       // Con su intención: rehacer «Ver contrato 24» vuelve a traer la ficha,
       // no le pregunta al modelo por el texto del botón.
-      regeneracionPendienteRef.current = { texto, intencion: conv.messages[u].intencion ?? null };
+      // (29-10-2026) Y con sus archivos: rehacer un comprobante vuelve a leer el mismo archivo.
+      const adjuntos = conv.messages[u].adjuntos;
+      regeneracionPendienteRef.current = { texto, intencion: conv.messages[u].intencion ?? null, ...(adjuntos?.length ? { adjuntos } : {}) };
     },
     [isThinking, isStreaming, isAgentsRunning, activeConversationId, conversations, agencyId]
   );
@@ -2311,7 +2313,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
     const pendiente = regeneracionPendienteRef.current;
     if (pendiente === null) return;
     regeneracionPendienteRef.current = null;
-    sendMessage(pendiente.texto, { intencion: pendiente.intencion });
+    sendMessage(pendiente.texto, { intencion: pendiente.intencion, ...(pendiente.adjuntos?.length ? { adjuntos: pendiente.adjuntos } : {}) });
     // Depende de `conversations` a propósito: es el cambio de ese estado (el
     // recorte) lo que habilita este envío con el historial ya correcto.
   }, [conversations, sendMessage]);

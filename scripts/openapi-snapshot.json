@@ -32895,7 +32895,9 @@
               "bajar_extracto",
               "decidir_reparacion",
               "decidir_sobrecosto",
-              "cambiar_cuenta"
+              "cambiar_cuenta",
+              "retirar_postulacion",
+              "reclamar_postulacion"
             ]
           },
           "titulo": {
@@ -32958,7 +32960,10 @@
               "que_me_falta",
               "mis_visitas",
               "por_que_me_rechazaron",
-              "sigue_disponible"
+              "sigue_disponible",
+              "retirar_postulacion",
+              "reactivar_postulacion",
+              "reclamo_postulacion"
             ]
           },
           "texto": {

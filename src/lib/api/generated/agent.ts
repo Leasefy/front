@@ -4947,7 +4947,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Chat del panel — las preguntas del mes: usadas, incluidas, recargas y si el chat frena */
+        /** Chat del panel — la bolsa de preguntas: usadas, incluidas (del mes o de una vez), recargas y si el chat frena */
         get: operations["getAiHubBolsaDePreguntas"];
         put?: never;
         post?: never;
@@ -12982,6 +12982,8 @@ export interface components {
             porcentaje: number;
             agotada: boolean;
             aviso: 80 | 100 | null;
+            /** @enum {string} */
+            periodo: "mes" | "siempre";
         };
         AiHubBolsaDePreguntasError: {
             error: string;

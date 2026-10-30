@@ -33,6 +33,19 @@ export interface CotizacionDelPlan {
   porInmueble: boolean;
   inmuebles: number;
   usuarios: number;
+  /**
+   * De dónde sale `monto` con el cobro por inmueble (back 30-10-2026): el plan (inmuebles × $2.100, mínimo $99.000),
+   * los usuarios de más y el piloto automático contratado. `null` (o ausente, back anterior) con el precio fijo.
+   */
+  desglose?: DesgloseDelPlan | null;
+}
+
+export interface DesgloseDelPlan {
+  plan: number;
+  usuariosDeMas: number;
+  usuariosAdicionales: number;
+  piloto: number;
+  conPilotoAutomatico: boolean;
 }
 
 export interface AccesoConCotizacion extends AccesoDeLaCuenta {

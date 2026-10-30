@@ -64,8 +64,16 @@ describe('RecargasDePreguntas', () => {
     const c = await montar(<RecargasDePreguntas />)
     expect(c.querySelector('h2')?.textContent).toBe('50 preguntas al mes incluidas + 200 de tus recargas')
     expect(porId('recarga-50')?.textContent).toContain('50 preguntas')
-    expect(porId('recarga-200')?.textContent).toContain('La más elegida')
+    expect(porId('recarga-200')?.textContent).toContain('Para el uso diario')
     expect((porId('comprar-recarga-500') as HTMLButtonElement).disabled).toBe(false)
+  })
+
+  it('la cuenta gratis: 5 preguntas de una vez, que no se reinician (Nico, 30-10-2026)', async () => {
+    ver.mockResolvedValue({ ...vista, vigentes: 0, bolsa: { incluidas: 5, periodo: 'siempre' } })
+    const c = await montar(<RecargasDePreguntas />)
+    expect(c.querySelector('h2')?.textContent).toBe('5 preguntas gratis, una sola vez')
+    expect(c.textContent).toContain('no se reinician')
+    expect(c.textContent).toContain('abre todo Leasefy, que trae 50 cada mes')
   })
 
   it('sin permiso de pagar: no hay botón, dice quién la compra', async () => {

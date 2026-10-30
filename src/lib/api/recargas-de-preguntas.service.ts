@@ -36,6 +36,8 @@ export interface VistaDeLasRecargas {
   vigentes: number;
   venceLaPrimera: string | null;
   compras: CompraDeRecarga[];
+  /** La bolsa que trae la cuenta: 50 al mes, o 5 de una vez la gratis (30-10-2026). Ausente en un back anterior. */
+  bolsa?: { incluidas: number; periodo: 'mes' | 'siempre' };
 }
 
 export const recargasDePreguntasApi = {

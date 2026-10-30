@@ -19,11 +19,14 @@ import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
 import { useAuth } from '@/lib/auth/use-auth';
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
 import { conversionApi } from '@/lib/api/conversion.service';
+import { tarifasApi, type TarifasDeLeasefy } from '@/lib/api/tarifas.service';
 import { DIAS_PARA_INSISTIR, precioDelMes, type AccesoConCotizacion } from '@/lib/conversion/acceso';
 import { shouldResumeReactivation } from '@/app/panel/inmobiliaria/upgrade/resume-reactivation';
 import { enlaceDeWhatsApp } from '@/lib/venta/whatsapp-de-leasefy';
 import { TarjetaDeRefiereYGana } from '@/components/refiere-y-gana/RefiereYGana';
 import { RecargasDePreguntas } from './RecargasDePreguntas';
+import { CuentaDelPlan } from './CuentaDelPlan';
+import { PreciosDeLeasefy } from './PreciosDeLeasefy';
 
 /** Lo que se abre al pagar: lo que la cuenta gratis ve en demo. */
 const LO_QUE_SE_ABRE: readonly BeneficioEn3D[] = [
@@ -37,6 +40,14 @@ const LO_QUE_SE_ABRE: readonly BeneficioEn3D[] = [
 
 /** Lo que la cuenta gratis ya tiene y no pierde nunca. */
 const LO_GRATIS = ['Tus inmuebles en el marketplace', 'Interesados, visitas y postulaciones', 'Tu página de inmobiliaria'] as const;
+
+/** Lo gratis que tiene número (sale de las tarifas): el chat con sus preguntas y las firmas para empezar. */
+function loGratisConNumero(t: TarifasDeLeasefy | null): string[] {
+  const extra: string[] = [];
+  if (t?.tarifas.cuentaGratis) extra.push(`El chat, con ${t.tarifas.cuentaGratis.preguntas} preguntas gratis para probarlo`);
+  if (t?.tarifas.firmas) extra.push(`${t.tarifas.firmas.gratisAlCrearLaCuenta} firmas electrónicas gratis para empezar`);
+  return extra;
+}
 
 const fecha = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'long', timeZone: 'America/Bogota' });
 
@@ -54,6 +65,9 @@ export function PagarLeasefy() {
   const { state: suscripcion, subscriptionStatus, hasPanelAccess, refetch } = useAgencySubscription();
   const [datos, setDatos] = useState<AccesoConCotizacion | null>(null);
   const [error, setError] = useState<unknown>(null);
+  // Las tarifas (`GET /config/tarifas`) van aparte: si fallan, se puede pagar igual y su sección dice qué pasó.
+  const [tarifas, setTarifas] = useState<TarifasDeLeasefy | null>(null);
+  const [errorDeTarifas, setErrorDeTarifas] = useState<unknown>(null);
 
   const cargar = useCallback(async () => {
     setError(null);
@@ -66,6 +80,18 @@ export function PagarLeasefy() {
   useEffect(() => {
     void cargar();
   }, [cargar]);
+
+  const cargarTarifas = useCallback(async () => {
+    setErrorDeTarifas(null);
+    try {
+      setTarifas(await tarifasApi.ver());
+    } catch (e) {
+      setErrorDeTarifas(e);
+    }
+  }, []);
+  useEffect(() => {
+    void cargarTarifas();
+  }, [cargarTarifas]);
 
   const checkout = useAgencyCheckout(() => {
     void refreshAgency({ despuesDeUnCambio: true });
@@ -107,7 +133,7 @@ export function PagarLeasefy() {
       <EncabezadoDePantalla
         seccion="Tu cuenta"
         titulo="Tu plan de Leasefy"
-        descripcion="Lo que tienes hoy y cuánto te sale Leasefy completo con tus inmuebles."
+        descripcion="Cuánto te sale Leasefy completo con tus inmuebles, qué incluye y lo que se cobra aparte."
       />
 
       <EstadoDelPlan estado={estado} prueba={prueba} suspendida={suspendida} />
@@ -151,14 +177,16 @@ export function PagarLeasefy() {
                   {!cotizacion.porInmueble
                     ? `Plan ${cotizacion.nombre}.`
                     : cotizacion.inmuebles > 0
-                      ? `Con ${cotizacion.inmuebles === 1 ? 'tu inmueble gestionado' : `tus ${cotizacion.inmuebles.toLocaleString('es-CO')} inmuebles gestionados`} y ${cotizacion.usuarios} usuarios: $2.100 por inmueble, mínimo $99.000.`
-                      : 'El mínimo, con dos usuarios incluidos. Cada inmueble que gestiones suma $2.100 al mes.'}
+                      ? `Con ${cotizacion.inmuebles === 1 ? 'tu inmueble gestionado' : `tus ${cotizacion.inmuebles.toLocaleString('es-CO')} inmuebles gestionados`} y ${cotizacion.usuarios === 1 ? '1 usuario' : `${cotizacion.usuarios.toLocaleString('es-CO')} usuarios`}. Se cobra por inmueble gestionado.`
+                      : 'El mínimo del plan, mientras empiezas a gestionar inmuebles.'}
                 </p>
               </div>
             ) : (
               <p className="mt-4 text-sm text-fg-muted">Escríbenos y te decimos cuánto te sale con tus inmuebles.</p>
             )}
-            <BeneficiosEn3D items={LO_QUE_SE_ABRE} className="mt-6" />
+            {cotizacion ? <CuentaDelPlan cotizacion={cotizacion} tarifas={tarifas?.tarifas ?? null} className="mt-5" /> : null}
+            <p className="mt-6 font-mono text-[11px] uppercase tracking-[0.08em] text-fg-subtle">Se abre todo</p>
+            <BeneficiosEn3D items={LO_QUE_SE_ABRE} className="mt-3" />
             <div className="mt-8 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center">
               {yaTieneTodo ? (
                 <p className="inline-flex items-center gap-2 text-sm font-medium text-success" data-testid="ya-tienes-todo">
@@ -196,7 +224,7 @@ export function PagarLeasefy() {
           <h2 className="mt-3 text-[18px] font-medium text-fg">Marketplace y Arrendamientos</h2>
           <p className="mt-1 text-sm text-fg-muted">Esto es tuyo pagues o no, y nada de lo que crees se pierde.</p>
           <ul className="mt-5 space-y-2.5">
-            {LO_GRATIS.map((x) => (
+            {[...LO_GRATIS, ...loGratisConNumero(tarifas)].map((x) => (
               <li key={x} className="flex items-center gap-2.5 text-sm text-fg">
                 <CheckCircle size={18} weight="fill" className="shrink-0 text-fg-subtle" aria-hidden="true" />
                 {x}
@@ -206,10 +234,13 @@ export function PagarLeasefy() {
         </section>
       </div>
 
-      {/* 28-10-2026 (Nico): Refiere y gana también en «Tu plan». */}
-      <TarjetaDeRefiereYGana ruta="/panel/inmobiliaria/refiere-y-gana" />
+      {/* Nico, 30-10-2026: «no veo que realmente hayas sumado todo lo que se hizo en el documento de modelo de negocio». */}
+      <PreciosDeLeasefy tarifas={tarifas} error={errorDeTarifas} onReintentar={cargarTarifas} />
 
       <RecargasDePreguntas />
+
+      {/* 28-10-2026 (Nico): Refiere y gana también en «Tu plan». */}
+      <TarjetaDeRefiereYGana ruta="/panel/inmobiliaria/refiere-y-gana" />
 
       <AgencyCheckoutOverlay
         planName={cotizacion?.nombre ?? 'Leasefy'}

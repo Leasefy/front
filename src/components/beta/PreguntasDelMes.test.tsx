@@ -77,6 +77,29 @@ describe('PreguntasDelMes', () => {
     expect(porId('preguntas-del-mes')?.textContent).toContain('Se acabaron las preguntas de este mes')
   })
 
+  it('la cuenta gratis (5 de una vez): cuenta las que quedan y, al acabarse, ofrece recargar o abrir todo', async () => {
+    ver.mockResolvedValue(bolsa({ periodo: 'siempre', usadas: 3, incluidas: 5, disponibles: 2, porcentaje: 60 }))
+    await montar(<PreguntasDelMes />)
+    expect(porId('preguntas-del-mes')?.textContent).toBe('Te quedan 2 de tus 5 preguntas gratis')
+    desmontar()
+    ver.mockResolvedValue(bolsa({ periodo: 'siempre', usadas: 4, incluidas: 5, disponibles: 1, porcentaje: 80, aviso: 80 }))
+    await montar(<PreguntasDelMes />)
+    expect(porId('preguntas-del-mes')?.textContent).toContain('Te queda 1 de tus 5 preguntas gratis')
+    expect(porId('recargar-preguntas')?.textContent).toBe('Recargar o abrir todo')
+    desmontar()
+    ver.mockResolvedValue(bolsa({ periodo: 'siempre', usadas: 5, incluidas: 5, disponibles: 0, porcentaje: 100, aviso: 100, agotada: true }))
+    await montar(<PreguntasDelMes />)
+    expect(porId('preguntas-del-mes')?.textContent).toContain('Se acabaron tus preguntas gratis')
+  })
+
+  it('la cuenta gratis agotada: la burbuja habla de las 5 gratis y de abrir todo', () => {
+    const texto = mensajeDeFalloDelChat(
+      new ApiError(402, 'x', 'BOLSA_DE_PREGUNTAS_AGOTADA', { code: 'BOLSA_DE_PREGUNTAS_AGOTADA', bolsa: { periodo: 'siempre', incluidas: 5 } } as never),
+    )
+    expect(texto).toContain('Ya usaste las 5 preguntas gratis del chat')
+    expect(texto).toContain('abrir todo Leasefy')
+  })
+
   it('el chat dice qué hacer con la bolsa agotada (402 del micro)', () => {
     const texto = mensajeDeFalloDelChat(new ApiError(402, 'x', 'BOLSA_DE_PREGUNTAS_AGOTADA'))
     expect(texto).toContain('ya usó las preguntas al chat de este mes')

@@ -14638,6 +14638,13 @@
                 "type": "null"
               }
             ]
+          },
+          "periodo": {
+            "type": "string",
+            "enum": [
+              "mes",
+              "siempre"
+            ]
           }
         },
         "required": [
@@ -14648,7 +14655,8 @@
           "disponibles",
           "porcentaje",
           "agotada",
-          "aviso"
+          "aviso",
+          "periodo"
         ]
       },
       "AiHubBolsaDePreguntasError": {
@@ -52662,7 +52670,7 @@
     "/api/agency/{agencyId}/ai-hub/bolsa-de-preguntas": {
       "get": {
         "operationId": "getAiHubBolsaDePreguntas",
-        "summary": "Chat del panel — las preguntas del mes: usadas, incluidas, recargas y si el chat frena",
+        "summary": "Chat del panel — la bolsa de preguntas: usadas, incluidas (del mes o de una vez), recargas y si el chat frena",
         "tags": [
           "agency",
           "ai-hub"

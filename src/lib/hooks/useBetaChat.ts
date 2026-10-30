@@ -483,8 +483,13 @@ export interface UseBetaChatOptions {
  * muestra.
  */
 export function mensajeDeFalloDelChat(error: unknown): string {
-  // La bolsa de preguntas del mes (Nico, 27-10-2026): se pausan SÓLO las preguntas, no el panel.
+  // La bolsa de preguntas del mes (Nico, 27-10-2026): se pausan SÓLO las preguntas, no el panel. La cuenta gratis trae
+  // 5 de una vez (30-10-2026): el micro lo dice con `bolsa.periodo: 'siempre'`.
   if (error instanceof ApiError && error.code === 'BOLSA_DE_PREGUNTAS_AGOTADA') {
+    const bolsa = (error.detalle as { bolsa?: { periodo?: string; incluidas?: number } } | undefined)?.bolsa;
+    if (bolsa?.periodo === 'siempre') {
+      return `Ya usaste las ${bolsa.incluidas ?? 5} preguntas gratis del chat. Un administrador puede comprar una recarga o abrir todo Leasefy (trae 50 preguntas cada mes) en Tu plan de Leasefy; lo demás de tu cuenta sigue funcionando.`;
+    }
     return 'Tu inmobiliaria ya usó las preguntas al chat de este mes. Un administrador puede recargar en Tu plan de Leasefy → Preguntas del chat; lo demás de Leasefy sigue funcionando.';
   }
   const fallo = clasificarFallo(error);

@@ -288,11 +288,10 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     const filas = filterAgencyNav(ALL_NAV_ITEMS, ctxNav);
     // Modo comercial (registro rápido desde el marketplace, Nico 20-10-2026):
     // lo comercial abierto; lo demás con «Activar», que al entrar dice para qué
-    // sirve activar (CandadoDelModoComercial). Sin el chat de los agentes: no
-    // conocen a esta inmobiliaria hasta que se activa.
+    // sirve activar (CandadoDelModoComercial). El chat SÍ va (Nico, 30-10-2026):
+    // la cuenta gratis trae 5 preguntas de una vez.
     if (!conCandado && !faltaActivar) return filas;
     return filas
-      .filter((f) => f.kind === 'section' || f.href !== '/panel/inmobiliaria')
       .map((f) => {
         if (f.kind === 'section') return f;
         // 🔴 Nico, 27-10-2026: en el mes gratis (o pagando) sin activar se ve todo; «Activar» sólo en agentes y plata.

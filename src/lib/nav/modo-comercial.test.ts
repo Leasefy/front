@@ -19,9 +19,17 @@ describe('el modo comercial del panel', () => {
     }
   });
 
+  it('el chat también está en la cuenta gratis (Nico, 30-10-2026): el inicio EXACTO y /beta, no lo de debajo', () => {
+    expect(abiertaEnModoComercial('/panel/inmobiliaria')).toBe(true);
+    expect(abiertaEnModoComercial('/panel/inmobiliaria/')).toBe(true);
+    expect(abiertaEnModoComercial('/panel/inmobiliaria?conversacion=1')).toBe(true);
+    expect(abiertaEnModoComercial('/panel/inmobiliaria/beta')).toBe(true);
+    expect(pideActivar('/panel/inmobiliaria')).toBe(false);
+    expect(abiertaEnModoComercial('/panel/inmobiliaria/piloto')).toBe(false);
+  });
+
   it('cierra lo demás y lo que hacen los agentes de IA, aunque viva dentro de lo comercial', () => {
     for (const r of [
-      '/panel/inmobiliaria',
       '/panel/inmobiliaria/contratos',
       '/panel/inmobiliaria/pagos/cobranza',
       '/panel/inmobiliaria/contabilidad',
@@ -51,11 +59,11 @@ describe('mes gratis o pagando sin activar (Nico, 27-10-2026: el aliado ve todo)
     expect(pideActivar('/panel/inmobiliaria/upgrade')).toBe(false)
   })
 
-  it('sólo los agentes, el chat y la plata piden activar; lo demás se usa de una', () => {
+  it('sólo los agentes y la plata piden activar; lo demás (y el chat) se usa de una', () => {
     for (const ruta of ['/panel/inmobiliaria/contratos', '/panel/inmobiliaria/propietarios', '/panel/inmobiliaria/mantenimientos', '/panel/inmobiliaria/reportes', '/panel/inmobiliaria/inmuebles']) {
       expect(pideActivar(ruta)).toBe(false)
     }
-    for (const ruta of ['/panel/inmobiliaria', '/panel/inmobiliaria/pagos/recaudo', '/panel/inmobiliaria/pagos/cobranza', '/panel/inmobiliaria/facturacion', '/panel/inmobiliaria/contabilidad', '/panel/inmobiliaria/conciliacion', '/panel/inmobiliaria/inmuebles/avaluos', '/panel/inmobiliaria/postulaciones/matching', '/panel/inmobiliaria/reportes/ia']) {
+    for (const ruta of ['/panel/inmobiliaria/pagos/recaudo', '/panel/inmobiliaria/pagos/cobranza', '/panel/inmobiliaria/facturacion', '/panel/inmobiliaria/contabilidad', '/panel/inmobiliaria/conciliacion', '/panel/inmobiliaria/inmuebles/avaluos', '/panel/inmobiliaria/postulaciones/matching', '/panel/inmobiliaria/reportes/ia']) {
       expect(pideActivar(ruta)).toBe(true)
     }
   })

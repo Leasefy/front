@@ -39,6 +39,14 @@ const ABIERTAS: readonly string[] = [
   '/panel/inmobiliaria/inquilinos',
 ];
 
+/**
+ * El chat (Nico, 30-10-2026: «no veo el chat para la cuenta gratuita y debería de estar»): también en la cuenta gratis,
+ * con 5 preguntas de una vez; al acabarse, recarga o paga el plan. Vive en el inicio EXACTO del panel (no lo de debajo)
+ * y en `/beta`, que es el mismo chat. El micro no necesita la cuenta activada: reconoce al equipo por el back.
+ */
+const EL_CHAT = '/panel/inmobiliaria';
+const EL_CHAT_TAMBIEN_EN = '/panel/inmobiliaria/beta';
+
 /** Dentro de lo abierto, lo que hacen los agentes de IA. */
 const CERRADAS_ADENTRO: readonly string[] = [
   '/panel/inmobiliaria/inmuebles/avaluos',
@@ -54,6 +62,7 @@ function esOdebajo(ruta: string, base: string): boolean {
 /** ¿Esta ruta del panel se usa sin activar la cuenta? */
 export function abiertaEnModoComercial(ruta: string): boolean {
   const limpia = ruta.split(/[?#]/)[0]!.replace(/\/+$/, '') || '/';
+  if (limpia === EL_CHAT || esOdebajo(limpia, EL_CHAT_TAMBIEN_EN)) return true;
   if (CERRADAS_ADENTRO.some((c) => esOdebajo(limpia, c))) return false;
   return ABIERTAS.some((a) => esOdebajo(limpia, a));
 }
@@ -65,7 +74,7 @@ export function enModoComercial(agency: Pick<Agency, 'modoComercial'> | null | u
 /**
  * 🔴 Nico, 27-10-2026: el aliado en su mes gratis (y quien ya pagó) VE TODO aunque no haya activado la cuenta. Sin
  * activar sólo piden «Activar mi cuenta» (los tres pasos cortos, 2 minutos):
- *   · los agentes de IA y el chat: el micro no conoce la cuenta hasta activarla;
+ *   · los agentes de IA: el micro no conoce la cuenta hasta activarla (el chat no: está abierto, ver `EL_CHAT`);
  *   · lo que mueve plata (pagos, giros, facturación, contabilidad, nómina, conciliación): ahí entra el segundo factor.
  * Lo demás (contratos, propietarios, inquilinos, mantenimientos, reportes…) se usa de una.
  */
@@ -86,7 +95,5 @@ const PIDEN_ACTIVAR: readonly string[] = [
 export function pideActivar(ruta: string): boolean {
   const limpia = ruta.split(/[?#]/)[0]!.replace(/\/+$/, '') || '/';
   if (abiertaEnModoComercial(limpia)) return false;
-  // El inicio es el chat de los agentes.
-  if (limpia === '/panel/inmobiliaria') return true;
   return PIDEN_ACTIVAR.some((p) => esOdebajo(limpia, p));
 }

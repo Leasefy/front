@@ -2,14 +2,13 @@
 
 import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { CheckCircle } from '@phosphor-icons/react';
 import { Ilustracion, motionDuration, motionEase } from '@leasefy/cadence';
 
 import { useAuth } from '@/lib/auth/use-auth';
 import { Button } from '@/components/ui/button';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { Dialog, DialogBody, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { BeneficiosEn3D, EscenaDeMarca, type BeneficioEn3D } from '@/components/conversion/EscenaDeMarca';
 import { ModuloConDemo } from '@/components/venta/ModuloConDemo';
@@ -40,7 +39,8 @@ const LO_QUE_SE_ABRE = [
 /**
  * El candado del modo comercial (Juan y Nico, 19/20-10-2026). Envuelve el
  * contenido del panel:
- *   · el inicio del panel (el chat de los agentes) lleva a sus inmuebles;
+ *   · el chat (el inicio del panel) está abierto, con 5 preguntas gratis de una vez (Nico, 30-10-2026; antes llevaba a
+ *     sus inmuebles);
  *   · una ruta cerrada muestra para qué sirve activar, con el botón;
  *   · la primera vez, una bienvenida que dice qué tiene y qué se abre al activar.
  * Fuera del modo comercial no hace nada.
@@ -49,26 +49,13 @@ export function CandadoDelModoComercial({ children }: { children: ReactNode }) {
   const { agency, user } = useAuth();
   const pathname = usePathname() ?? '';
   const enDemo = useModoDemo();
-  const router = useRouter();
   const comercial = enModoComercial(agency);
   // 27-10-2026 (Nico): en lo gratis lleva candado también la ya activada a la que se le acabó el mes gratis; en el
   // mes gratis (o pagando) sin activar, lo que usa a los agentes pide activar.
   const conCandado = conCandadoDelPlan(agency);
   const faltaActivar = faltaActivarParaVerTodo(agency);
-  const esElInicio = (conCandado || faltaActivar) && pathname.replace(/\/+$/, '') === '/panel/inmobiliaria';
-
-  useEffect(() => {
-    if (esElInicio) router.replace(INICIO_DEL_MODO_COMERCIAL);
-  }, [esElInicio, router]);
 
   if (!conCandado && !faltaActivar) return children;
-  if (esElInicio) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <CargaDeMarca tamano="lg" />
-      </div>
-    );
-  }
   // 🔴 Nico, 27-10-2026: en el mes gratis (o pagando) sin activar VE TODO; sólo los agentes y la plata piden activar.
   const abierta = faltaActivar ? !pideActivar(pathname) : abiertaEnModoComercial(pathname);
   // Con llaves: lo de adentro cambia de rama (abierta / activar / cerrada) y la bienvenida va al lado.

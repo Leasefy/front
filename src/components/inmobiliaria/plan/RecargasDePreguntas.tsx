@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ChatCircleDots, Sparkle } from '@phosphor-icons/react';
+import { ChatCircleDots } from '@phosphor-icons/react';
 import { Stagger, StaggerItem } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
@@ -17,13 +17,14 @@ const fecha = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short',
 const numero = (n: number) => n.toLocaleString('es-CO');
 const SONDEO_MS = 5_000;
 const SONDEO_TOPE_MS = 10 * 60_000;
-/** La que más conviene destacar: la de 200 (el equipo que pregunta todos los días). */
+/** La que se destaca: la de 200, para el equipo que pregunta todos los días. */
 const DESTACADA = 200;
 
 /**
  * Preguntas al chat (MODELO-DE-NEGOCIO.md §3.2–3.4; Nico, 27-10-2026). El plan trae 50 al mes para toda la
- * inmobiliaria; lo demás se compra en recargas (50, 200 o 500, + IVA, duran 12 meses). Comprar abre Wompi en otra
- * pestaña y esta sección espera la confirmación sola. Comprar: quien paga el plan.
+ * inmobiliaria; la cuenta gratis, 5 de una vez (30-10-2026). Lo demás se compra en recargas (50, 200 o 500, + IVA,
+ * duran 12 meses). Comprar abre Wompi en otra pestaña y esta sección espera la confirmación sola. Comprar: quien paga
+ * el plan. Los botones van en arena: el voltaje de la pantalla es «Pagar y abrir todo».
  */
 export function RecargasDePreguntas() {
   const permisos = usePermissionsContextSafe();
@@ -33,6 +34,8 @@ export function RecargasDePreguntas() {
   const [error, setError] = useState<unknown>(null);
   const [comprando, setComprando] = useState<number | null>(null);
   const [esperando, setEsperando] = useState<string | null>(null);
+  // La cuenta gratis: 5 de una vez (el back lo dice; un back anterior no trae `bolsa`).
+  const gratis = vista?.bolsa?.periodo === 'siempre';
 
   const cargar = useCallback(async () => {
     setError(null);
@@ -95,13 +98,19 @@ export function RecargasDePreguntas() {
         <ChatCircleDots size={14} weight="bold" aria-hidden="true" />
         Preguntas del chat
       </p>
-      <h2 className="mt-3 text-[18px] font-medium text-fg">
-        {vista ? `${numero(vista.incluidasAlMes)} preguntas al mes incluidas` : 'Preguntas al mes incluidas'}
+      <h2 className="mt-3 text-h3 text-fg">
+        {!vista
+          ? 'Preguntas al chat'
+          : gratis
+            ? `${numero(vista.bolsa!.incluidas)} preguntas gratis, una sola vez`
+            : `${numero(vista.incluidasAlMes)} preguntas al mes incluidas`}
         {vista && vista.vigentes > 0 ? ` + ${numero(vista.vigentes)} de tus recargas` : ''}
       </h2>
       <p className="mt-1 max-w-[62ch] text-sm text-fg-muted">
-        Son para todo tu equipo y se reinician cada mes. Si usan el chat todos los días, recarga: entre más grande la
-        recarga, más barata cada pregunta. Los agentes, el piloto y aprobar lo que el chat propone no gastan preguntas.
+        {gratis
+          ? `Tu cuenta gratis trae ${numero(vista!.bolsa!.incluidas)} preguntas al chat para probarlo, y no se reinician. Cuando se acaben, recarga aquí o abre todo Leasefy, que trae ${numero(vista!.incluidasAlMes)} cada mes.`
+          : 'Son para todo tu equipo y se reinician cada mes. Si usan el chat todos los días, recarga: entre más grande la recarga, más barata cada pregunta.'}{' '}
+        Los agentes, el piloto y aprobar lo que el chat propone no gastan preguntas.
         {vista?.venceLaPrimera ? ` Tu primera recarga vence el ${fecha.format(new Date(vista.venceLaPrimera))}.` : ''}
       </p>
 
@@ -133,9 +142,8 @@ export function RecargasDePreguntas() {
                   data-testid={`recarga-${r.preguntas}`}
                 >
                   {destacada && (
-                    <span className="absolute -top-2.5 left-5 inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-0.5 text-[11px] font-medium text-primary-fg">
-                      <Sparkle size={12} weight="fill" aria-hidden="true" />
-                      La más elegida
+                    <span className="absolute -top-2.5 left-5 inline-flex items-center rounded-full bg-primary-soft px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.06em] text-primary">
+                      Para el uso diario
                     </span>
                   )}
                   <p className="text-[22px] font-[420] tracking-[-0.02em] text-fg tabular-nums">{numero(r.preguntas)} preguntas</p>
@@ -146,7 +154,7 @@ export function RecargasDePreguntas() {
                   <div className="mt-5 flex-1" />
                   {puedeComprar ? (
                     <Button
-                      variant={destacada ? 'default' : 'secondary'}
+                      variant="secondary"
                       className="h-10 rounded-full"
                       onClick={() => void comprar(r.preguntas)}
                       isLoading={comprando === r.preguntas}

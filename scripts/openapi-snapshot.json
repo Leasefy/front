@@ -364,6 +364,83 @@
           "agenteDueno"
         ]
       },
+      "AiHubChatModificacion": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "sobre": {
+            "type": "string"
+          },
+          "cambios": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "clave": {
+                  "type": "string"
+                },
+                "etiqueta": {
+                  "type": "string"
+                },
+                "antes": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "despues": {
+                  "type": "string"
+                },
+                "sensible": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "clave",
+                "etiqueta",
+                "antes",
+                "despues",
+                "sensible"
+              ]
+            }
+          },
+          "desde": {
+            "type": "string"
+          },
+          "efectos": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "noCambia": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "deshacer": {
+            "type": "string"
+          },
+          "aviso": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "sobre",
+          "cambios",
+          "desde",
+          "efectos",
+          "noCambia",
+          "deshacer",
+          "aviso"
+        ]
+      },
       "AiHubChatTarjetaPropuesta": {
         "type": "object",
         "properties": {
@@ -474,6 +551,9 @@
               "programar",
               "clic"
             ]
+          },
+          "modificacion": {
+            "$ref": "#/components/schemas/AiHubChatModificacion"
           }
         },
         "required": [
@@ -560,6 +640,37 @@
           },
           "planId": {
             "type": "string"
+          },
+          "loteId": {
+            "type": "string"
+          },
+          "quitar": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "elegidos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "i": {
+                  "type": "integer"
+                },
+                "tipo": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "i",
+                "tipo",
+                "id"
+              ]
+            }
           },
           "entidad": {
             "type": "object",
@@ -881,7 +992,8 @@
               "numero",
               "texto",
               "texto_largo",
-              "opcion"
+              "opcion",
+              "adjunto"
             ]
           },
           "requerido": {
@@ -1217,6 +1329,425 @@
           "ejecucionId"
         ]
       },
+      "AiHubChatItemDelLote": {
+        "type": "object",
+        "properties": {
+          "n": {
+            "type": "integer"
+          },
+          "etiqueta": {
+            "type": "string"
+          },
+          "detalle": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "accion": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "listo",
+              "quitado",
+              "pendiente",
+              "en_curso",
+              "hecho",
+              "fallido",
+              "omitido"
+            ]
+          },
+          "resumen": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "quitable": {
+            "type": "boolean"
+          },
+          "revisado": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "n",
+          "etiqueta",
+          "detalle",
+          "accion",
+          "estado",
+          "resumen",
+          "quitable",
+          "revisado"
+        ]
+      },
+      "AiHubChatTarjetaLote": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "lote"
+            ]
+          },
+          "loteId": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "cita": {
+            "type": "string"
+          },
+          "verbo": {
+            "type": "string"
+          },
+          "descripcion": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "propuesto",
+              "ejecutando",
+              "programado",
+              "en_pausa",
+              "hecho",
+              "cancelado",
+              "vencido"
+            ]
+          },
+          "modo": {
+            "type": "string",
+            "enum": [
+              "manual",
+              "copiloto",
+              "automatico"
+            ]
+          },
+          "pregunta": {
+            "type": "string"
+          },
+          "porQue": {
+            "type": "string"
+          },
+          "venceEn": {
+            "type": "string"
+          },
+          "riesgo": {
+            "$ref": "#/components/schemas/AiHubChatRiesgoDeLaAccion"
+          },
+          "cifra": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiHubChatItemDelLote"
+            }
+          },
+          "noEntran": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "porQue": {
+                  "type": "string"
+                },
+                "cuantos": {
+                  "type": "integer"
+                },
+                "quienes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "porQue",
+                "cuantos",
+                "quienes"
+              ]
+            }
+          },
+          "porResolver": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "nombre": {
+                  "type": "string"
+                },
+                "motivo": {
+                  "type": "string",
+                  "enum": [
+                    "ambiguo",
+                    "no_aparece",
+                    "no_se_pudo_buscar"
+                  ]
+                },
+                "opciones": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "etiqueta": {
+                        "type": "string"
+                      },
+                      "detalle": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "entidad": {
+                        "type": "object",
+                        "properties": {
+                          "tipo": {
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "tipo",
+                          "id"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "etiqueta",
+                      "detalle",
+                      "entidad"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "nombre",
+                "motivo",
+                "opciones"
+              ]
+            }
+          },
+          "quedan": {
+            "type": "integer"
+          },
+          "tope": {
+            "type": "integer"
+          },
+          "progreso": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer"
+              },
+              "hechos": {
+                "type": "integer"
+              },
+              "fallidos": {
+                "type": "integer"
+              },
+              "omitidos": {
+                "type": "integer"
+              },
+              "pendientes": {
+                "type": "integer"
+              },
+              "quitados": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "total",
+              "hechos",
+              "fallidos",
+              "omitidos",
+              "pendientes",
+              "quitados"
+            ]
+          },
+          "espera": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "tipo": {
+                "type": "string",
+                "enum": [
+                  "horario",
+                  "sin_sesion",
+                  "limite",
+                  "proceso"
+                ]
+              },
+              "porQue": {
+                "type": "string"
+              },
+              "hasta": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "tipo",
+              "porQue",
+              "hasta"
+            ]
+          },
+          "resumen": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "fallas": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "porQue": {
+                  "type": "string"
+                },
+                "cuantos": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "porQue",
+                "cuantos"
+              ]
+            }
+          },
+          "campos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiHubChatCampoDelPlan"
+            }
+          },
+          "hacer": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "etiqueta": {
+                "type": "string"
+              },
+              "intencion": {
+                "$ref": "#/components/schemas/AiHubChatIntencionDelBoton"
+              }
+            },
+            "required": [
+              "etiqueta",
+              "intencion"
+            ]
+          },
+          "cancelar": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "etiqueta": {
+                "type": "string"
+              },
+              "intencion": {
+                "$ref": "#/components/schemas/AiHubChatIntencionDelBoton"
+              }
+            },
+            "required": [
+              "etiqueta",
+              "intencion"
+            ]
+          },
+          "reintentar": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "etiqueta": {
+                "type": "string"
+              },
+              "intencion": {
+                "$ref": "#/components/schemas/AiHubChatIntencionDelBoton"
+              }
+            },
+            "required": [
+              "etiqueta",
+              "intencion"
+            ]
+          },
+          "seguir": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "etiqueta": {
+                "type": "string"
+              },
+              "intencion": {
+                "$ref": "#/components/schemas/AiHubChatIntencionDelBoton"
+              }
+            },
+            "required": [
+              "etiqueta",
+              "intencion"
+            ]
+          },
+          "ensayo": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "tipo",
+          "loteId",
+          "titulo",
+          "cita",
+          "verbo",
+          "descripcion",
+          "estado",
+          "modo",
+          "pregunta",
+          "porQue",
+          "venceEn",
+          "riesgo",
+          "cifra",
+          "items",
+          "noEntran",
+          "porResolver",
+          "quedan",
+          "tope",
+          "progreso",
+          "espera",
+          "resumen",
+          "fallas",
+          "campos",
+          "hacer",
+          "cancelar",
+          "reintentar",
+          "seguir",
+          "ensayo"
+        ]
+      },
       "AiHubChatPiezasNuevasDelDone": {
         "type": "object",
         "properties": {
@@ -1264,6 +1795,9 @@
                 ]
               }
             ]
+          },
+          "lote": {
+            "$ref": "#/components/schemas/AiHubChatTarjetaLote"
           }
         },
         "required": [
@@ -13696,7 +14230,8 @@
               "reportes",
               "comunicacion",
               "director",
-              "retencion"
+              "retencion",
+              "servicios"
             ]
           },
           "actionType": {
@@ -13783,7 +14318,8 @@
               "reportes",
               "comunicacion",
               "director",
-              "retencion"
+              "retencion",
+              "servicios"
             ]
           },
           "taskDescription": {
@@ -14011,7 +14547,8 @@
                     "reportes",
                     "comunicacion",
                     "director",
-                    "retencion"
+                    "retencion",
+                    "servicios"
                   ]
                 },
                 "texto": {
@@ -14183,7 +14720,8 @@
                   "reportes",
                   "comunicacion",
                   "director",
-                  "retencion"
+                  "retencion",
+                  "servicios"
                 ]
               },
               "tags": {
@@ -14739,6 +15277,38 @@
         ]
       },
       "AiHubChatEjecucionError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "AiHubChatLoteRespuesta": {
+        "type": "object",
+        "properties": {
+          "tarjeta": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AiHubChatTarjetaLote"
+              },
+              {
+                "type": "object"
+              }
+            ]
+          }
+        },
+        "required": [
+          "tarjeta"
+        ]
+      },
+      "AiHubChatLoteError": {
         "type": "object",
         "properties": {
           "error": {
@@ -32151,6 +32721,143 @@
         },
         "required": [
           "textos"
+        ]
+      },
+      "PortalChatTarjeta": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "accion": {
+            "type": "string",
+            "enum": [
+              "radicar_pqrs",
+              "pedir_certificado"
+            ]
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "detalle": {
+            "type": "string"
+          },
+          "boton": {
+            "type": "string",
+            "enum": [
+              "Sí, hazlo"
+            ]
+          },
+          "datos": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "accion",
+          "titulo",
+          "detalle",
+          "boton",
+          "datos"
+        ]
+      },
+      "PortalChatPedidoResponse": {
+        "type": "object",
+        "properties": {
+          "pedido": {
+            "type": "string",
+            "enum": [
+              "cuanto_debo",
+              "mis_giros",
+              "link_de_pago",
+              "certificado",
+              "radicar_pqrs",
+              "ver_pqrs",
+              "ajeno",
+              "no_entiendo"
+            ]
+          },
+          "texto": {
+            "type": "string"
+          },
+          "tarjeta": {
+            "$ref": "#/components/schemas/PortalChatTarjeta"
+          }
+        },
+        "required": [
+          "pedido",
+          "texto",
+          "tarjeta"
+        ]
+      },
+      "PortalChatError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "PortalChatPedidoBody": {
+        "type": "object",
+        "properties": {
+          "texto": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "portal": {
+            "type": "string",
+            "enum": [
+              "inquilino",
+              "propietario"
+            ]
+          }
+        },
+        "required": [
+          "texto",
+          "portal"
+        ]
+      },
+      "PortalChatHacerResponse": {
+        "type": "object",
+        "properties": {
+          "hecho": {
+            "type": "boolean"
+          },
+          "texto": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "hecho",
+          "texto"
+        ]
+      },
+      "PortalChatHacerBody": {
+        "type": "object",
+        "properties": {
+          "accion": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "datos": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "maxLength": 2000
+            }
+          }
+        },
+        "required": [
+          "accion",
+          "datos"
         ]
       },
       "AseguradoraQuote": {
@@ -52856,6 +53563,86 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AiHubChatEjecucionError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/ai-hub/chat/lotes/{loteId}": {
+      "get": {
+        "operationId": "getAiHubChatLote",
+        "summary": "La tarjeta de hoy de un lote del chat (la misma acción para varios): su avance y su resumen",
+        "description": "Devuelve la tarjeta de un lote del chat de quien pregunta, con el avance de la corrida en segundo plano. Si el lote esperaba la sesión o el horario de ley y ya se puede, o quedó a medias, sigue con la sesión de quien pregunta (idempotente). Cualquier miembro; sólo sus propios lotes.",
+        "tags": [
+          "agency",
+          "ai-hub"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "33333333-3333-4333-8333-333333333333"
+            },
+            "required": true,
+            "name": "loteId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "La tarjeta al día",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatLoteRespuesta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin JWT válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatLoteError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Otra inmobiliaria, o ensayo sin su token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatLoteError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe, no es tuyo, o este servidor todavía no guarda lotes (falta la migración de los planes)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatLoteError"
                 }
               }
             }
@@ -81787,6 +82574,98 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TraducirError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/portal/chat/pedido": {
+      "post": {
+        "operationId": "postPortalChatPedido",
+        "summary": "Chat del portal — reconoce el pedido (sin modelo) y responde con lo de la persona",
+        "tags": [
+          "portal"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortalChatPedidoBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Respuesta o tarjeta",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalChatPedidoResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o sesión no verificada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalChatError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/portal/chat/hacer": {
+      "post": {
+        "operationId": "postPortalChatHacer",
+        "summary": "Chat del portal — el clic en «Sí, hazlo»",
+        "tags": [
+          "portal"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortalChatHacerBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Lo que pasó",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalChatHacerResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o sesión no verificada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalChatError"
                 }
               }
             }

@@ -24,7 +24,7 @@ const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
 const RUTAS_DE_DESCARGA: ReadonlyArray<{ patron: RegExp; forma: FormaDeLaDescarga }> = [
   { patron: new RegExp(`^/inmobiliaria/procesos/${UUID}/descarga$`, 'i'), forma: 'enlace' },
   { patron: /^\/inmobiliaria\/contabilidad\/exogena\/[0-9]{4}\/archivo\?anio=[0-9]{4}$/, forma: 'archivo' },
-  { patron: new RegExp(`^/inmobiliaria/documentos/${UUID}/pdf$`, 'i'), forma: 'archivo' },
+  { patron: new RegExp(`^/inmobiliaria/documents/${UUID}/pdf$`, 'i'), forma: 'archivo' },
 ]
 
 /** La forma si la ruta es una descarga conocida y segura del back; `null` si no. */

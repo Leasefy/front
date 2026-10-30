@@ -51,7 +51,7 @@ export function PagarLeasefy() {
   const { user, agency, refreshAgency } = useAuth();
   const permisos = usePermissionsContextSafe();
   const puedePagar = Boolean(permisos?.isAdmin || permisos?.canAccess('subscription', 'edit'));
-  const { state: suscripcion, subscriptionStatus, refetch } = useAgencySubscription();
+  const { state: suscripcion, subscriptionStatus, hasPanelAccess, refetch } = useAgencySubscription();
   const [datos, setDatos] = useState<AccesoConCotizacion | null>(null);
   const [error, setError] = useState<unknown>(null);
 
@@ -95,7 +95,10 @@ export function PagarLeasefy() {
     }
     void checkout.pay(cotizacion.tier, subscriptionStatus, suscripcion?.planTier ?? null);
   };
-  const yaTieneTodo = estado === 'pagado' || estado === 'cliente';
+  // Suspendida o cancelada por un pago pendiente: el acceso se cortó aunque `estado` diga «cliente», y el guard del
+  // panel manda aquí a quien administra. Ahí SÍ se paga (T-0205); si no, la pantalla lo dejaba sin salida.
+  const suspendida = !hasPanelAccess;
+  const yaTieneTodo = (estado === 'pagado' || estado === 'cliente') && !suspendida;
   const whatsapp = enlaceDeWhatsApp({ quien: 'inmobiliaria', nombre: user?.firstName ?? null, empresa: agency?.name ?? null, queVio: 'el plan de Leasefy' });
 
   return (
@@ -107,7 +110,7 @@ export function PagarLeasefy() {
         descripcion="Lo que tienes hoy y cuánto te sale Leasefy completo con tus inmuebles."
       />
 
-      <EstadoDelPlan estado={estado} prueba={prueba} />
+      <EstadoDelPlan estado={estado} prueba={prueba} suspendida={suspendida} />
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
         <motion.section
@@ -225,10 +228,13 @@ export function PagarLeasefy() {
   );
 }
 
-function EstadoDelPlan({ estado, prueba }: Pick<AccesoConCotizacion, 'estado' | 'prueba'>) {
+function EstadoDelPlan({ estado, prueba, suspendida }: Pick<AccesoConCotizacion, 'estado' | 'prueba'> & { suspendida: boolean }) {
   let titulo: string;
   let texto: string;
-  if (estado === 'prueba' && prueba) {
+  if (suspendida) {
+    titulo = 'Tu plan está suspendido por un pago pendiente';
+    texto = 'Paga lo pendiente y tu inmobiliaria sigue como la dejaste; no se pierde nada de lo que creaste.';
+  } else if (estado === 'prueba' && prueba) {
     titulo = prueba.diasQueQuedan === 1 ? 'Mañana termina tu mes gratis' : `Te quedan ${prueba.diasQueQuedan} días de tu mes gratis`;
     texto = `${prueba.aliado ? `${prueba.aliado} te regaló` : 'Tienes'} Leasefy completo hasta el ${fecha.format(new Date(prueba.termina))}. Si pagas antes, no se apaga nada.`;
   } else if (estado === 'gratis' && prueba?.vencida) {
@@ -244,7 +250,7 @@ function EstadoDelPlan({ estado, prueba }: Pick<AccesoConCotizacion, 'estado' | 
   const total = prueba ? Math.max(1, (new Date(prueba.termina).getTime() - new Date(prueba.empieza).getTime()) / 86_400_000) : 0;
   const usado = estado === 'prueba' && prueba ? Math.min(100, Math.max(0, ((total - prueba.diasQueQuedan) / total) * 100)) : null;
   // Los mismos tonos de la barra del plan: el mes gratis en naranja, rojo desde 10 días antes y al terminar.
-  const urgente = (estado === 'prueba' && prueba && prueba.diasQueQuedan <= DIAS_PARA_INSISTIR) || (estado === 'gratis' && prueba?.vencida);
+  const urgente = suspendida || (estado === 'prueba' && prueba && prueba.diasQueQuedan <= DIAS_PARA_INSISTIR) || (estado === 'gratis' && prueba?.vencida);
   const tono: 'regalo' | 'urgente' | 'neutro' = urgente ? 'urgente' : estado === 'prueba' ? 'regalo' : 'neutro';
   const ilustracion: NombreIlustracion =
     tono === 'urgente' ? 'reloj_mora' : tono === 'regalo' ? 'novedad_regalo' : estado === 'gratis' ? 'casa' : 'pago_confirmado';

@@ -264,6 +264,7 @@ const DEL_AGENTE: Record<string, DemoDelModulo> = {
     promesa: 'El contrato, el cobro y el giro al propietario, sin saber de administración: la plataforma te lleva paso a paso.',
     puntos: ['Contrato en línea con firma', 'El cobro del arriendo cada mes', 'El giro al propietario en un clic'],
     capturas: [cap('erp-renovaciones', 'Contratos y renovaciones')],
+    video: video('contratos', 'Recorrido por Contratos con datos de ejemplo: activos, por empezar, por firmar y terminados'),
   },
   cobranza: {
     titulo: 'El arriendo se cobra solo',
@@ -282,6 +283,14 @@ const DEL_AGENTE: Record<string, DemoDelModulo> = {
     promesa: 'Lo que entra se aplica solo y cada propietario recibe su giro con su liquidación.',
     puntos: ['Recaudo por referencia', 'Giro con su liquidación', 'Extracto para cada propietario'],
     capturas: [cap('erp-dispersiones', 'Giros a propietarios')],
+    video: video('pagos', 'Recorrido por Pagos con datos de ejemplo: la deuda del mes, cuota por cuota, por vencer, en plazo, en cartera y pagada'),
+  },
+  reportes: {
+    titulo: 'Tu negocio en cifras',
+    promesa: 'Ocupación, cartera, recaudo y renovaciones de las propiedades que administras, al día.',
+    puntos: ['Recaudo y ocupación del mes', 'Lo que deja cada inmueble', 'Cartera por edades'],
+    capturas: [cap('demo-reportes', 'Reportes con datos de ejemplo')],
+    video: video('reportes', 'Recorrido por Reportes con datos de ejemplo: el resumen del mes, la rentabilidad por inmueble y la ocupación por zona'),
   },
 };
 
@@ -295,7 +304,14 @@ const GENERAL_DEL_AGENTE: DemoDelModulo = {
 /** El agente no tiene facturación propia: su demo de pagos la cubre (la inmobiliaria sí tiene la suya desde el 29-10). */
 const ALIAS_DEL_AGENTE: Record<string, string> = { ...ALIAS, facturacion: 'pagos' };
 
+/**
+ * Nico 30-10-2026 («en agente inmobiliario… tiene que haber videos, no imágenes, en las demos»): el agente usa el panel
+ * de la inmobiliaria (sin Nómina), así que la sección que no tiene texto propio del agente muestra la demo de esa
+ * sección —con su video— y no la general con capturas.
+ */
 export function demoDelAgente(claveDelModulo: string | null | undefined): DemoDelModulo {
   if (!claveDelModulo) return GENERAL_DEL_AGENTE;
-  return DEL_AGENTE[claveDelModulo] ?? DEL_AGENTE[ALIAS_DEL_AGENTE[claveDelModulo] ?? ''] ?? GENERAL_DEL_AGENTE;
+  const propia = DEL_AGENTE[claveDelModulo] ?? DEL_AGENTE[ALIAS_DEL_AGENTE[claveDelModulo] ?? ''];
+  if (propia) return propia;
+  return DE_LA_INMOBILIARIA[claveDelModulo] ?? DE_LA_INMOBILIARIA[ALIAS[claveDelModulo] ?? ''] ?? GENERAL_DEL_AGENTE;
 }

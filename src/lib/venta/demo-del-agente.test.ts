@@ -13,6 +13,15 @@ describe('demos por perfil', () => {
     expect(demoDelAgente('contratos').titulo).not.toBe(demoDeLaInmobiliaria('contratos').titulo);
   });
 
+  it('el agente ve VIDEO en las secciones que lo tienen, no la general con capturas (Nico 30-10)', () => {
+    for (const clave of ['contratos', 'pagos', 'facturacion', 'propietarios', 'reportes', 'mantenimientos', 'documentos', 'contabilidad', 'servicios-publicos', 'solicitudes', 'proveedores']) {
+      expect(demoDelAgente(clave).video, clave).toBeDefined();
+    }
+    // Sin texto propio del agente, la demo de la sección (no la general).
+    expect(demoDelAgente('mantenimientos').titulo).toBe(demoDeLaInmobiliaria('mantenimientos').titulo);
+    expect(demoDelAgente('reportes').titulo).not.toBe(demoDeLaInmobiliaria('reportes').titulo);
+  });
+
   it('el propietario: «Quiero que Leasefy maneje mi inmueble»', () => {
     expect(demoDelPropietario(null).titulo).toBe('Quiero que Leasefy maneje mi inmueble');
   });

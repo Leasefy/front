@@ -74,6 +74,20 @@ describe('las piezas del `done`', () => {
     ]);
   });
 
+  it('30-10: el botón trae lo que la frase ya dijo (el canon del otrosí); lo que no es texto no viaja', () => {
+    const [a] = leerAcciones([
+      {
+        id: 'hacer_otrosi',
+        titulo: 'Hacer un otrosí al contrato #24',
+        entidad: { tipo: 'contrato', id: UUID },
+        disponible: true,
+        datos: { canon: '2500000', mes: '2027-01', 'no vale': 'x', diaDePago: 15 },
+      },
+    ]);
+    expect(a!.datos).toEqual({ canon: '2500000', mes: '2027-01' });
+    expect(leerAcciones([{ id: 'x_y', titulo: 'X', entidad: { tipo: 'contrato', id: UUID }, datos: {} }])[0]).not.toHaveProperty('datos');
+  });
+
   it('confirmación, resultado y formulario: tolerantes, nunca lanzan', () => {
     expect(leerConfirmacion({ propuestaId: 'p', frase: 'Voy a…', modo: 'raro' })).toMatchObject({ modo: 'copiloto', pregunta: '¿Lo hago?' });
     expect(leerConfirmacion({ frase: 'sin id' })).toBeNull();

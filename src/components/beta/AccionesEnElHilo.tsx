@@ -188,7 +188,8 @@ function AccionesDeLaFicha({ acciones, turnoId }: { acciones: AccionDelHilo[]; t
               tipo: a.entidad.tipo,
               id: a.entidad.id,
             });
-            mandar(a.titulo, { accion: a.id, entidad: a.entidad });
+            // 30-10: con lo que la frase ya dijo (el canon del otrosí), el formulario sale lleno.
+            mandar(a.titulo, { accion: a.id, entidad: a.entidad, ...(a.datos ? { datos: a.datos } : {}) });
           }}
         />
       ) : (

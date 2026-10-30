@@ -270,6 +270,22 @@ export interface AccionDelHilo {
   lectura: boolean;
   /** Desde cuándo se podrá (`YYYY-MM-DD`), si el porqué lo dice. */
   desde: string | null;
+  /**
+   * 30-10: lo que la frase ya dijo para esta acción (el canon del otrosí). Va
+   * con el clic y el formulario sale lleno. Ausente = vacío, como siempre.
+   */
+  datos?: Record<string, string>;
+}
+
+/** Los datos de un botón: claves como las de la intención y valores en texto (lo demás no viaja). */
+function leerDatosDelBoton(v: unknown): Record<string, string> | undefined {
+  if (!esObjeto(v)) return undefined;
+  const datos = Object.fromEntries(
+    Object.entries(v).filter(
+      ([clave, valor]) => /^[A-Za-z][A-Za-z0-9_]{0,39}$/.test(clave) && typeof valor === 'string' && valor.length <= 500,
+    ),
+  ) as Record<string, string>;
+  return Object.keys(datos).length ? datos : undefined;
 }
 
 export function leerAcciones(v: unknown): AccionDelHilo[] {
@@ -290,6 +306,7 @@ export function leerAcciones(v: unknown): AccionDelHilo[] {
       riesgo: leerRiesgo(a.riesgo),
       lectura: a.lectura === true,
       desde: typeof a.desde === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(a.desde) ? a.desde : null,
+      ...(leerDatosDelBoton(a.datos) ? { datos: leerDatosDelBoton(a.datos) } : {}),
     });
   }
   return salida;

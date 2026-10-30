@@ -109,6 +109,30 @@ describe('lo que se puede hacer', () => {
 
   // Nico (23-09, 23:47): «que se vea que es un CTA… que diga cómo ver lo que
   // no se puede hacer ahora».
+  it('30-10: el botón con lo que la frase ya dijo lo manda con el clic (el formulario sale lleno)', () => {
+    pintar(
+      mensaje({
+        acciones: [
+          {
+            id: 'hacer_otrosi',
+            titulo: 'Hacer un otrosí al contrato #24 (canon o día de pago)',
+            entidad: CONTRATO,
+            disponible: true,
+            porQueNo: null,
+            riesgo: { ...SIN, muevePlata: true },
+            lectura: false,
+            desde: null,
+            datos: { canon: '2500000', mes: '2027-01' },
+          },
+        ],
+      }),
+    );
+    act(() => boton('Hacer un otrosí')!.click());
+    expect(contexto.sendMessage).toHaveBeenCalledWith('Hacer un otrosí al contrato #24 (canon o día de pago)', {
+      intencion: { accion: 'hacer_otrosi', entidad: CONTRATO, datos: { canon: '2500000', mes: '2027-01' } },
+    });
+  });
+
   it('lo que no se puede: un botón que dice qué muestra y cuántas, en el pie de la caja; adentro, el porqué y desde cuándo', () => {
     pintar(m);
     expect(boton('Mandarle el estado de cuenta por WhatsApp')).toBeUndefined();

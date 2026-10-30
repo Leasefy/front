@@ -17,6 +17,8 @@ vi.mock('@/lib/api/portal-del-propietario.service', () => ({
     pedirCambioDeCuenta: (...a: unknown[]) => pedirCambioDeCuenta(...a),
   },
 }));
+const pdfDelCertificado = vi.fn();
+vi.mock('@/lib/api/lease-documents.service', () => ({ leaseDocumentsApi: { pdf: (...a: unknown[]) => pdfDelCertificado(...a) } }));
 const cabecerasDeLaCuenta = vi.fn((): Record<string, string> => ({}));
 vi.mock('@/lib/auth/cuenta-activa', async (original) => ({
   ...(await original<typeof import('@/lib/auth/cuenta-activa')>()),
@@ -221,6 +223,32 @@ describe('ChatDelPortal — Ori dentro del portal, sin modelo', () => {
     });
     await hasta(() => document.body.querySelector('[role="alert"]'));
     expect(subirAdjunto).not.toHaveBeenCalled();
+  });
+
+  it('R15: emitido el paz y salvo, se descarga AHÍ MISMO con la sesión de la persona (sin ir a «Mis certificados»)', async () => {
+    const documentoId = '9a8b7c6d-1b2c-4d5e-8f90-123456789abc';
+    const PAZ_Y_SALVO = {
+      accion: 'pedir_certificado',
+      titulo: 'Emitir tu paz y salvo',
+      detalle: 'Paz y salvo del arriendo de Cra 10 # 20-30.',
+      boton: 'Sí, hazlo',
+      datos: { contractId: '11111111-1111-4111-8111-111111111111' },
+    };
+    agentFetch
+      .mockResolvedValueOnce(json(200, { pedido: 'certificado', texto: 'Revisé tu estado de cuenta: no te queda nada por pagar.', tarjeta: PAZ_Y_SALVO }))
+      .mockResolvedValueOnce(json(200, { hecho: true, texto: 'Listo, tu paz y salvo quedó emitido.', documentoId }));
+    pdfDelCertificado.mockReset().mockResolvedValue(new Blob(['%PDF'], { type: 'application/pdf' }));
+    Object.assign(URL, { createObjectURL: vi.fn(() => 'blob:x'), revokeObjectURL: vi.fn() });
+    await abrir();
+    await escribir('necesito mi paz y salvo');
+    await clic('Enviar');
+    await hasta(() => boton('Sí, hazlo'));
+    expect(boton('Descargar el certificado')).toBeNull();
+    await clic('Sí, hazlo');
+    await clic('Descargar el certificado');
+    await hasta(() => texto().includes('Listo: el certificado quedó en tus descargas.'));
+    expect(pdfDelCertificado).toHaveBeenCalledWith(documentoId);
+    expect(agentFetch).toHaveBeenCalledTimes(2);
   });
 
   describe('el propietario hace lo suyo desde el chat (29-10)', () => {

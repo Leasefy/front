@@ -34,6 +34,7 @@ import { abrirElPagoEnLinea } from '@/lib/portales/pago-desde-el-chat';
 import { portalDelPropietarioApi } from '@/lib/api/portal-del-propietario.service';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { FormularioCambioDeCuenta } from '@/components/landlord/portal/FormularioCambioDeCuenta';
+import { DescargaDelCertificado } from './DescargaDelCertificado';
 import { FotoDelDano } from './FotoDelDano';
 import { TarjetaDelChatDelPortal, type EstadoDeLaTarjetaDelPortal } from './TarjetaDelChatDelPortal';
 
@@ -49,6 +50,8 @@ export type TurnoDelPortal =
       error?: boolean;
       /** La solicitud que quedó radicada: para agregarle la foto del daño. */
       pqrsId?: string;
+      /** R15: el certificado que quedó emitido, para descargarlo aquí mismo. */
+      documentoId?: string;
       /** El formulario del cambio de cuenta, abierto dentro de la tarjeta. */
       formularioAbierto?: boolean;
     };
@@ -133,7 +136,7 @@ export function useChatDelPortal(portal: PortalDelChat) {
         return;
       }
       const r = await hacerEnElChatDelPortal(tarjeta, portal);
-      cambiar(id, { estado: r.hecho ? 'hecha' : 'fallida', resultado: r.texto, pqrsId: r.pqrsId });
+      cambiar(id, { estado: r.hecho ? 'hecha' : 'fallida', resultado: r.texto, pqrsId: r.pqrsId, documentoId: r.documentoId });
     },
     [cambiar, portal],
   );
@@ -256,6 +259,9 @@ export function ChatDelPortal({ portal }: { portal: PortalDelChat }) {
                   >
                     {t.estado === 'hecha' && t.tarjeta.accion === 'radicar_pqrs' && t.pqrsId && (
                       <FotoDelDano pqrsId={t.pqrsId} />
+                    )}
+                    {t.estado === 'hecha' && t.tarjeta.accion === 'pedir_certificado' && t.documentoId && (
+                      <DescargaDelCertificado documentoId={t.documentoId} />
                     )}
                     {t.tarjeta.accion === 'cambiar_cuenta' && (
                       <Collapse open={Boolean(t.formularioAbierto) && t.estado === 'pendiente'}>

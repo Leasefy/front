@@ -1,5 +1,6 @@
 'use client';
 
+import { descripcionPublica } from '@/lib/inmuebles/descripcion-publica';
 import { useMemo, useRef, useState, type ReactNode } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -430,7 +431,8 @@ export function CaracteristicasDelInmueble({ p }: { p: Property }) {
 
 export function Descripcion({ texto }: { texto: string | null | undefined }) {
   const [abierta, setAbierta] = useState(false);
-  const limpio = (texto ?? '').trim();
+  // 🔴 Nunca lo interno de la importación (dónde están las llaves, el otro precio): Nico 30-10-2026.
+  const limpio = descripcionPublica(texto);
   if (!limpio) return null;
   const larga = limpio.length > 420;
   return (

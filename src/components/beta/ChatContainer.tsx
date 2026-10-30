@@ -14,6 +14,7 @@ import { useScrollDelTurno } from '@/lib/hooks/use-scroll-del-turno';
 import { Button } from '@/components/ui/button';
 import { ChatMessageSkeleton } from './BetaSkeletons';
 import { BetaWelcome } from './BetaWelcome';
+import { AvisoDeLoProgramado } from './AvisoDeLoProgramado';
 import { UserBubble } from './UserBubble';
 import { AssistantBubble } from './AssistantBubble';
 import { ChatInput } from './ChatInput';
@@ -228,6 +229,8 @@ function ConversacionDelChat({ className }: ChatContainerProps) {
           >
             {/* Center-constrain messages for wider screens */}
             <div ref={listaRef} className="max-w-3xl mx-auto space-y-5">
+              {/* D4 (Nico 30-10): lo programado que quedó listo o salió solo, arriba. */}
+              <AvisoDeLoProgramado />
               {messages.map((message, index) => {
                 const isLastAssistant =
                   message.role === 'assistant' &&
@@ -554,6 +557,7 @@ function ConversacionDelChat({ className }: ChatContainerProps) {
       ) : (
         /* Empty state — Manus-style: greeting + hero input + pills, all centered */
         <div data-lenis-prevent className="relative flex-1 overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <AvisoDeLoProgramado className="mx-auto w-full max-w-3xl px-4 pt-6 sm:px-6" />
           <BetaWelcome onPromptClick={(texto, adjuntos) => sendMessage(texto, adjuntos?.length ? { adjuntos } : undefined)} />
         </div>
       )}

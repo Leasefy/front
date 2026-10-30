@@ -930,4 +930,15 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   // 30-10 (R17): la constancia de un documento subido en nombre del postulante.
   'Lo subió {quien} en nombre del postulante': 'Uploaded by {quien} on behalf of the applicant',
   'Lo subió tu inmobiliaria en nombre del postulante': 'Uploaded by your agency on behalf of the applicant',
+  // 30-10 (D4): el aviso de lo programado al abrir el chat.
+  'Lo que programaste': 'What you scheduled',
+  'Quedó listo lo que programaste': 'What you scheduled is ready',
+  'Ya se hizo lo que programaste': 'What you scheduled is done',
+  'Y {n} más esperando tu clic.': 'And {n} more waiting for your click.',
+  'Antes de hacer nada te muestro qué voy a hacer.': "Before doing anything, I'll show you what I'm going to do.",
+  'Hacerlo ahora': 'Do it now',
+  'Ahora no': 'Not now',
+  'Entendido': 'Got it',
+  'Ya se hizo': 'Done',
+  'Se hizo solo en Automático': 'Done on its own in Automatic',
 }

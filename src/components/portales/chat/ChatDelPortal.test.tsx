@@ -11,10 +11,12 @@ vi.mock('@/lib/api/pqrs.service', () => ({ pqrsApi: { subirAdjunto: (...a: unkno
 vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'));
 const bajarExtracto = vi.fn();
 const pedirCambioDeCuenta = vi.fn();
+const bajarCertificadoDeIngresos = vi.fn();
 vi.mock('@/lib/api/portal-del-propietario.service', () => ({
   portalDelPropietarioApi: {
     bajarExtracto: (...a: unknown[]) => bajarExtracto(...a),
     pedirCambioDeCuenta: (...a: unknown[]) => pedirCambioDeCuenta(...a),
+    bajarCertificadoDeIngresos: (...a: unknown[]) => bajarCertificadoDeIngresos(...a),
   },
 }));
 const pdfDelCertificado = vi.fn();
@@ -295,6 +297,31 @@ describe('ChatDelPortal — Ori dentro del portal, sin modelo', () => {
       await clic('Descargar extracto');
       await hasta(() => texto().includes('quedó en tus descargas'));
       expect(bajarExtracto).toHaveBeenCalledWith({ id: ID, mes: '2026-09' });
+      expect(agentFetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('R16: «Mi certificado de ingresos y retenciones» → «Descargar certificado» baja el PDF de ESE año con su sesión, sin /hacer', async () => {
+      bajarCertificadoDeIngresos.mockReset().mockResolvedValueOnce(undefined);
+      agentFetch.mockResolvedValueOnce(
+        json(200, {
+          pedido: 'certificado_de_ingresos',
+          texto: 'Tu certificado de ingresos y retenciones de 2025: ingreso bruto por arrendamiento $ 27.600.000.',
+          tarjeta: {
+            accion: 'bajar_certificado_de_ingresos',
+            titulo: 'Certificado de ingresos y retenciones 2025',
+            detalle: 'El PDF con el resumen del año, por inmueble y por mes, para tu declaración.',
+            boton: 'Descargar certificado',
+            datos: { anio: '2025' },
+          },
+        }),
+      );
+      await abrir('propietario');
+      await clic('Mi certificado de ingresos y retenciones');
+      await hasta(() => texto().includes('Certificado de ingresos y retenciones 2025'));
+      expect(boton('Ahora no')).toBeNull();
+      await clic('Descargar certificado');
+      await hasta(() => texto().includes('quedó en tus descargas'));
+      expect(bajarCertificadoDeIngresos).toHaveBeenCalledWith(2025);
       expect(agentFetch).toHaveBeenCalledTimes(1);
     });
 

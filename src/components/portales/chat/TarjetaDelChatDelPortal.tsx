@@ -9,7 +9,7 @@
  * Desde el 29-10 también trae DECISIONES (reparaciones y sobrecostos del
  * propietario): «Aprobar», «Rechazar» (con un porqué opcional que ve la
  * inmobiliaria) y «La hago yo», cada una su propio clic; la que pidió en
- * palabras va resaltada. El extracto es una descarga (sin «Ahora no»).
+ * palabras va resaltada. El extracto y el certificado de ingresos (R16) son descargas (sin «Ahora no»).
  */
 import { useId, useState } from 'react';
 import { Badge, Button, Collapse } from '@leasefy/cadence';
@@ -35,12 +35,18 @@ const INSIGNIA: Record<EstadoDeLaTarjetaDelPortal, Insignia> = {
 /** Lo que espera cada tarjeta mientras nadie la toca. */
 const PENDIENTE_POR_ACCION: Partial<Record<Tarjeta['accion'], Insignia>> = {
   bajar_extracto: { variante: 'neutral', texto: 'Para descargar' },
+  bajar_certificado_de_ingresos: { variante: 'neutral', texto: 'Para descargar' },
   decidir_reparacion: { variante: 'warning', texto: 'Por decidir' },
   decidir_sobrecosto: { variante: 'warning', texto: 'Por decidir' },
 };
 
 /** Sin «Ahora no»: decidir (no tocarla es no decidir) y descargar (no cambia nada). */
-const SIN_AHORA_NO: ReadonlySet<Tarjeta['accion']> = new Set(['bajar_extracto', 'decidir_reparacion', 'decidir_sobrecosto']);
+const SIN_AHORA_NO: ReadonlySet<Tarjeta['accion']> = new Set([
+  'bajar_extracto',
+  'bajar_certificado_de_ingresos',
+  'decidir_reparacion',
+  'decidir_sobrecosto',
+]);
 
 function Decisiones({
   opciones,

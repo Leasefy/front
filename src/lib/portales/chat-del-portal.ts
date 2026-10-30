@@ -105,7 +105,8 @@ export const SUGERENCIAS_DEL_PORTAL: Record<PortalDelChat, readonly string[]> = 
     'Mándame el extracto',
     '¿Qué reparaciones tengo por aprobar?',
     'Quiero cambiar mi cuenta',
-    'Necesito un certificado',
+    // R16 (Nico, pregunta 38: «HACER el certificado»): el suyo, el de ingresos y retenciones.
+    'Mi certificado de ingresos y retenciones',
     '¿Qué me respondieron?',
   ],
   postulante: [

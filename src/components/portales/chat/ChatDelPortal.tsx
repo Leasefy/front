@@ -130,6 +130,19 @@ export function useChatDelPortal(portal: PortalDelChat) {
         }
         return;
       }
+      if (tarjeta.accion === 'bajar_certificado_de_ingresos') {
+        // R16: el certificado de ingresos y retenciones del año, con la sesión de la persona (como «Informes»).
+        try {
+          await portalDelPropietarioApi.bajarCertificadoDeIngresos(Number(tarjeta.datos.anio));
+          cambiar(id, { estado: 'hecha', resultado: 'Listo: el certificado quedó en tus descargas.' });
+        } catch (err) {
+          cambiar(id, {
+            estado: 'fallida',
+            resultado: mensajeParaLaPersona(err, { porDefecto: 'No pude bajar el certificado.', accion: 'bajar el certificado' }),
+          });
+        }
+        return;
+      }
       if (tarjeta.accion === 'cambiar_cuenta') {
         // El cambio va por el formulario controlado (certificación + correo + aprobación): se abre aquí.
         cambiar(id, { estado: 'pendiente', formularioAbierto: true });

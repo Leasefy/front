@@ -84,9 +84,14 @@ let root: Root
 const casilla = (i: number) => container.querySelector(`[data-testid="casilla-${i}"]`) as HTMLInputElement
 
 async function vaciar() {
-  await act(async () => {
-    for (let i = 0; i < 40; i++) await Promise.resolve()
-  })
+  // Micro-turnos para las promesas encadenadas y macro-turnos para los imports dinámicos
+  // y el `fetch` del doble: sólo con micro-turnos el CI cargado llegaba antes que el flujo.
+  for (let ronda = 0; ronda < 5; ronda++) {
+    await act(async () => {
+      for (let i = 0; i < 40; i++) await Promise.resolve()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+  }
 }
 
 async function escribir(codigo: string) {

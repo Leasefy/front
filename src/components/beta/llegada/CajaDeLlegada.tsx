@@ -6,17 +6,23 @@ import {
   useId,
   useRef,
   useState,
+  type ClipboardEvent,
+  type DragEvent,
   type KeyboardEvent,
   type ReactNode,
 } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { motionDuration, motionEase } from '@leasefy/cadence';
-import { ArrowUp, Cards, Microphone, Stop, WarningCircle, X } from '@phosphor-icons/react';
+import { ArrowUp, Camera, Cards, Microphone, Paperclip, Stop, UploadSimple, WarningCircle, X } from '@phosphor-icons/react';
 import { Kbd } from '@/components/ui/kbd';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { relojDeVoz, useDictadoPorVoz, useNivelDelMicrofono } from '../dictado-por-voz';
 import { useEjemploQueSeEscribe } from './use-ejemplo-que-se-escribe';
+import { TiraDeAdjuntos } from './TiraDeAdjuntos';
+import { useTr } from '@/lib/i18n/use-tr';
+import { ACEPTA_EL_CHAT, nombreDelPegado, type AdjuntoDelMensaje } from '@/lib/chat/adjuntos';
+import type { AdjuntosDelCompositor } from '@/lib/chat/use-adjuntos-del-compositor';
 
 /**
  * CajaDeLlegada — la caja grande de la llegada del chat (Nico, 02-10-2026:
@@ -42,15 +48,26 @@ import { useEjemploQueSeEscribe } from './use-ejemplo-que-se-escribe';
  * - **Bandeja** (opcional): la franja de estado que asoma debajo del marco.
  * - **Aviso** (opcional): la franja de arriba, dentro de la caja.
  *
- * Qué NO tiene, a propósito: «+» (el chat no recibe adjuntos) ni selector de
- * modelo, ni «Pausa» en la voz (el dictado del navegador no se puede pausar:
+ * - **Adjuntar** (29-10-2026, «el chat lo resuelve todo»; sólo con `adjuntos`):
+ *   el clip abre el selector, en el celular la cámara toma la foto, y también
+ *   se arrastra y se suelta sobre la caja o se pega (Ctrl+V). Los archivos van
+ *   en fichas arriba del texto (`TiraDeAdjuntos`), suben apenas se agregan y se
+ *   quitan antes de mandar.
+ *
+ * Qué NO tiene, a propósito: selector de modelo, ni «Pausa» en la voz (el dictado del navegador no se puede pausar:
  * sería un botón que finge). «Voz» donde el navegador sabe dictar o grabar:
  * en Arc, Brave y Firefox se graba y el texto llega al tocar «Listo»
  * (Nico, 12-10-2026).
  */
 
 interface CajaDeLlegadaProps {
-  onEnviar: (texto: string) => void;
+  /** El texto y, si la caja recibe archivos, los que ya subieron. */
+  onEnviar: (texto: string, adjuntos?: AdjuntoDelMensaje[]) => void;
+  /**
+   * Los archivos del compositor (`useAdjuntosDelCompositor`). Sin esto la caja
+   * no ofrece adjuntar (el marketplace usa la MISMA caja y no los recibe).
+   */
+  adjuntos?: AdjuntosDelCompositor;
   /** Abre o cierra el menú de plantillas. */
   onPlantillas: () => void;
   plantillasAbiertas: boolean;
@@ -104,9 +121,11 @@ export function CajaDeLlegada({
   encima,
   placeholder,
   textos,
+  adjuntos,
   className,
 }: CajaDeLlegadaProps) {
   const { t } = useI18n();
+  const tr = useTr();
   const reducido = useReducedMotion() ?? false;
   const [valor, setValor] = useState('');
   const [enfocada, setEnfocada] = useState(false);
@@ -118,7 +137,16 @@ export function CajaDeLlegada({
   const dictado = useDictadoPorVoz(valor, setValor);
   useNivelDelMicrofono(cajaRef, dictado.escuchando, reducido);
   const hayTexto = valor.trim().length > 0;
-  const puedeEnviar = hayTexto && !dictado.escuchando && !dictado.transcribiendo && !ocupado;
+  // Con archivos listos se puede mandar sin escribir; mientras alguno sube, se espera.
+  const hayQueMandar = hayTexto || Boolean(adjuntos?.hayListos);
+  const subiendo = Boolean(adjuntos?.subiendo);
+  const puedeEnviar = hayQueMandar && !subiendo && !dictado.escuchando && !dictado.transcribiendo && !ocupado;
+  const selectorRef = useRef<HTMLInputElement>(null);
+  const camaraRef = useRef<HTMLInputElement>(null);
+  // Arrastrar y soltar: el contador evita el parpadeo al pasar sobre los hijos.
+  const [arrastrando, setArrastrando] = useState(false);
+  const capasDelArrastre = useRef(0);
+  const traeArchivos = (e: DragEvent) => Array.from(e.dataTransfer?.types ?? []).includes('Files');
   const encendida = enfocada || hayTexto;
   // Sin la franja de arriba la caja se veía chica (Nico, 02-10): más aire.
   const altoMinimo = compacta ? 'min-h-[28px]' : aviso ? 'min-h-[56px]' : 'min-h-[92px]';
@@ -149,10 +177,52 @@ export function CajaDeLlegada({
 
   const enviar = useCallback(() => {
     const texto = valor.trim();
-    if (!texto || dictado.escuchando || dictado.transcribiendo || ocupado) return;
-    onEnviar(texto);
+    if (dictado.escuchando || dictado.transcribiendo || ocupado || adjuntos?.subiendo) return;
+    if (!texto && !adjuntos?.hayListos) return;
+    const listos = adjuntos ? adjuntos.tomarLosListos() : [];
+    if (listos.length > 0) onEnviar(texto, listos);
+    else onEnviar(texto);
     setValor('');
-  }, [valor, dictado.escuchando, dictado.transcribiendo, ocupado, onEnviar]);
+  }, [valor, dictado.escuchando, dictado.transcribiendo, ocupado, onEnviar, adjuntos]);
+
+  // Pegar una captura (o un archivo copiado) la adjunta; el texto pegado sigue igual.
+  const alPegar = (e: ClipboardEvent<HTMLTextAreaElement>) => {
+    if (!adjuntos) return;
+    const archivos = Array.from(e.clipboardData?.files ?? []);
+    if (archivos.length === 0) return;
+    e.preventDefault();
+    const ahora = new Date();
+    adjuntos.agregar(archivos.map((f, i) => nombreDelPegado(f, ahora, i)));
+  };
+
+  const arrastre = adjuntos
+    ? {
+        onDragEnter: (e: DragEvent) => {
+          if (!traeArchivos(e)) return;
+          e.preventDefault();
+          capasDelArrastre.current += 1;
+          setArrastrando(true);
+        },
+        onDragOver: (e: DragEvent) => {
+          if (!traeArchivos(e)) return;
+          e.preventDefault();
+          if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+        },
+        onDragLeave: (e: DragEvent) => {
+          if (!traeArchivos(e)) return;
+          capasDelArrastre.current = Math.max(0, capasDelArrastre.current - 1);
+          if (capasDelArrastre.current === 0) setArrastrando(false);
+        },
+        onDrop: (e: DragEvent) => {
+          if (!traeArchivos(e)) return;
+          e.preventDefault();
+          capasDelArrastre.current = 0;
+          setArrastrando(false);
+          adjuntos.agregar(Array.from(e.dataTransfer.files));
+          areaRef.current?.focus();
+        },
+      }
+    : {};
 
   const alTeclear = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     // Con un IME (tildes compuestas, teclados asiáticos) Enter confirma la
@@ -164,7 +234,7 @@ export function CajaDeLlegada({
   };
 
   return (
-    <div className={cn('relative w-full', className)}>
+    <div className={cn('relative w-full', className)} data-arrastrando={arrastrando ? 'true' : undefined} {...arrastre}>
       {/* Marco */}
       <div
         className={cn(
@@ -216,6 +286,28 @@ export function CajaDeLlegada({
               <i />
               <b />
             </span>
+
+            {/* Soltar archivos: el aviso cubre la caja mientras se arrastran encima. */}
+            <AnimatePresence>
+              {arrastrando ? (
+                <motion.div
+                  key="soltar"
+                  data-testid="soltar-archivos"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0, transition: { duration: motionDuration.fast, ease: motionEase.exit } }}
+                  transition={{ duration: motionDuration.base, ease: motionEase.enter }}
+                  className={cn(
+                    'pointer-events-none absolute inset-1 z-[3] flex flex-col items-center justify-center gap-1 border border-dashed border-primary bg-surface text-center',
+                    compacta ? 'rounded-[22px]' : 'rounded-[26px]'
+                  )}
+                >
+                  <UploadSimple size={20} aria-hidden className="text-primary" />
+                  <span className="text-[15px] text-fg">{tr('Suelta para adjuntar')}</span>
+                  <span className="text-[13px] text-fg-muted">{tr('Fotos, PDF, XML, Excel, CSV u OFX · hasta 10 MB')}</span>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
 
             <AnimatePresence initial={false}>{aviso ? <div key="aviso">{aviso}</div> : null}</AnimatePresence>
             {/* Lo de arriba (el avance del turno) se recorta con el radio de la
@@ -309,6 +401,14 @@ export function CajaDeLlegada({
                     exit={{ opacity: 0, y: -6, transition: { duration: motionDuration.fast, ease: motionEase.exit } }}
                     transition={{ duration: motionDuration.base, ease: motionEase.enter }}
                   >
+                    {adjuntos ? (
+                      <TiraDeAdjuntos
+                        adjuntos={adjuntos.adjuntos}
+                        onQuitar={adjuntos.quitar}
+                        onReintentar={adjuntos.reintentar}
+                        className={adjuntos.adjuntos.length ? 'mb-2.5' : undefined}
+                      />
+                    ) : null}
                     <div className="relative">
                       <textarea
                         ref={areaRef}
@@ -321,6 +421,7 @@ export function CajaDeLlegada({
                           if (dictado.error) dictado.limpiarError();
                         }}
                         onKeyDown={alTeclear}
+                        onPaste={alPegar}
                         // Mientras el micro pasa lo grabado a texto, lo que se
                         // escriba se pisaría con lo dictado: se espera.
                         readOnly={dictado.transcribiendo}
@@ -404,6 +505,26 @@ export function CajaDeLlegada({
                       </div>
                     )}
 
+                    {/* Lo que no entró (tipo, peso, cuántos): dicho junto a la caja. */}
+                    {adjuntos?.aviso && (
+                      <div
+                        role="alert"
+                        data-testid="aviso-de-adjuntos"
+                        className="mt-2 flex items-start gap-2 rounded-[14px] bg-warning-soft px-3 py-2 text-[13px] leading-snug text-fg"
+                      >
+                        <WarningCircle size={16} aria-hidden className="mt-px shrink-0 text-warning" />
+                        <span className="flex-1">{adjuntos.aviso}</span>
+                        <button
+                          type="button"
+                          onClick={adjuntos.limpiarAviso}
+                          aria-label={tr('Cerrar el aviso')}
+                          className="-mr-1 flex size-6 shrink-0 items-center justify-center rounded-full text-fg-muted hover:bg-surface-hover hover:text-fg [@media(pointer:coarse)]:size-11"
+                        >
+                          <X size={12} aria-hidden />
+                        </button>
+                      </div>
+                    )}
+
                     {/* Barra de abajo. Sus botones quedan a la MISMA distancia del
                         borde que del fondo (Nico, 03-10: «está más lejos de la
                         izquierda de abajo ese botón»): el contenido va con
@@ -445,7 +566,75 @@ export function CajaDeLlegada({
                         {menuDePlantillas}
                       </span>
 
+                      {adjuntos ? (
+                        <span className="mr-auto flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => selectorRef.current?.click()}
+                            aria-label={tr('Adjuntar archivos')}
+                            title={tr('Adjuntar: fotos, PDF, XML, Excel, CSV u OFX')}
+                            data-testid="adjuntar"
+                            className={cn(
+                              'inline-flex items-center justify-center rounded-full border border-border bg-surface text-fg',
+                              redondo,
+                              '[@media(pointer:coarse)]:size-11',
+                              'transition-colors duration-fast hover:border-border-strong hover:bg-bg active:scale-[0.98]'
+                            )}
+                          >
+                            <Paperclip size={17} aria-hidden />
+                          </button>
+                          {/* En el celular, la foto se toma ahí mismo. */}
+                          <button
+                            type="button"
+                            onClick={() => camaraRef.current?.click()}
+                            aria-label={tr('Tomar una foto')}
+                            data-testid="tomar-foto"
+                            className={cn(
+                              'hidden items-center justify-center rounded-full border border-border bg-surface text-fg [@media(pointer:coarse)]:inline-flex',
+                              redondo,
+                              '[@media(pointer:coarse)]:size-11',
+                              'transition-colors duration-fast hover:border-border-strong hover:bg-bg active:scale-[0.98]'
+                            )}
+                          >
+                            <Camera size={17} aria-hidden />
+                          </button>
+                          <input
+                            ref={selectorRef}
+                            type="file"
+                            multiple
+                            accept={ACEPTA_EL_CHAT}
+                            className="sr-only"
+                            tabIndex={-1}
+                            aria-hidden
+                            data-testid="selector-de-archivos"
+                            onChange={(e) => {
+                              adjuntos.agregar(Array.from(e.target.files ?? []));
+                              e.target.value = '';
+                            }}
+                          />
+                          <input
+                            ref={camaraRef}
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            className="sr-only"
+                            tabIndex={-1}
+                            aria-hidden
+                            onChange={(e) => {
+                              adjuntos.agregar(Array.from(e.target.files ?? []));
+                              e.target.value = '';
+                            }}
+                          />
+                        </span>
+                      ) : null}
+
                       <div className="flex items-center gap-2">
+                        {/* Mientras un archivo sube, el mensaje espera (y lo dice). */}
+                        {subiendo ? (
+                          <span role="status" className="hidden text-[13px] text-fg-muted sm:inline">
+                            {tr('Subiendo archivos…')}
+                          </span>
+                        ) : null}
                         {/* «Enter» aparece cuando ya hay algo que mandar. */}
                         <span
                           aria-hidden

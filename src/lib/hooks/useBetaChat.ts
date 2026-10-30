@@ -80,6 +80,7 @@ import {
   type BackendAccionPropuesta,
 } from '@/lib/api/ai-hub-acciones';
 import { enviarFeedbackDeChat } from '@/lib/api/ai-hub-feedback';
+import { textoSinPalabras, type AdjuntoDelMensaje } from '@/lib/chat/adjuntos';
 import { leerRazonamiento } from '@/lib/agentes/agente-que-habla';
 import { ApiError } from '@/lib/api/client';
 import { mensajeDeDemasiadasSolicitudes } from '@/lib/api/demasiadas-solicitudes';
@@ -357,7 +358,14 @@ export interface UseBetaChatReturn {
    * hilo, con forma (23-09, «todo en el chat»): viaja con el texto y el micro
    * lo atiende sin adivinar.
    */
-  sendMessage: (text: string, opciones?: { intencion?: IntencionDelChat | null }) => void;
+  sendMessage: (
+    text: string,
+    opciones?: {
+      intencion?: IntencionDelChat | null;
+      /** (29-10-2026) Los archivos que ya subieron con este mensaje: el micro los lee por su id. */
+      adjuntos?: AdjuntoDelMensaje[];
+    },
+  ) => void;
   isThinking: boolean;
   isStreaming: boolean;
   streamingContent: string;
@@ -1547,6 +1555,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       signal: AbortSignal;
       /** Lo que pidió el botón, con forma (23-09): el micro lo atiende directo. */
       intencion?: IntencionDelChat | null;
+      /** (29-10-2026) Los archivos del mensaje. */
+      adjuntos?: AdjuntoDelMensaje[];
     }): Promise<{
       responseText: string;
       suggestedActions: BackendSuggestedAction[];
@@ -1609,6 +1619,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         message: args.message,
         history: args.history,
         intencion: args.intencion ?? null,
+        ...(args.adjuntos?.length ? { adjuntos: args.adjuntos } : {}),
         signal: args.signal,
         handlers: {
           onSnapshot: (s) => {
@@ -1951,8 +1962,10 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
   // ========================================================================
 
   const sendMessage = useCallback(
-    (text: string, opciones?: { intencion?: IntencionDelChat | null }) => {
-      const trimmed = text.trim();
+    (text: string, opciones?: { intencion?: IntencionDelChat | null; adjuntos?: AdjuntoDelMensaje[] }) => {
+      const adjuntos = opciones?.adjuntos ?? [];
+      // Sólo archivos, sin palabras: el texto dice qué se mandó (el micro igual lee cada uno).
+      const trimmed = text.trim() || (adjuntos.length > 0 ? textoSinPalabras(adjuntos) : '');
       const intencion = opciones?.intencion ?? null;
       if (!trimmed || isThinking || isStreaming || isAgentsRunning || !activeConversationId) return;
 
@@ -1986,6 +1999,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         // Queda en el mensaje: así la tarjeta de «¿Lo hago?» sabe que ya se
         // contestó y «Rehacer» vuelve a pedir lo mismo.
         ...(intencion ? { intencion } : {}),
+        ...(adjuntos.length > 0 ? { adjuntos } : {}),
       };
       const assistantId = generateId();
       const assistantMessage: ChatMessage = {
@@ -2082,6 +2096,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
             conversationId,
             signal,
             intencion,
+            ...(adjuntos.length > 0 ? { adjuntos } : {}),
           });
           if (signal.aborted) return;
           // Llegó la respuesta: el pensamiento se cierra y se pliega en «Cómo lo pensó».
@@ -2096,6 +2111,19 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
             (errorDelStream.status === 402 || errorDelStream.status === 429)
           ) {
             finalizeError(assistantId, conversationId, mensajeDeFalloDelChat(errorDelStream));
+            return;
+          }
+          // Con archivos no hay respaldo: el POST de una vez no los lee, y
+          // contestar sin ellos sería fingir que se leyeron (29-10-2026).
+          if (adjuntos.length > 0) {
+            setActiveAgentBlock(null);
+            setIsAgentsRunning(false);
+            aplicarPensamiento(null);
+            finalizeError(
+              assistantId,
+              conversationId,
+              `${mensajeDeFalloDelChat(errorDelStream)} Los archivos quedaron guardados: vuelve a mandarlos en un momento.`
+            );
             return;
           }
           // Stream failed (route missing, proxy buffering, mid-stream drop) →
@@ -2151,7 +2179,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
    * historial la respuesta que estamos rehaciendo. El efecto de abajo dispara
    * cuando el estado recortado ya aterrizó.
    */
-  const regeneracionPendienteRef = useRef<{ texto: string; intencion: IntencionDelChat | null } | null>(null);
+  const regeneracionPendienteRef = useRef<{ texto: string; intencion: IntencionDelChat | null; adjuntos?: AdjuntoDelMensaje[] } | null>(null);
 
   /**
    * Rehace la última respuesta del asistente.
@@ -2198,7 +2226,9 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       );
       // Con su intención: rehacer «Ver contrato 24» vuelve a traer la ficha,
       // no le pregunta al modelo por el texto del botón.
-      regeneracionPendienteRef.current = { texto, intencion: conv.messages[u].intencion ?? null };
+      // (29-10-2026) Y con sus archivos: rehacer un comprobante vuelve a leer el mismo archivo.
+      const adjuntos = conv.messages[u].adjuntos;
+      regeneracionPendienteRef.current = { texto, intencion: conv.messages[u].intencion ?? null, ...(adjuntos?.length ? { adjuntos } : {}) };
     },
     [isThinking, isStreaming, isAgentsRunning, activeConversationId, conversations, agencyId]
   );
@@ -2317,7 +2347,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
     const pendiente = regeneracionPendienteRef.current;
     if (pendiente === null) return;
     regeneracionPendienteRef.current = null;
-    sendMessage(pendiente.texto, { intencion: pendiente.intencion });
+    sendMessage(pendiente.texto, { intencion: pendiente.intencion, ...(pendiente.adjuntos?.length ? { adjuntos: pendiente.adjuntos } : {}) });
     // Depende de `conversations` a propósito: es el cambio de ese estado (el
     // recorte) lo que habilita este envío con el historial ya correcto.
   }, [conversations, sendMessage]);

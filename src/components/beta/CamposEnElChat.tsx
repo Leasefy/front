@@ -1,6 +1,7 @@
 'use client';
 
 import { CurrencyInput } from '@leasefy/cadence';
+import { Paperclip } from '@phosphor-icons/react';
 import { Input, Textarea } from '@/components/ui';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SelectorDeMes } from '@/components/finanzas/SelectorDeMes';
@@ -100,7 +101,20 @@ export function CamposEnElChat({
     <div className="grid gap-3 sm:grid-cols-2">
       {campos.map((c) => {
         const id = `campo-${idBase}-${c.clave}`;
-        const ancho = c.tipo === 'texto_largo' ? 'sm:col-span-2' : '';
+        const ancho = c.tipo === 'texto_largo' || c.tipo === 'adjunto' ? 'sm:col-span-2' : '';
+        // (29-10-2026) Los archivos que mandó la persona: no se escriben, se
+        // ven con su nombre y viajan tal cual.
+        if (c.tipo === 'adjunto') {
+          return (
+            <div key={c.clave} className={cn('space-y-1.5', ancho)} data-testid={`campo-adjunto-${c.clave}`}>
+              <span className="block font-body text-[14px] font-medium text-fg">{c.etiqueta}</span>
+              <p className="flex items-start gap-2 rounded-md bg-surface-muted px-3 py-2 font-body text-[13px] text-fg">
+                <Paperclip size={16} aria-hidden className="mt-px shrink-0 text-fg-muted" />
+                <span className="min-w-0 break-words">{c.ayuda ?? t('beta.enElChat.formulario.archivoAdjunto')}</span>
+              </p>
+            </div>
+          );
+        }
         return (
           <div key={c.clave} className={cn('space-y-1.5', ancho)}>
             <label htmlFor={id} className="block font-body text-[14px] font-medium text-fg">

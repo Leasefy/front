@@ -360,6 +360,11 @@ export interface ChatMessage {
    * (`formulario`). Ver `src/lib/chat/acciones-del-hilo.ts`.
    */
   intencion?: import('@/lib/chat/acciones-del-hilo').IntencionDelChat;
+  /**
+   * (29-10-2026, adjuntos en el chat) En un mensaje de la PERSONA, los archivos
+   * que mandó con él (ya subidos: el micro los lee por su id).
+   */
+  adjuntos?: import('@/lib/chat/adjuntos').AdjuntoDelMensaje[];
   acciones?: import('@/lib/chat/acciones-del-hilo').AccionDelHilo[];
   confirmacion?: import('@/lib/chat/acciones-del-hilo').ConfirmacionEnElHilo;
   resultado?: import('@/lib/chat/acciones-del-hilo').ResultadoEnElHilo;

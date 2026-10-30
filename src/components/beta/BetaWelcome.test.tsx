@@ -172,12 +172,15 @@ describe('la llegada del chat', () => {
     expect(boton.getAttribute('aria-expanded')).toBe('true');
   });
 
-  it('no dibuja controles que el chat no soporta: ni «+», ni adjuntar, ni voz sin dictado', () => {
+  // 29-10-2026 (Nico, «el chat lo resuelve todo»): el chat YA recibe archivos,
+  // así que «Adjuntar» sí va (con su clip); «+» y la voz sin dictado siguen sin ir.
+  it('no dibuja controles que el chat no soporta: ni «+» ni voz sin dictado; adjuntar sí', () => {
     pintar(<BetaWelcome />);
     const nombres = [...container.querySelectorAll('button')].map(
       (b) => `${b.textContent} ${b.getAttribute('aria-label') ?? ''}`
     );
-    expect(nombres.some((n) => /adjunt|\+|dictar/i.test(n))).toBe(false);
+    expect(nombres.some((n) => /\+|dictar/i.test(n))).toBe(false);
+    expect(nombres.some((n) => /Adjuntar archivos/.test(n))).toBe(true);
   });
 
   it('«Preguntas predeterminadas» sale desde su botón: el menú vive junto al botón, no debajo de la bandeja', () => {

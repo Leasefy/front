@@ -719,7 +719,7 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   "{n} más esperan que la persona confirme su correo: el plazo empieza cuando lo confirma.": "{n} more are waiting for the person to confirm their email: the deadline starts when they do.",
   // inquilino › Mi calificación (ronda 28)
   "Todavía no tienes calificación": "You don't have a rating yet",
-  "Se arma con tu estudio y tus pagos en Leasefy.": "It is built from your assessment and your payments on Leasefy.",
+  "Se arma con tus documentos y tus pagos en Leasefy.": "It is built from your documents and your payments on Leasefy.",
   "Conocer mi tope": "Find out my limit",
   "Cuando arriendes con Leasefy, aquí ves cada contrato con tus pagos a tiempo y lo que dijo la inmobiliaria al terminar.": "When you rent through Leasefy, here you see each lease with your on-time payments and what the agency said at the end.",
   "Leer la autorización": "Read the authorization",

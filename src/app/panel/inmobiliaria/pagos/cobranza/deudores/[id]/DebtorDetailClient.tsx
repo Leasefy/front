@@ -16,7 +16,7 @@
  *  - PIIRevealContextProvider wraps everything; single shared PIIRevealModal
  *    lifted to this level (Task 6 wiring)
  *  - ?tab=… deep links read on mount and written on tab change (shallow)
- *  - Realtime channels (31-11) unchanged: stage_transitions + calls.
+ *  - No realtime channels (the 31-11 Supabase ones were dead code; removed in T-0183).
  */
 
 import * as React from 'react'
@@ -27,8 +27,6 @@ import { useI18n } from '@/lib/i18n'
 import { stageColorClasses, humanCaseState, stageDisplayName } from '@/lib/cartera'
 import { useDebtorDetail } from '@/lib/hooks/cobranza/use-debtor-detail'
 import { useDebtorCompromisos } from '@/lib/hooks/cobranza/use-debtor-compromisos'
-import { useDebtorStageTransitionsRealtime } from '@/lib/hooks/cobranza/use-debtor-stage-transitions-realtime'
-import { useDebtorCallsRealtime } from '@/lib/hooks/cobranza/use-debtor-calls-realtime'
 import {
   PIIRevealContextProvider,
   type PIIFieldKey,
@@ -127,56 +125,14 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
   }, [data, compromisosData])
 
   // -----------------------------------------------------------------------
-  // Phase 31 plan 31-11: Supabase Realtime (XR-01, D-31-16, D-31-18)
-  //
-  // Two channels per open debtor (stage_transitions + calls). On each event,
-  // we bump a per-tab refetchKey so the tab's data hook re-fetches (D-31-09
-  // lazy-mount preserved — non-active tab still doesn't poll, just gets a
-  // stale key it ignores until activated). On every SUBSCRIBED status
-  // (initial + reconnect) we trigger a single detail refetch to catch any
-  // events missed during a transient disconnect (lossy OK per D-31-18).
-  //
-  // Callbacks wrapped in useCallback so the realtime useEffect deps stay
-  // referentially stable — otherwise the channel would resubscribe on every
-  // parent render.
+  // Refetch keys. Cada pestaña vuelve a leer su dato cuando su clave sube
+  // (D-31-09: la pestaña inactiva no hace polling). Antes también subían por los
+  // canales de Supabase Realtime de transiciones y llamadas (31-11); esos
+  // canales apuntaban a tablas que no están en `public` ni publicadas y nunca
+  // recibieron un evento, así que se retiraron (T-0183). Las claves suben por
+  // las acciones de la persona (`onIntervention`) y por el fetch de siempre.
   // -----------------------------------------------------------------------
   const [timelineRefetchKey, setTimelineRefetchKey] = useState(0)
-  const [callsRefetchKey, setCallsRefetchKey] = useState(0)
-
-  const handleNewTransition = useCallback(() => {
-    // Sidebar (stage badge, days-in-stage, isPaused) reads from useDebtorDetail
-    // — refetch it. Timeline tab also needs to re-load.
-    void refetch()
-    setTimelineRefetchKey((n) => n + 1)
-  }, [refetch])
-
-  const handleStageReconnect = useCallback(() => {
-    void refetch()
-    setTimelineRefetchKey((n) => n + 1)
-  }, [refetch])
-
-  const handleNewCall = useCallback(() => {
-    // Sidebar (contact-attempts counter) reads from useDebtorDetail — refetch.
-    // Llamadas tab refetches via its own refetchKey.
-    void refetch()
-    setCallsRefetchKey((n) => n + 1)
-  }, [refetch])
-
-  const handleCallReconnect = useCallback(() => {
-    void refetch()
-    setCallsRefetchKey((n) => n + 1)
-  }, [refetch])
-
-  useDebtorStageTransitionsRealtime({
-    debtorId,
-    onNewTransition: handleNewTransition,
-    onReconnect: handleStageReconnect,
-  })
-  useDebtorCallsRealtime({
-    debtorId,
-    onNewCall: handleNewCall,
-    onReconnect: handleCallReconnect,
-  })
 
   const onRevealRequest = useCallback((field: PIIFieldKey) => {
     setRevealModal({ field })
@@ -395,7 +351,7 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
             <TimelineTab debtorId={debtorId} refetchKey={timelineRefetchKey} />
           )}
           {activeTab === 'llamadas' && (
-            <LlamadasTab debtorId={debtorId} refetchKey={callsRefetchKey} />
+            <LlamadasTab debtorId={debtorId} />
           )}
           {activeTab === 'gestiones' && (
             <GestionesDeLaPersona

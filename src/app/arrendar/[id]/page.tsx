@@ -201,8 +201,8 @@ export default function ArrendarPage({ params }: Props) {
               <section aria-labelledby="lo-que-sigue" className="rounded-lg border border-border bg-surface p-6 md:p-8">
                 <h2 id="lo-que-sigue" className="font-heading text-xl font-normal text-fg">Lo que sigue</h2>
                 <p className="mt-2 text-sm text-fg-muted">
-                  En el paso 2 te pedimos tu nombre, cédula, celular y correo, y consultamos a las aseguradoras si respaldan tu
-                  arriendo. En el paso 3 te decimos si te lo podemos arrendar y cómo seguir.
+                  En el paso 2 subes tu cédula y tu extracto bancario y estudiamos tus documentos, gratis. En el paso 3 te
+                  decimos el rango donde tienes mejores posibilidades de que te acepten y cómo seguir.
                 </p>
                 <div className="mt-6 flex flex-col-reverse gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
                   <Button variant="ghost" hideArrow onClick={() => setConfirmandoSalida(true)} data-testid="volver-al-inmueble">

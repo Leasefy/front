@@ -88,6 +88,13 @@ activity feed, execution panel).
   pegan al agente.** (Acá decía «activo salvo `!== 'false'`»; ese patrón no existe en el código
   y hacía pensar que el panel servía datos inventados.)
 - ⚠️ `ANTHROPIC_API_KEY`, `INNGEST_*`, las keys de proveedores → viven en el `.env` del agent, NO acá.
+- **Almacenamiento (T-0182, Supabase → S3, aditivo).** `NEXT_PUBLIC_ASSETS_HOST` = hostname de CloudFront de los
+  assets públicos (vacío = no se agrega). Allowlists que lo leen, TODAS con host exacto y sin comodines (buckets S3
+  en `src/lib/seguridad/buckets-s3.data.mjs`, la lista única; `leasefy-prod-public` no está: sólo va por CloudFront):
+  `hosts-de-almacenamiento.ts`, `/api/docs/[documentId]`, `fotoPermitida`, `politica-de-contenido.ts` (`img-src`/`connect-src`/`frame-src`)
+  y `next.config.mjs` (`images.remotePatterns`, lista única de buckets). Los hosts de Supabase siguen valiendo hasta que se
+  retire. ⚠ Una foto con URL FIRMADA no va por `next/image` optimizado: la cache se indexa por la URL con query y la
+  copia sobrevive al vencimiento de la firma (y `/_next/image` es público); usar `<img>`/`unoptimized`.
 
 ## Auth y permisos
 
@@ -800,6 +807,44 @@ la pone en cada contrato con mora desde la fecha de la línea. Contrato congelad
 - **Saldos iniciales opcionales**: el paso «Registros contables» queda listo con cualquier registro contable cargado (apertura
   o libro diario); la guía ya no los llama «Obligatorio».
 
+## Realtime: Supabase o SSE (T-0183)
+
+Sólo dos cosas reciben eventos en vivo: la bandeja de notificaciones y la revocación de sesión única. Las dos pasan
+por UN adaptador, `subscribeRealtime()` (`src/lib/realtime/`), que elige transporte con
+`NEXT_PUBLIC_REALTIME_PROVIDER` (build-time; `lib/realtime/provider.ts`: trim + minúsculas, vacío, ausente o desconocido
+= `supabase`). Contrato congelado en `.orchestration/tasks/T-0183-realtime-to-sse/contract.md`; el back es otra unidad.
+
+- **`supabase`** (default y vía de vuelta): los canales de siempre (`notifications:{userId}:{instancia}` sobre
+  `notification_logs`, `session-revocations:{userId}` sobre `session_revocations`), sin cambios.
+- **`sse`**: UNA conexión por pestaña a `${NEXT_PUBLIC_BACKEND_URL}/realtime/stream`, compartida por los dos hooks
+  (`sse-connection.ts`, con cuenta de suscriptores: la última que se va cierra el `fetch`). Cliente con `fetch` + Bearer
+  (`sse-stream.ts`; `EventSource` no manda cabeceras), parser incremental propio (`sse-parser.ts`: el de `ai-hub-chat`
+  no guarda el `id:`). Eventos: `ready`, `notification.created`, `session.revoked`, `reauth`, `resync`.
+  - Reconexión con backoff exponencial y jitter COMPLETO (espera al azar en [0, techo]; techo 1 s que se duplica hasta 30 s). El
+    contador de intentos NO se reinicia con `ready`: sólo cuando el stream estuvo sano 30 s (un servidor que abre y corta no
+    recibe un bucle de 1 s). 60 s sin bytes =
+    conexión muerta (el servidor manda `: ping` cada 25 s).
+  - 🔴 El cursor viaja en `?lastEventId=`, NO en la cabecera `Last-Event-ID`: la lista de CORS del gateway no la permite
+    y la reconexión moriría en el preflight (mismo incidente de `use-quote-stream`, QA-IA-A 04-10).
+  - `reauth` = reconectar YA con token fresco (`asegurarSesionVigente`); `resync` = soltar el cursor y refetch
+    (`onReconnect`). Con cursor, el servidor rellena el hueco: la reconexión NO dispara refetch.
+  - 401 `SESSION_SUPERSEDED` al conectar = sesión revocada, definitivo (a menos que el token usado ya no sea el vigente,
+    `esRespuestaDeUnTokenViejo`: entonces es nuestra sesión nueva y se reintenta). Otro 401 se reintenta con backoff.
+- **Los hooks** (`use-notifications-realtime.ts`, `use-session-revocation.ts`) conservan su firma; leen los callbacks por
+  ref y la suscripción depende sólo del usuario (si no, cada render del padre reabriría el stream).
+  `useNotifications` deduplica por id (el relleno puede repetir un evento). Revocación: `revokedSessionId === null` =
+  revocar ESTA sesión (cierre por inactividad, 401 del stream); si no, se compara con la sesión actual
+  (`shouldRevokeThisSession`).
+- **Cierre propio** (`lib/auth/cierre-propio.ts`): `revocarSesion()` (cierre explícito y por inactividad) marca «estoy
+  cerrando mi sesión»; con SSE el back puede entregar a esta pestaña el `session.revoked` que ese cierre provoca, y
+  `SessionRevocationHandler` lo ignora mientras la marca esté puesta (si no, mostraría «Iniciaste sesión en otro
+  dispositivo» tras el cierre propio). La marca se baja cuando vuelve a haber un usuario con sesión. En el adaptador de
+  Supabase, una fila de `session_revocations` sin `revoked_session_id` de texto se ignora (como antes del adaptador).
+- Los 4 hooks de tiempo real de cobranza se borraron (tablas fuera de `public`, nunca recibieron nada): esas pantallas
+  siguen con su fetch/refetch de siempre.
+- **Activar `sse` en un entorno** exige que el back (`/realtime/stream`) y el gateway (location sin buffering, timeout
+  largo) ya estén desplegados; es una variable de build, así que cambiarla pide redeploy del front.
+
 ## Agente de proyecto y skills
 
 `.claude/agents/leasify-front-agent.md` delega trabajo pesado; `.claude/skills/` tiene el
@@ -822,3 +867,46 @@ TDD, testing, estándares, living-docs). Cargá la skill que aplique antes de to
 | Plan gating de IA | solo planes Flex | Los agentes IA son el diferenciador del plan Flex |
 | Colores UI agentes | neutro/sobrio | Sin colores estridentes |
 | Login bootstrap (T-0082) | un solo `GET /users/me/bootstrap` compone 5 llamadas; los 5 endpoints originales quedan como fallback por sección, nunca se retiran | Cortar el fan-out de requests post-login sin introducir una caché ni romper la degradación fina que ya existía por endpoint |
+
+## Estudio gratis de documentos — «¿hasta cuánto me arriendan?» (T-0193)
+
+Reemplaza el estudio de pago con Fianly/Wompi. Contrato congelado en
+`.orchestration/tasks/T-0193-tenant-canon-estimate-bureau/contract.md`; el back es WU-1.
+Gratis, sin aseguradoras, sin depósito (Ley 820 art. 16).
+
+- **`/aprobacion`** (pública, pero el estudio exige sesión de inquilino; sin ella abre la cuenta encima):
+  asistente `autorizar` (casilla `calificacion-leasefy-v1`, obligatoria, se manda `autorizo: true`) →
+  `documentos` (cédula y extracto obligatorios; nómina y certificación laboral opcionales; cada archivo se
+  sube al elegirlo) → `procesando` → resultado. `?repetir=1` abre un estudio nuevo aunque el último esté
+  COMPLETED (lo usa la pantalla de resultado cuando venció o no hubo ingreso verificado).
+- **`/inquilino/aprobacion`**: el resultado. `canonMaximoCop` tal cual lo manda el back, enmarcado como «el
+  rango donde tienes mejores posibilidades de que te acepten» (una guía, no una promesa). `null` = «no
+  pudimos verificar tu ingreso», NUNCA `$0` ni un número calculado acá. Una condición con «depósito» se
+  filtra aunque llegue.
+- **Capa de datos**: `estudio-de-canon.types.ts` (parser defensivo), `estudio-de-canon.service.ts`
+  (`crear` / `subirDocumento` multipart / `iniciar` / `actual`; todo fallo es un `EstudioDeCanonError` con el
+  `code` estable del back y copy en español), `use-estudio-de-canon.ts` (T-0195: un GET al montar/recargar y, SOLO
+  mientras PROCESSING, uno cada 120 s; COMPLETED/FAILED no hacen más llamadas; se salta el tick con la pestaña oculta;
+  un tick fallido no pierde el estudio ni lo marca FAILED), `aprobacion-from-estudio.ts`
+  (`mapEstudioToAprobacion`: el shape `Aprobacion` de `use-aprobacion` no cambió, sólo su fuente).
+- **Retirado**: `AseguradorasConPrima`, `EstadoPagoAprobacion`, `ValidacionPorWhatsapp`,
+  `use-prescoring-current`, `prescoring.types`, `aprobacion-from-prescoring`, `estudio-solicitud.service`,
+  `validacion-del-estudio.service`, `borrador-del-estudio`. El back responde `410 PRESCORING_DESACTIVADO` a
+  `POST /pre-scoring` con `PRESCORING_FIANLY_ENABLED` apagado.
+- **Pendiente al integrar el back (WU-1)**: regenerar `rutas-del-back.json` con
+  `node scripts/rutas-del-back.mjs <back>` y borrar las tres filas `estudioDeCanonApi.*` de
+  `rutas-que-el-back-no-tiene.guardian.test.ts`.
+
+### Falla y reintento del estudio (T-0195)
+
+Contrato congelado en `.orchestration/tasks/T-0195-tenant-study-failure-retry/contract.md`; back+agent son WU-1.
+
+- `Estudio.error` trae `documentoConError` (`cedula` | `extracto_bancario` | null), `accion` (`REINTENTAR` |
+  `REEMPLAZAR_DOCUMENTO`) y `reintentosRestantes`; el parser degrada lo desconocido (ausente = sin documento,
+  `REINTENTAR`, 1 reintento).
+- `/aprobacion` en FAILED: dice qué documento dio el problema y deja cambiarlo (`subirDocumento`, que NO reinicia nada);
+  «Reintentar con los mismos documentos / con el archivo nuevo» = `estudioDeCanonApi.reintentar`
+  (`POST /estudio/:id/reintentar`). `ESTUDIO_SIN_REINTENTOS` o `reintentosRestantes === 0` ofrecen «Empezar un estudio
+  nuevo»; `ESTUDIO_NO_REINTENTABLE` vuelve a leer el estudio.
+- La ruta nueva se declaró a mano en `rutas-del-back.json` (sin el back a la mano); regenerar con
+  `node scripts/rutas-del-back.mjs <back>` al integrar.

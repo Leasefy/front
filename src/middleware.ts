@@ -122,6 +122,7 @@ export function middleware(request: NextRequest) {
     // En sólo-reporte `upgrade-insecure-requests` no aplica y ensucia la consola.
     soloReporte: modo === 'reporte',
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    NEXT_PUBLIC_ASSETS_HOST: process.env.NEXT_PUBLIC_ASSETS_HOST,
     NEXT_PUBLIC_BACKEND_URL: process.env.NEXT_PUBLIC_BACKEND_URL,
     NEXT_PUBLIC_AGENT_URL: process.env.NEXT_PUBLIC_AGENT_URL,
     NEXT_PUBLIC_AVALUO_API_URL: process.env.NEXT_PUBLIC_AVALUO_API_URL,

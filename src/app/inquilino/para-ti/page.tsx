@@ -267,8 +267,8 @@ export default function ParaTiPage() {
             titulo={locale === 'es' ? 'Inmuebles para ti' : 'Properties for you'}
             descripcion={
               locale === 'es'
-                ? 'Con tu aprobación sabemos hasta cuánto te respaldan las aseguradoras y aquí te mostramos sólo lo que puedes tomar.'
-                : 'With your approval we know how much the insurers back you, and here we show you only what you can take.'
+                ? 'Con tu tope sabemos en qué rango de arriendo tienes mejores posibilidades de que te acepten, y aquí te mostramos sólo lo que puedes tomar.'
+                : 'With your cap we know the rent range where you have the best chances of being accepted, and here we show you only what you can take.'
             }
             acciones={
               <Button asChild variant="outline" size="sm" hideArrow className="max-lg:flex-1">

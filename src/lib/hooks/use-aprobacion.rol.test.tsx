@@ -1,6 +1,6 @@
 /**
  * IN-22 (QA de Inmuebles, 04-10): el aviso público del inmueble abierto por
- * alguien de la inmobiliaria pedía `GET /pre-scoring/current` y el back
+ * alguien de la inmobiliaria pedía `GET /calificacion-leasefy/estudio/actual` y el back
  * respondía 403 («Esto es sólo para cuentas de inquilino») — un error en
  * consola en cada aviso que abría un asesor o un administrador.
  *
@@ -63,7 +63,7 @@ describe('IN-22: el estudio se pide sólo si quien mira es inquilino', () => {
     apiClientGet.mockReset().mockRejectedValue(new Error('403'))
   })
 
-  it('🔴 alguien de la inmobiliaria NO pide /pre-scoring/current (antes: 403 en consola)', async () => {
+  it('🔴 alguien de la inmobiliaria NO pide el estudio (antes: 403 en consola)', async () => {
     const r = await conSesion({ user: usuario('agency'), isLoading: false })
     expect(apiClientGet).not.toHaveBeenCalled()
     expect(r.cargando).toBe(false)
@@ -77,9 +77,9 @@ describe('IN-22: el estudio se pide sólo si quien mira es inquilino', () => {
   })
 
   it('un inquilino sí (control positivo)', async () => {
-    apiClientGet.mockResolvedValue({ order: null, evaluation: null })
+    apiClientGet.mockResolvedValue({ estudio: null })
     await conSesion({ user: usuario('tenant'), isLoading: false })
-    expect(apiClientGet).toHaveBeenCalledWith('/pre-scoring/current')
+    expect(apiClientGet).toHaveBeenCalledWith('/calificacion-leasefy/estudio/actual')
   })
 
   it('mientras la sesión todavía no dice quién es, no pregunta (sigue cargando)', async () => {

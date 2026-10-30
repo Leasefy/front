@@ -1,37 +1,11 @@
 /**
- * page.test.tsx — /aprobacion, Slice 1 del pre-scoring de afianzamiento.
+ * page.test.tsx — /aprobacion, the free document study (T-0193).
  *
- * El pago YA NO navega la pantalla: abre Wompi en OTRA pestaña (mismo patrón
- * que `useAgencyCheckout.pay` — pre-abrir sincrónicamente dentro del gesto de
- * click, antes de cualquier `await`) y esta página se queda, poleando el
- * back vía `<EstadoPagoAprobacion>` (probado aparte en su propio archivo).
- *
- * Sin sesión (Juan, 15-10-2026; Nico: «pasos primero, cuenta al final») el
- * submit NO manda al login: guarda lo escrito y abre la ventana de la cuenta
- * encima, sin tocar `window.open`. Con la cuenta recién creada y el perfil
- * sin hacer, va al onboarding del inquilino con regreso a esta pantalla.
- *
- * Con sesión, cubre las tres respuestas del back:
- *  (a) `reused:false` → crea la orden, redirige la pestaña pre-abierta al
- *      `paymentUrl` y entra en modo "pagando" (se renderiza
- *      `<EstadoPagoAprobacion>` en vez del form).
- *  (b) `reused:true`  → ya existe un estudio: NO se paga de nuevo, se cierra
- *      la pestaña pre-abierta y se manda a `/inquilino/aprobacion`.
- *  (c) error de `crearOrdenPreScoring` → se cierra la pestaña, se muestra el
- *      error y NO se entra en modo "pagando".
- * Y el caso de popup bloqueado: `window.open` devuelve null/closed → se pasa
- * `popupBlocked` a `<EstadoPagoAprobacion>`.
- * Y el caso de formulario inválido: no llama a ningún servicio ni abre nada.
- *
- * `<EstadoPagoAprobacion>` se mockea acá: su propio comportamiento (copy por
- * estado, polling, botón "ya pagué") ya está cubierto en
- * `EstadoPagoAprobacion.test.tsx` — acá solo importa que la página lo
- * renderice con las props correctas en el momento correcto.
- *
- * `@/components/ui/select` se mockea: Radix Select no es interactuable de
- * forma confiable bajo happy-dom (requiere pointer capture / portales). El
- * mock traduce el mismo árbol de props (`SelectTrigger[id]`,
- * `SelectContent > SelectItem[value]`) a un `<select>` nativo equivalente.
+ * Covers the wizard states of the frozen contract (§3.1 A): consent required
+ * before the study exists, required documents before "iniciar", the processing
+ * screen, COMPLETED → result screen, FAILED → retry, and every error code with
+ * user-facing copy (429 daily limit, 410, consent missing, invalid file, missing
+ * documents). Also pins the product rules: no insurers, no payment, no deposit.
  */
 
 import * as React from 'react'
@@ -41,42 +15,18 @@ import { act } from 'react'
 
 void React
 
-// ---------------------------------------------------------------------------
-// Mocks
-// ---------------------------------------------------------------------------
-
 const pushMock = vi.fn()
 const replaceMock = vi.fn()
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: pushMock, back: vi.fn(), replace: replaceMock }),
 }))
 
-// El estado del estudio se mockea: su lógica propia (404 = sin_estudio,
-// polling, mapeo) ya está cubierta en `use-prescoring-current.test.ts`.
-let mockEstudio: { estado: string; isLoading: boolean } = {
-  estado: 'sin_estudio',
-  isLoading: false,
-}
-const preScoringOptionsMock = vi.fn()
-vi.mock('@/lib/hooks/use-prescoring-current', () => ({
-  usePreScoringCurrent: (options?: unknown) => {
-    preScoringOptionsMock(options)
-    return mockEstudio
-  },
-}))
-
 let mockUser: { role: string } | null = null
-let mockSesion: { isAuthenticated: boolean; needsOnboarding: boolean; perfilElegido: string | null } = {
-  isAuthenticated: false,
-  needsOnboarding: false,
-  perfilElegido: null,
-}
+let mockSesion = { isAuthenticated: false, needsOnboarding: false, perfilElegido: null as string | null }
 vi.mock('@/lib/auth/use-auth', () => ({
   useAuth: () => ({ user: mockUser, isLoading: false, ...mockSesion }),
 }))
 
-// La ventana de la cuenta se prueba con «Publicar inmueble»; acá sólo importa
-// que se abra, con qué destino y con qué correo.
 const { pedirLaCuentaMock, ventanaDeCuentaOpcionesMock } = vi.hoisted(() => ({
   pedirLaCuentaMock: vi.fn(),
   ventanaDeCuentaOpcionesMock: vi.fn(),
@@ -88,635 +38,581 @@ vi.mock('@/components/marketplace/CuentaParaPublicar', () => ({
   },
 }))
 
-const { crearOrdenPreScoringMock, MockPreScoringError } = vi.hoisted(() => {
-  class MockPreScoringError extends Error {
-    kind: string
-    porCampo: Record<string, string>
-    sueltos: string[]
-    constructor(kind: string, message: string, porCampo: Record<string, string> = {}, sueltos?: string[]) {
-      super(message)
-      this.kind = kind
-      this.porCampo = porCampo
-      this.sueltos = sueltos ?? (message ? [message] : [])
-    }
-  }
-  return { crearOrdenPreScoringMock: vi.fn(), MockPreScoringError }
-})
-vi.mock('@/lib/api/estudio-solicitud.service', () => ({
-  crearOrdenPreScoring: (...a: unknown[]) => crearOrdenPreScoringMock(...a),
-  PreScoringError: MockPreScoringError,
-}))
-
-// El estado post-pago se prueba aparte: acá solo importa con qué props se
-// renderiza y cuándo reemplaza al form.
-const estadoPagoPropsMock = vi.fn()
-vi.mock('@/components/aprobacion/EstadoPagoAprobacion', () => ({
-  EstadoPagoAprobacion: (props: { paymentUrl: string | null; popupBlocked: boolean; onReintentar: () => void }) => {
-    estadoPagoPropsMock(props)
-    return React.createElement(
-      'div',
-      { 'data-testid': 'estado-pago' },
-      'estado-pago',
-    )
-  },
-}))
-
-// Radix Select no es fácilmente interactuable bajo happy-dom: se traduce a un
-// <select> nativo leyendo directamente los props de SelectTrigger/SelectItem
-// (nunca se renderizan como componentes reales, así que no hace falta
-// reproducir su comportamiento).
-vi.mock('@/components/ui/select', () => {
-  function Select({
-    value,
-    onValueChange,
-    children,
-  }: {
-    value: string
-    onValueChange: (v: string) => void
-    children: React.ReactNode
-  }) {
-    const kids = React.Children.toArray(children) as React.ReactElement[]
-    const trigger = kids.find((c) => (c.props as { id?: string })?.id)
-    const content = kids.find((c) => Array.isArray((c.props as { children?: unknown })?.children))
-    const items = content
-      ? (React.Children.toArray((content.props as { children: React.ReactNode }).children) as React.ReactElement[])
-      : []
-    const testId = (trigger?.props as { id?: string } | undefined)?.id
-    return (
-      <select
-        data-testid={testId ? `select-${testId}` : undefined}
-        value={value}
-        onChange={(e) => onValueChange(e.target.value)}
-      >
-        <option value="" />
-        {items.map((item) => {
-          const p = item.props as { value: string; children: React.ReactNode }
-          return (
-            <option key={p.value} value={p.value}>
-              {typeof p.children === 'string' ? p.children : p.value}
-            </option>
-          )
-        })}
-      </select>
-    )
-  }
+vi.mock('@/lib/api/client', async () => {
+  const real = await vi.importActual<typeof import('@/lib/api/client')>('@/lib/api/client')
   return {
-    Select,
-    SelectTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-    SelectValue: () => null,
-    SelectContent: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-    SelectItem: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+    ...real,
+    apiClient: {
+      ...real.apiClient,
+      get: vi.fn().mockResolvedValue({ title: 'Autorización', text: 'Texto legal de la calificación.' }),
+    },
   }
+})
+
+const { actual, crear, subirDocumento, iniciar, reintentar } = vi.hoisted(() => ({
+  reintentar: vi.fn(),
+  actual: vi.fn(),
+  crear: vi.fn(),
+  subirDocumento: vi.fn(),
+  iniciar: vi.fn(),
+}))
+vi.mock('@/lib/api/estudio-de-canon.service', async () => {
+  const real = await vi.importActual<typeof import('@/lib/api/estudio-de-canon.service')>(
+    '@/lib/api/estudio-de-canon.service',
+  )
+  return { ...real, estudioDeCanonApi: { actual, crear, subirDocumento, iniciar, reintentar } }
 })
 
 import AprobacionPage from './page'
-import { guardarArriendoEnCurso } from '@/lib/aprobacion/arriendo-en-curso'
-
-// ---------------------------------------------------------------------------
-// Harness
-// ---------------------------------------------------------------------------
+import { EstudioDeCanonError } from '@/lib/api/estudio-de-canon.service'
+import type { EstudioDeCanon } from '@/lib/api/estudio-de-canon.types'
 
 let container: HTMLDivElement
 let root: Root
-let openMock: ReturnType<typeof vi.fn>
-let payTab: { location: { href: string }; closed: boolean; close: ReturnType<typeof vi.fn> }
+
+function estudio(parcial: Partial<EstudioDeCanon> = {}): EstudioDeCanon {
+  return {
+    id: '11111111-1111-4111-8111-111111111111',
+    status: 'DRAFT',
+    creadoEl: null,
+    terminadoEl: null,
+    venceEl: null,
+    documentos: [],
+    faltan: ['cedula', 'extracto_bancario'],
+    resultado: null,
+    error: null,
+    ...parcial,
+  }
+}
+
+function errorDelEstudio(parcial: Partial<NonNullable<EstudioDeCanon['error']>> = {}): NonNullable<EstudioDeCanon['error']> {
+  return {
+    codigo: 'ESTUDIO_FALLIDO',
+    mensaje: 'No pudimos terminar.',
+    documentoConError: null,
+    accion: 'REINTENTAR',
+    reintentosRestantes: 3,
+    ...parcial,
+  }
+}
+
+async function flush() {
+  await act(async () => {
+    await new Promise((r) => setTimeout(r, 0))
+  })
+}
+
+async function montar(url = '/aprobacion') {
+  window.history.pushState({}, '', url)
+  await act(async () => {
+    root.render(<AprobacionPage />)
+  })
+  await flush()
+}
+
+const q = (sel: string) => container.querySelector(sel) as HTMLElement | null
+
+async function elegirArchivo(tipo: string, file: File) {
+  const input = q(`[data-testid="archivo-${tipo}"]`) as HTMLInputElement
+  Object.defineProperty(input, 'files', { value: [file], configurable: true })
+  await act(async () => {
+    input.dispatchEvent(new Event('change', { bubbles: true }))
+  })
+  await flush()
+}
+
+const pdf = (nombre = 'doc.pdf') => new File(['contenido'], nombre, { type: 'application/pdf' })
 
 beforeEach(() => {
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
-  mockUser = null
-  mockSesion = { isAuthenticated: false, needsOnboarding: false, perfilElegido: null }
-  window.localStorage.clear()
-  pedirLaCuentaMock.mockReset()
-  ventanaDeCuentaOpcionesMock.mockReset()
-  mockEstudio = { estado: 'sin_estudio', isLoading: false }
-  pushMock.mockReset()
-  replaceMock.mockReset()
-  preScoringOptionsMock.mockReset()
-  crearOrdenPreScoringMock.mockReset()
-  estadoPagoPropsMock.mockReset()
-
-  payTab = { location: { href: '' }, closed: false, close: vi.fn() }
-  openMock = vi.fn(() => payTab as unknown as Window)
-  vi.stubGlobal('open', openMock)
+  mockUser = { role: 'tenant' }
+  mockSesion = { isAuthenticated: true, needsOnboarding: false, perfilElegido: null }
+  for (const m of [pushMock, replaceMock, pedirLaCuentaMock, ventanaDeCuentaOpcionesMock, actual, crear, subirDocumento, iniciar, reintentar]) {
+    m.mockReset()
+  }
+  actual.mockResolvedValue(null)
+  window.scrollTo = vi.fn() as unknown as typeof window.scrollTo
 })
 
 afterEach(() => {
-  act(() => {
-    root.unmount()
-  })
+  act(() => root.unmount())
   container.remove()
-  vi.unstubAllGlobals()
-  vi.restoreAllMocks()
 })
 
-function setInputValue(el: HTMLInputElement, value: string) {
-  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
-  act(() => {
-    setter?.call(el, value)
-    el.dispatchEvent(new Event('input', { bubbles: true }))
-  })
-}
-
-function setSelectValue(el: HTMLSelectElement, value: string) {
-  const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')?.set
-  act(() => {
-    setter?.call(el, value)
-    el.dispatchEvent(new Event('change', { bubbles: true }))
-  })
-}
-
-function fillValidForm() {
-  setInputValue(container.querySelector('#nombres') as HTMLInputElement, 'María')
-  setInputValue(container.querySelector('#apellidos') as HTMLInputElement, 'Restrepo')
-  setInputValue(container.querySelector('#cedula') as HTMLInputElement, '1098765432')
-  setInputValue(container.querySelector('#phone') as HTMLInputElement, '3001112233')
-  setInputValue(container.querySelector('#email') as HTMLInputElement, 'maria@correo.com')
-  setSelectValue(container.querySelector('[data-testid="select-ciudad"]') as HTMLSelectElement, 'Bogotá')
-  setInputValue(container.querySelector('#canon') as HTMLInputElement, '2.000.000')
-  setSelectValue(
-    container.querySelector('[data-testid="select-tipoInmueble"]') as HTMLSelectElement,
-    'apartamento',
-  )
-  const consent = container.querySelector('#consent') as HTMLButtonElement
-  act(() => {
-    consent.click()
-  })
-}
-
-async function submit() {
-  const form = container.querySelector('form') as HTMLFormElement
-  await act(async () => {
-    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
-    await new Promise((r) => setTimeout(r, 0))
-  })
-}
-
-describe('<AprobacionPage> — Slice 1 pre-scoring (pago en otra pestaña)', () => {
-  describe('sin sesión', () => {
-    it('formulario válido: NO crea la orden ni abre pestañas, NO manda al login: guarda lo escrito y abre la cuenta encima', async () => {
-      mockUser = null
-
-      act(() => {
-        root.render(<AprobacionPage />)
-      })
-      fillValidForm()
-      await submit()
-
-      expect(openMock).not.toHaveBeenCalled()
-      expect(crearOrdenPreScoringMock).not.toHaveBeenCalled()
-      expect(pushMock).not.toHaveBeenCalled()
-      expect(pedirLaCuentaMock).toHaveBeenCalledTimes(1)
-      const opciones = ventanaDeCuentaOpcionesMock.mock.calls.at(-1)?.[0] as { destino: string; rol: string; correoInicial: string }
-      expect(opciones).toMatchObject({ destino: '/aprobacion', rol: 'tenant', correoInicial: 'maria@correo.com' })
-      const guardado = JSON.parse(window.localStorage.getItem('leasefy:borrador-del-estudio') ?? '{}')
-      expect(guardado.campos).toMatchObject({ nombres: 'María', cedula: '1098765432', email: 'maria@correo.com' })
-      expect(guardado.campos.consent).toBeUndefined()
-    })
-
-    it('muestra los pasos del estudio aunque no venga de un inmueble (Juan, 15-10)', () => {
-      act(() => {
-        root.render(<AprobacionPage />)
-      })
-      expect(container.querySelector('[data-testid="pasos-del-estudio"]')).not.toBeNull()
-      expect(container.textContent).toContain('Paso 1 de 3 · tus datos')
-      expect(container.querySelector('[data-testid="paso-2-de-3"]')).toBeNull()
-    })
-
-    it('al volver, lo escrito sigue ahí y lo dice (la autorización NO: se vuelve a dar)', () => {
-      window.localStorage.setItem(
-        'leasefy:borrador-del-estudio',
-        JSON.stringify({ campos: { nombres: 'María', cedula: '1098765432', email: 'maria@correo.com' }, guardadoEn: Date.now() }),
-      )
-      mockUser = { role: 'tenant' }
-      act(() => {
-        root.render(<AprobacionPage />)
-      })
-      expect((container.querySelector('#nombres') as HTMLInputElement).value).toBe('María')
-      expect((container.querySelector('#cedula') as HTMLInputElement).value).toBe('1098765432')
-      expect(container.querySelector('[data-testid="datos-del-estudio-guardados"]')?.textContent).toContain('Tu cuenta quedó lista')
-      expect(container.querySelector('#consent')?.getAttribute('aria-checked')).not.toBe('true')
-    })
-
-    it('con la cuenta recién creada y sin perfil, va al onboarding del inquilino con regreso al estudio', () => {
-      mockSesion = { isAuthenticated: true, needsOnboarding: true, perfilElegido: 'tenant' }
-      act(() => {
-        root.render(<AprobacionPage />)
-      })
-      expect(replaceMock).toHaveBeenCalledWith('/onboarding/inquilino?returnUrl=%2Faprobacion')
-    })
-  })
-
-  describe('con sesión', () => {
-    beforeEach(() => {
-      mockUser = { role: 'tenant' }
-    })
-
-    it('reused:false — abre la pestaña ANTES de crear la orden, la redirige al pago y entra en modo "pagando"', async () => {
-      crearOrdenPreScoringMock.mockImplementation(async () => {
-        // La pestaña ya debe estar abierta antes de que resuelva el POST:
-        // se pre-abre sincrónicamente dentro del gesto de click.
-        expect(openMock).toHaveBeenCalledTimes(1)
-        return {
-          reused: false,
-          orderId: 'ord-123',
-          paymentUrl: 'https://checkout.wompi.co/l/ord-123',
-        }
-      })
-
-      act(() => {
-        root.render(<AprobacionPage />)
-      })
-      fillValidForm()
-      await submit()
-
-      expect(crearOrdenPreScoringMock).toHaveBeenCalledTimes(1)
-      const payload = crearOrdenPreScoringMock.mock.calls[0][0]
-      expect(payload).toMatchObject({
-        documentNumber: '1098765432',
-        phoneE164: '+573001112233',
-        candidate: { names: 'María', surnames: 'Restrepo', email: 'maria@correo.com' },
-        ciudad: 'Bogotá',
-        canonCop: 2_000_000,
-        tipoInmueble: 'apartamento',
-        consent: true,
-      })
-
-      // La página NUNCA navega: sigue siendo esta misma pantalla.
-      expect(pushMock).not.toHaveBeenCalled()
-      expect(payTab.location.href).toBe('https://checkout.wompi.co/l/ord-123')
-      expect(payTab.close).not.toHaveBeenCalled()
-
-      // Reemplaza el form por el estado de pago.
-      expect(container.querySelector('[data-testid="estado-pago"]')).not.toBeNull()
-      expect(container.querySelector('form')).toBeNull()
-      expect(estadoPagoPropsMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          paymentUrl: 'https://checkout.wompi.co/l/ord-123',
-          popupBlocked: false,
-        }),
-      )
-    })
-
-    it('reused:true — NO paga de nuevo, cierra la pestaña pre-abierta y redirige a /inquilino/aprobacion', async () => {
-      crearOrdenPreScoringMock.mockResolvedValue({
-        reused: true,
-        orderId: 'ord-999',
-        status: 'STUDY_STARTED',
-      })
-
-      act(() => {
-        root.render(<AprobacionPage />)
-      })
-      fillValidForm()
-      await submit()
-
-      expect(payTab.close).toHaveBeenCalledTimes(1)
-      expect(pushMock).toHaveBeenCalledWith('/inquilino/aprobacion')
-      expect(container.querySelector('[data-testid="estado-pago"]')).toBeNull()
-    })
-
-    it('popup bloqueado (window.open devuelve null): pasa popupBlocked=true a <EstadoPagoAprobacion>', async () => {
-      openMock.mockReturnValue(null)
-      crearOrdenPreScoringMock.mockResolvedValue({
-        reused: false,
-        orderId: 'ord-123',
-        paymentUrl: 'https://checkout.wompi.co/l/ord-123',
-      })
-
-      act(() => {
-        root.render(<AprobacionPage />)
-      })
-      fillValidForm()
-      await submit()
-
-      expect(container.querySelector('[data-testid="estado-pago"]')).not.toBeNull()
-      expect(estadoPagoPropsMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          paymentUrl: 'https://checkout.wompi.co/l/ord-123',
-          popupBlocked: true,
-        }),
-      )
-    })
-
-    it('si crearOrdenPreScoring falla, cierra la pestaña, muestra el error y NO entra en modo pagando', async () => {
-      crearOrdenPreScoringMock.mockRejectedValue(
-        new MockPreScoringError('unavailable', 'El servicio no está disponible en este momento. Intenta más tarde.'),
-      )
-
-      act(() => {
-        root.render(<AprobacionPage />)
-      })
-      fillValidForm()
-      await submit()
-
-      expect(payTab.close).toHaveBeenCalledTimes(1)
-      expect(pushMock).not.toHaveBeenCalled()
-      expect(container.querySelector('[data-testid="estado-pago"]')).toBeNull()
-      expect(container.textContent).toContain('El servicio no está disponible en este momento. Intenta más tarde.')
-    })
-
-    // 🔴 02-10-2026 · Sistema de errores: lo que el back rechaza por campo va a SU campo.
-    it('🔴 un 400 con campos: el error va bajo su campo (con foco y aria), sin banner genérico', async () => {
-      const CANON = 'El canon no puede pasar de $100.000.000 al mes. Revisa que no sobren ceros.'
-      crearOrdenPreScoringMock.mockRejectedValue(
-        new MockPreScoringError('validation', 'Revisa los campos marcados.', { canon: CANON }, []),
-      )
-      act(() => {
-        root.render(<AprobacionPage />)
-      })
-      fillValidForm()
-      await submit()
-      await act(async () => {
-        await new Promise((r) => setTimeout(r, 0))
-      })
-
-      const error = container.querySelector('#canon-error')
-      expect(error?.textContent).toBe(CANON)
-      const canon = container.querySelector('#canon') as HTMLInputElement
-      expect(canon.getAttribute('aria-invalid')).toBe('true')
-      expect(canon.getAttribute('aria-describedby')).toBe('canon-error')
-      expect(document.activeElement).toBe(canon)
-      expect(container.textContent).not.toContain('Revisa los campos marcados.')
-      expect(container.querySelector('[data-testid="estado-pago"]')).toBeNull()
-
-      // Al corregir el canon, el error del servidor se va (el texto sale con su
-      // animación; lo que cuenta es que el campo deja de estar marcado).
-      setInputValue(canon, '2.500.000')
-      expect(canon.getAttribute('aria-invalid')).toBeNull()
-      expect(canon.getAttribute('aria-describedby')).toBeNull()
-    })
-
-    it('el formulario ataja un canon de once cifras con la frase del back, sin llamar al servicio', async () => {
-      act(() => {
-        root.render(<AprobacionPage />)
-      })
-      fillValidForm()
-      setInputValue(container.querySelector('#canon') as HTMLInputElement, '30000000000')
-      await submit()
-      expect(crearOrdenPreScoringMock).not.toHaveBeenCalled()
-      expect(openMock).not.toHaveBeenCalled()
-      expect(container.querySelector('#canon-error')?.textContent).toBe(
-        'El canon no puede pasar de $100.000.000 al mes. Revisa que no sobren ceros.',
-      )
-    })
-
-    it('un fallo que no es PreScoringError pasa por el traductor (sin respuesta = conexión)', async () => {
-      crearOrdenPreScoringMock.mockRejectedValue(new TypeError('Failed to fetch'))
-      act(() => {
-        root.render(<AprobacionPage />)
-      })
-      fillValidForm()
-      await submit()
-      expect(container.querySelector('[role="alert"]')?.textContent).toMatch(/conexión/)
-    })
-
-    it('formulario inválido (sin nombres): no llama a ningún servicio ni abre ninguna pestaña', async () => {
-      act(() => {
-        root.render(<AprobacionPage />)
-      })
-      // Deliberadamente NO se llena "nombres".
-      setInputValue(container.querySelector('#apellidos') as HTMLInputElement, 'Restrepo')
-      setInputValue(container.querySelector('#cedula') as HTMLInputElement, '1098765432')
-      setInputValue(container.querySelector('#phone') as HTMLInputElement, '3001112233')
-      setInputValue(container.querySelector('#email') as HTMLInputElement, 'maria@correo.com')
-      setSelectValue(container.querySelector('[data-testid="select-ciudad"]') as HTMLSelectElement, 'Bogotá')
-      setSelectValue(
-        container.querySelector('[data-testid="select-tipoInmueble"]') as HTMLSelectElement,
-        'apartamento',
-      )
-      const consent = container.querySelector('#consent') as HTMLButtonElement
-      act(() => {
-        consent.click()
-      })
-      await submit()
-
-      expect(openMock).not.toHaveBeenCalled()
-      expect(crearOrdenPreScoringMock).not.toHaveBeenCalled()
-      expect(pushMock).not.toHaveBeenCalled()
-    })
-  })
-})
-
-/**
- * El regreso a /aprobacion con un estudio YA hecho.
- *
- * Lo dispara el cierre de sesión por tiempo: `terminarSesion` guarda la ruta
- * actual como `returnUrl`, así que quien se quedó en esta pantalla esperando
- * el pago vuelve exactamente acá después de volver a entrar — y se encontraba
- * el formulario vacío, como si nunca hubiera pagado. El formulario no es una
- * pantalla neutra: es una invitación a pagar de nuevo algo que ya tiene.
- */
-describe('<AprobacionPage> — quien ya tiene un estudio no ve el formulario', () => {
-  beforeEach(() => {
-    mockUser = { role: 'tenant' }
-  })
-
-  it('estudio en proceso: manda a /inquilino/aprobacion sin mostrar el formulario', () => {
-    mockEstudio = { estado: 'en_proceso', isLoading: false }
-
-    act(() => {
-      root.render(<AprobacionPage />)
-    })
-
-    expect(replaceMock).toHaveBeenCalledWith('/inquilino/aprobacion')
-    expect(container.querySelector('form')).toBeNull()
-  })
-
-  it('estudio con resultado (aprobado): mismo destino', () => {
-    mockEstudio = { estado: 'aprobado', isLoading: false }
-
-    act(() => {
-      root.render(<AprobacionPage />)
-    })
-
-    expect(replaceMock).toHaveBeenCalledWith('/inquilino/aprobacion')
-  })
-
-  it('mientras se resuelve el estado: no muestra el formulario ni navega todavía', () => {
-    mockEstudio = { estado: 'sin_estudio', isLoading: true }
-
-    act(() => {
-      root.render(<AprobacionPage />)
-    })
-
-    expect(replaceMock).not.toHaveBeenCalled()
-    expect(container.querySelector('form')).toBeNull()
-  })
-
-  it('estudio expirado: la ventana cerró, el formulario SÍ corresponde', () => {
-    mockEstudio = { estado: 'expirado', isLoading: false }
-
-    act(() => {
-      root.render(<AprobacionPage />)
-    })
-
-    expect(replaceMock).not.toHaveBeenCalled()
-    expect(container.querySelector('form')).not.toBeNull()
-  })
-
-  it('sin sesión: no consulta el estudio y muestra el formulario', () => {
+describe('<AprobacionPage> — sin sesión / rol', () => {
+  it('sin sesión: no llama al back y ofrece crear la cuenta encima', async () => {
     mockUser = null
-
-    act(() => {
-      root.render(<AprobacionPage />)
+    mockSesion = { isAuthenticated: false, needsOnboarding: false, perfilElegido: null }
+    await montar()
+    expect(actual).not.toHaveBeenCalled()
+    expect(q('[data-testid="vista-sin-cuenta"]')).not.toBeNull()
+    await act(async () => {
+      q('[data-testid="crear-cuenta-para-el-estudio"]')!.click()
     })
+    expect(pedirLaCuentaMock).toHaveBeenCalledTimes(1)
+    expect(ventanaDeCuentaOpcionesMock.mock.calls.at(-1)?.[0]).toMatchObject({ destino: '/aprobacion', rol: 'tenant' })
+  })
 
-    expect(preScoringOptionsMock).toHaveBeenCalledWith({ enabled: false })
-    expect(replaceMock).not.toHaveBeenCalled()
-    expect(container.querySelector('form')).not.toBeNull()
+  it('cuenta recién creada sin perfil: va al onboarding con regreso a esta pantalla', async () => {
+    mockSesion = { isAuthenticated: true, needsOnboarding: true, perfilElegido: 'tenant' }
+    await montar()
+    // The mocked router is a new object per render, so the effect may re-run.
+    expect(replaceMock).toHaveBeenCalled()
+    expect(String(replaceMock.mock.calls.at(-1)?.[0])).toContain('aprobacion')
+  })
+
+  it('un rol que no es inquilino no consulta ni ve el estudio', async () => {
+    mockUser = { role: 'agency' }
+    await montar()
+    expect(actual).not.toHaveBeenCalled()
+    expect(q('[data-testid="vista-no-inquilino"]')).not.toBeNull()
   })
 })
 
-/**
- * Paso 2 del recorrido que empieza en la ficha (Nico, 14-09): se arma como el
- * paso 1 — los pasos en su franja, FUERA del formulario —, recuerda el inmueble
- * elegido, escribe el canon con puntos de miles y abre desde arriba.
- */
-describe('<AprobacionPage> — paso 2 desde la ficha', () => {
-  beforeEach(() => {
-    window.sessionStorage.clear()
-    window.history.replaceState(null, '', '/aprobacion?paso=2&canon=1100000&ciudad=Bogot%C3%A1&tipo=apartamento')
-  })
-  afterEach(() => {
-    window.history.replaceState(null, '', '/')
-  })
-
-  it('los pasos van fuera del formulario, con el inmueble del paso 1 y el canon con puntos de miles', () => {
-    const subir = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
-    guardarArriendoEnCurso({
-      propertyId: 'p-1',
-      titulo: 'Apartamento en Bello',
-      ciudad: 'Bello',
-      tipo: 'apartamento',
-      foto: null,
-      canon: 1_100_000,
-      ingresoTotal: 5_000_000,
-      canonMaximo: 3_333_333,
-    })
-
-    act(() => {
-      root.render(<AprobacionPage />)
-    })
-
-    const pasos = container.querySelector('[data-testid="paso-2-de-3"]')
-    const form = container.querySelector('form') as HTMLFormElement
-    expect(pasos).not.toBeNull()
-    expect(form.contains(pasos)).toBe(false)
-    expect(container.querySelector('[data-testid="inmueble-del-paso-2"]')?.textContent).toContain('Apartamento en Bello')
-    expect((container.querySelector('#canon') as HTMLInputElement).value).toBe('1.100.000')
-    expect(subir).toHaveBeenCalledWith(expect.objectContaining({ top: 0 }))
-  })
-
-  it('una ciudad del inmueble fuera de la lista fija igual queda elegida', () => {
-    window.history.replaceState(null, '', '/aprobacion?paso=2&canon=1100000&ciudad=Bello&tipo=apartamento')
-    act(() => {
-      root.render(<AprobacionPage />)
-    })
-    expect((container.querySelector('[data-testid="select-ciudad"]') as HTMLSelectElement).value).toBe('Bello')
-  })
-
-  it('el botón queda apagado hasta autorizar el tratamiento de datos', () => {
-    act(() => {
-      root.render(<AprobacionPage />)
-    })
+describe('<AprobacionPage> — paso 1: autorización', () => {
+  it('sin estudio: "Continuar" queda apagado hasta marcar la autorización y no se crea nada', async () => {
+    await montar()
     const boton = container.querySelector('button[type="submit"]') as HTMLButtonElement
     expect(boton.disabled).toBe(true)
+    expect(crear).not.toHaveBeenCalled()
+    expect(container.textContent).toContain('Paso 1 de 3')
+  })
 
-    act(() => {
-      ;(container.querySelector('#consent') as HTMLButtonElement).click()
+  it('al marcar y continuar crea el estudio y pasa a los documentos', async () => {
+    crear.mockResolvedValue(estudio())
+    await montar()
+    await act(async () => {
+      q('#consent')!.click()
     })
+    await act(async () => {
+      container.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+    await flush()
+    expect(crear).toHaveBeenCalledTimes(1)
+    expect(q('[data-testid="vista-documentos"]')).not.toBeNull()
+  })
+
+  it('permite leer el texto legal de la autorización', async () => {
+    await montar()
+    expect(q('[data-testid="texto-legal"]')).toBeNull()
+    const leer = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === 'Leer el texto')!
+    await act(async () => {
+      leer.click()
+    })
+    expect(q('[data-testid="texto-legal"]')?.textContent).toContain('Texto legal de la calificación.')
+  })
+
+  it('429 ESTUDIO_LIMITE_DIARIO: dice que vuelva mañana', async () => {
+    crear.mockRejectedValue(
+      new EstudioDeCanonError(429, 'Hoy ya hiciste el máximo de estudios permitidos. Vuelve mañana y lo intentamos de nuevo.', 'ESTUDIO_LIMITE_DIARIO'),
+    )
+    await montar()
+    await act(async () => {
+      q('#consent')!.click()
+    })
+    await act(async () => {
+      container.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+    await flush()
+    expect(q('[data-testid="error-general"]')?.textContent).toMatch(/mañana/i)
+    expect(q('[data-testid="vista-documentos"]')).toBeNull()
+  })
+
+  it('410 PRESCORING_DESACTIVADO: muestra el mensaje que lleva a Mi calificación', async () => {
+    crear.mockRejectedValue(
+      new EstudioDeCanonError(410, 'El estudio anterior ya no está disponible. Calcula tu tope gratis en Mi calificación.', 'PRESCORING_DESACTIVADO'),
+    )
+    await montar()
+    await act(async () => {
+      q('#consent')!.click()
+    })
+    await act(async () => {
+      container.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+    await flush()
+    expect(q('[data-testid="error-general"]')?.textContent).toContain('Mi calificación')
+  })
+
+  it('AUTORIZACION_REQUERIDA del back: se muestra el aviso y no se avanza', async () => {
+    crear.mockRejectedValue(
+      new EstudioDeCanonError(400, 'Para empezar necesitamos tu autorización. Márcala y vuelve a intentarlo.', 'AUTORIZACION_REQUERIDA'),
+    )
+    await montar()
+    await act(async () => {
+      q('#consent')!.click()
+    })
+    await act(async () => {
+      container.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+    await flush()
+    expect(q('[data-testid="error-general"]')?.textContent).toMatch(/autorización/i)
+  })
+})
+
+describe('<AprobacionPage> — paso 2: documentos', () => {
+  it('"Estudiar mis documentos" exige cédula y extracto; nómina y certificación son opcionales', async () => {
+    actual.mockResolvedValue(estudio())
+    await montar()
+    const boton = q('[data-testid="iniciar-estudio"]') as HTMLButtonElement
+    expect(boton.disabled).toBe(true)
+    expect(q('[data-testid="casilla-cedula"]')?.textContent).toContain('Obligatorio')
+    expect(q('[data-testid="casilla-nomina"]')?.textContent).toContain('Opcional')
+    expect(q('[data-testid="casilla-certificacion_laboral"]')?.textContent).toContain('Opcional')
+  })
+
+  it('sube el archivo elegido a su tipo y marca la casilla como recibida', async () => {
+    actual.mockResolvedValue(estudio())
+    subirDocumento.mockResolvedValue(estudio({ documentos: [{ tipo: 'cedula' }], faltan: ['extracto_bancario'] }))
+    await montar()
+    const archivo = pdf('cedula.pdf')
+    await elegirArchivo('cedula', archivo)
+    expect(subirDocumento).toHaveBeenCalledWith('11111111-1111-4111-8111-111111111111', 'cedula', archivo)
+    expect(q('[data-testid="subido-cedula"]')).not.toBeNull()
+    expect((q('[data-testid="iniciar-estudio"]') as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('con los dos obligatorios subidos habilita el inicio y pasa a procesando', async () => {
+    actual.mockResolvedValue(
+      estudio({ documentos: [{ tipo: 'cedula' }, { tipo: 'extracto_bancario' }], faltan: [] }),
+    )
+    iniciar.mockResolvedValue(
+      estudio({ status: 'PROCESSING', documentos: [{ tipo: 'cedula' }, { tipo: 'extracto_bancario' }], faltan: [] }),
+    )
+    await montar()
+    const boton = q('[data-testid="iniciar-estudio"]') as HTMLButtonElement
     expect(boton.disabled).toBe(false)
+    await act(async () => {
+      boton.click()
+    })
+    await flush()
+    expect(iniciar).toHaveBeenCalledWith('11111111-1111-4111-8111-111111111111')
+    expect(q('[data-testid="vista-procesando"]')).not.toBeNull()
   })
 
-  it('desde la ficha la ciudad es «Ciudad del inmueble»', () => {
-    act(() => {
-      root.render(<AprobacionPage />)
-    })
-    expect(container.querySelector('label[for="ciudad"]')?.textContent).toBe('Ciudad del inmueble')
+  it('un archivo inválido (ARCHIVO_INVALIDO) muestra el mensaje del back en su casilla', async () => {
+    actual.mockResolvedValue(estudio())
+    subirDocumento.mockRejectedValue(new EstudioDeCanonError(400, 'El archivo está dañado.', 'ARCHIVO_INVALIDO'))
+    await montar()
+    await elegirArchivo('extracto_bancario', pdf())
+    expect(q('[data-testid="casilla-extracto_bancario"]')?.textContent).toContain('El archivo está dañado.')
   })
 
-  it('sin venir de la ficha no muestra los pasos ni un inmueble', () => {
-    window.history.replaceState(null, '', '/aprobacion')
-    act(() => {
-      root.render(<AprobacionPage />)
+  it('un archivo de más de 10 MB o de otro tipo se rechaza sin llamar al back', async () => {
+    actual.mockResolvedValue(estudio())
+    await montar()
+    await elegirArchivo('cedula', new File(['x'], 'virus.exe', { type: 'application/x-msdownload' }))
+    expect(q('[data-testid="casilla-cedula"]')?.textContent).toContain('PDF o una imagen')
+    const grande = new File(['x'], 'grande.pdf', { type: 'application/pdf' })
+    Object.defineProperty(grande, 'size', { value: 11 * 1024 * 1024 })
+    await elegirArchivo('cedula', grande)
+    expect(q('[data-testid="casilla-cedula"]')?.textContent).toContain('10 MB')
+    expect(subirDocumento).not.toHaveBeenCalled()
+  })
+
+  it('DOCUMENTOS_FALTANTES resalta las casillas que faltan', async () => {
+    actual.mockResolvedValue(
+      estudio({ documentos: [{ tipo: 'cedula' }, { tipo: 'extracto_bancario' }], faltan: [] }),
+    )
+    iniciar.mockRejectedValue(
+      new EstudioDeCanonError(400, 'Faltan documentos: sube tu cédula y tu extracto bancario para continuar.', 'DOCUMENTOS_FALTANTES', ['extracto_bancario']),
+    )
+    await montar()
+    await act(async () => {
+      ;(q('[data-testid="iniciar-estudio"]') as HTMLButtonElement).click()
     })
-    expect(container.querySelector('[data-testid="paso-2-de-3"]')).toBeNull()
-    expect(container.querySelector('[data-testid="inmueble-del-paso-2"]')).toBeNull()
+    await flush()
+    expect(q('[data-testid="casilla-extracto_bancario"]')?.textContent).toContain('obligatorio')
+    expect(q('[data-testid="error-general"]')?.textContent).toMatch(/faltan documentos/i)
+  })
+
+  it('503 con el agente caído: el estudio sigue en borrador y se puede reintentar', async () => {
+    actual.mockResolvedValue(
+      estudio({ documentos: [{ tipo: 'cedula' }, { tipo: 'extracto_bancario' }], faltan: [] }),
+    )
+    iniciar.mockRejectedValue(new EstudioDeCanonError(503, 'El servicio no está disponible en este momento. Tus documentos quedaron guardados: reintenta en un momento.', 'SERVICIO_NO_DISPONIBLE'))
+    await montar()
+    await act(async () => {
+      ;(q('[data-testid="iniciar-estudio"]') as HTMLButtonElement).click()
+    })
+    await flush()
+    expect(q('[data-testid="vista-documentos"]')).not.toBeNull()
+    expect(q('[data-testid="error-general"]')?.textContent).toMatch(/reintenta/i)
+    expect((q('[data-testid="iniciar-estudio"]') as HTMLButtonElement).disabled).toBe(false)
+  })
+
+  it('ESTUDIO_NO_ENCONTRADO vuelve al comienzo', async () => {
+    actual.mockResolvedValue(estudio())
+    subirDocumento.mockRejectedValue(new EstudioDeCanonError(404, 'No encontramos ese estudio. Puedes empezar uno nuevo.', 'ESTUDIO_NO_ENCONTRADO'))
+    await montar()
+    await elegirArchivo('cedula', pdf())
+    expect(q('[data-testid="vista-documentos"]')).toBeNull()
+    expect(container.querySelector('#consent')).not.toBeNull()
   })
 })
 
-/**
- * «Cerrar» (Nico, 2026-09-15): desde el paso 2 devolvía al paso 1 —era
- * `router.back()`— y salía sin preguntar. Ahora pregunta, y salir sale.
- */
-describe('<AprobacionPage> — cerrar el paso 2', () => {
-  beforeEach(() => {
+describe('<AprobacionPage> — procesando / resultado / fallo', () => {
+  it('PROCESSING: pantalla de espera con salida a Mi tope', async () => {
+    actual.mockResolvedValue(estudio({ status: 'PROCESSING' }))
+    await montar()
+    expect(q('[data-testid="vista-procesando"]')).not.toBeNull()
+    expect(container.querySelector('a[href="/inquilino/aprobacion"]')).not.toBeNull()
+  })
+
+  it('COMPLETED: lleva al resultado en /inquilino/aprobacion', async () => {
+    actual.mockResolvedValue(estudio({ status: 'COMPLETED' }))
+    await montar()
+    expect(replaceMock).toHaveBeenCalledWith('/inquilino/aprobacion')
+  })
+
+  it('COMPLETED con ?repetir=1: permite empezar otro estudio', async () => {
+    actual.mockResolvedValue(estudio({ status: 'COMPLETED' }))
+    await montar('/aprobacion?repetir=1')
+    expect(replaceMock).not.toHaveBeenCalled()
+    expect(container.querySelector('#consent')).not.toBeNull()
+  })
+
+  it('FAILED: muestra el mensaje del back y ofrece reintentar con los mismos documentos', async () => {
+    actual.mockResolvedValue(
+      estudio({ status: 'FAILED', error: errorDelEstudio({ codigo: 'ESTUDIO_NO_ARRANCO', mensaje: 'No pudimos iniciar el estudio de tus documentos. Intenta de nuevo.' }) }),
+    )
+    await montar()
+    expect(q('[data-testid="vista-fallido"]')?.textContent).toContain('No pudimos iniciar el estudio')
+    expect(q('[data-testid="documento-con-error"]')).toBeNull()
+    expect(q('[data-testid="reintentar-estudio"]')?.textContent).toContain('mismos documentos')
+    expect(q('[data-testid="reintentos-restantes"]')?.textContent).toBe('Te quedan 3 reintentos.')
+  })
+
+  it('FAILED con documento culpable: lo marca, deja reemplazarlo y reintenta con el archivo nuevo', async () => {
+    const fallido = estudio({
+      status: 'FAILED',
+      documentos: [{ tipo: 'cedula' }, { tipo: 'extracto_bancario' }],
+      faltan: [],
+      error: errorDelEstudio({
+        codigo: 'CEDULA_ILEGIBLE',
+        mensaje: 'No pudimos leer tu cédula.',
+        documentoConError: 'cedula',
+        accion: 'REEMPLAZAR_DOCUMENTO',
+        reintentosRestantes: 2,
+      }),
+    })
+    actual.mockResolvedValue(fallido)
+    subirDocumento.mockResolvedValue(fallido)
+    reintentar.mockResolvedValue({ ...fallido, status: 'PROCESSING', error: null })
+    await montar()
+    expect(q('[data-testid="documento-con-error"]')?.textContent).toContain('Este archivo es el que dio el problema')
+    expect(q('[data-testid="casilla-cedula"]')).not.toBeNull()
+    expect(q('[data-testid="casilla-extracto_bancario"]')).toBeNull()
+    expect(q('[data-testid="reintentos-restantes"]')?.textContent).toBe('Te quedan 2 reintentos.')
+
+    await elegirArchivo('cedula', pdf('cedula-nueva.pdf'))
+    expect(subirDocumento).toHaveBeenCalledWith(fallido.id, 'cedula', expect.any(File))
+    expect(reintentar).not.toHaveBeenCalled() // uploading does not restart anything
+    expect(q('[data-testid="reintentar-estudio"]')?.textContent).toContain('archivo nuevo')
+
+    await act(async () => {
+      q('[data-testid="reintentar-estudio"]')!.click()
+    })
+    await flush()
+    expect(reintentar).toHaveBeenCalledWith(fallido.id)
+    expect(q('[data-testid="vista-procesando"]')).not.toBeNull()
+  })
+
+  it('FAILED sin reintentos: no ofrece reintentar, ofrece empezar un estudio nuevo', async () => {
+    actual.mockResolvedValue(
+      estudio({ status: 'FAILED', error: errorDelEstudio({ reintentosRestantes: 0 }) }),
+    )
+    await montar()
+    expect(q('[data-testid="reintentar-estudio"]')).toBeNull()
+    expect(q('[data-testid="sin-reintentos"]')).not.toBeNull()
+    await act(async () => {
+      q('[data-testid="empezar-estudio-nuevo"]')!.click()
+    })
+    expect(container.querySelector('#consent')).not.toBeNull()
+    expect(q('[data-testid="vista-fallido"]')).toBeNull()
+  })
+
+  it('409 ESTUDIO_SIN_REINTENTOS al reintentar: pasa a "empezar un estudio nuevo"', async () => {
+    actual.mockResolvedValue(estudio({ status: 'FAILED', error: errorDelEstudio() }))
+    reintentar.mockRejectedValue(
+      new EstudioDeCanonError(409, 'Ya usaste todos los reintentos de este estudio.', 'ESTUDIO_SIN_REINTENTOS'),
+    )
+    await montar()
+    await act(async () => {
+      q('[data-testid="reintentar-estudio"]')!.click()
+    })
+    await flush()
+    expect(q('[data-testid="reintentar-estudio"]')).toBeNull()
+    expect(q('[data-testid="empezar-estudio-nuevo"]')).not.toBeNull()
+  })
+
+  it('409 ESTUDIO_NO_REINTENTABLE al reintentar: vuelve a leer el estudio', async () => {
+    actual.mockResolvedValue(estudio({ status: 'FAILED', error: errorDelEstudio() }))
+    reintentar.mockRejectedValue(new EstudioDeCanonError(409, 'ya no se puede', 'ESTUDIO_NO_REINTENTABLE'))
+    await montar()
+    expect(actual).toHaveBeenCalledTimes(1)
+    await act(async () => {
+      q('[data-testid="reintentar-estudio"]')!.click()
+    })
+    await flush()
+    expect(actual).toHaveBeenCalledTimes(2)
+    expect(q('[data-testid="error-general"]')?.textContent).toContain('ya no se puede')
+  })
+
+  it('503 al reintentar: dice el error y deja volver a apretar', async () => {
+    actual.mockResolvedValue(estudio({ status: 'FAILED', error: errorDelEstudio() }))
+    reintentar.mockRejectedValue(new EstudioDeCanonError(503, 'El servicio no está disponible. Reintenta en un momento.', 'SERVICIO_NO_DISPONIBLE'))
+    await montar()
+    await act(async () => {
+      q('[data-testid="reintentar-estudio"]')!.click()
+    })
+    await flush()
+    expect(q('[data-testid="error-general"]')?.textContent).toContain('Reintenta')
+    expect((q('[data-testid="reintentar-estudio"]') as HTMLButtonElement).disabled).toBe(false)
+  })
+
+  describe('T-0198: enfriamiento del reintento', () => {
+    const AHORA = new Date('2026-10-29T15:00:00.000Z')
+    const DESDE = new Date(AHORA.getTime() + 10 * 60_000).toISOString()
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] })
+      vi.setSystemTime(AHORA)
+    })
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    async function avanzar(ms: number) {
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(ms)
+      })
+    }
+    async function montarConTiempoFalso() {
+      window.history.pushState({}, '', '/aprobacion')
+      await act(async () => {
+        root.render(<AprobacionPage />)
+      })
+      await avanzar(0)
+    }
+    const boton = () => q('[data-testid="reintentar-estudio"]') as HTMLButtonElement
+
+    it('SERVICIO_NO_DISPONIBLE: dice que hay problemas, no culpa un documento y bloquea "Reintentar" hasta la hora', async () => {
+      actual.mockResolvedValue(
+        estudio({
+          status: 'FAILED',
+          error: errorDelEstudio({
+            codigo: 'SERVICIO_NO_DISPONIBLE',
+            mensaje: 'Estamos teniendo problemas con el sistema. Intenta de nuevo en 10 minutos.',
+            documentoConError: 'cedula',
+            reintentarDesde: DESDE,
+          }),
+        }),
+      )
+      await montarConTiempoFalso()
+      expect(q('[data-testid="vista-fallido"]')!.textContent).toContain(
+        'Estamos teniendo problemas con el sistema. Intenta de nuevo en 10 minutos.',
+      )
+      expect(q('[data-testid="documento-con-error"]')).toBeNull()
+      expect(boton().disabled).toBe(true)
+      expect(q('[data-testid="reintentar-desde"]')!.textContent).toMatch(/Podrás intentarlo de nuevo a las \d{2}:\d{2}/)
+      expect(vi.getTimerCount()).toBe(1)
+
+      await avanzar(10 * 60_000 - 1)
+      expect(boton().disabled).toBe(true)
+      await avanzar(1)
+      expect(boton().disabled).toBe(false)
+      expect(q('[data-testid="reintentar-desde"]')).toBeNull()
+      // One timer, no polling: nothing else was scheduled and /actual was read once.
+      expect(vi.getTimerCount()).toBe(0)
+      expect(actual).toHaveBeenCalledTimes(1)
+    })
+
+    it('cualquier código con reintentarDesde futuro bloquea; con uno pasado o ausente no', async () => {
+      actual.mockResolvedValue(
+        estudio({ status: 'FAILED', error: errorDelEstudio({ codigo: 'ESTUDIO_FALLIDO', reintentarDesde: DESDE }) }),
+      )
+      await montarConTiempoFalso()
+      expect(boton().disabled).toBe(true)
+      act(() => root.unmount())
+      expect(vi.getTimerCount()).toBe(0)
+      root = createRoot(container)
+
+      actual.mockResolvedValue(
+        estudio({
+          status: 'FAILED',
+          error: errorDelEstudio({ reintentarDesde: new Date(AHORA.getTime() - 1000).toISOString() }),
+        }),
+      )
+      await montarConTiempoFalso()
+      expect(boton().disabled).toBe(false)
+      expect(q('[data-testid="reintentar-desde"]')).toBeNull()
+    })
+
+    it('409 REINTENTO_MUY_PRONTO: deja el botón apagado hasta el instante devuelto y luego lo reabre', async () => {
+      actual.mockResolvedValue(estudio({ status: 'FAILED', error: errorDelEstudio() }))
+      reintentar.mockRejectedValue(
+        new EstudioDeCanonError(409, 'Aún no puedes reintentar.', 'REINTENTO_MUY_PRONTO', undefined, DESDE),
+      )
+      await montarConTiempoFalso()
+      expect(boton().disabled).toBe(false)
+      await act(async () => {
+        boton().click()
+      })
+      await avanzar(0)
+      expect(boton().disabled).toBe(true)
+      expect(q('[data-testid="reintentar-desde"]')).not.toBeNull()
+      expect(reintentar).toHaveBeenCalledTimes(1)
+
+      await avanzar(10 * 60_000)
+      expect(boton().disabled).toBe(false)
+    })
+  })
+
+  it('PROCESSING: dice que puede tardar unos minutos y que se puede volver o recargar', async () => {
+    actual.mockResolvedValue(estudio({ status: 'PROCESSING' }))
+    await montar()
+    const t = q('[data-testid="vista-procesando"]')?.textContent ?? ''
+    expect(t).toContain('unos minutos')
+    expect(t).toMatch(/recargar/i)
+  })
+})
+
+describe('<AprobacionPage> — reglas de producto', () => {
+  it('con el inmueble en curso (paso 2 de la ficha) muestra el inmueble y los pasos del arriendo', async () => {
+    window.sessionStorage.setItem(
+      'leasefy:arriendo-en-curso',
+      JSON.stringify({
+        propertyId: 'p1',
+        titulo: 'Apto en Chapinero',
+        ciudad: 'Bogotá',
+        tipo: 'apartamento',
+        foto: null,
+        canon: 2_000_000,
+        ingresoTotal: 7_000_000,
+        canonMaximo: 2_300_000,
+        guardadoEn: Date.now(),
+      }),
+    )
+    await montar('/aprobacion?paso=2')
+    expect(q('[data-testid="paso-2-de-3"]')).not.toBeNull()
+    expect(q('[data-testid="inmueble-del-paso-2"]')?.textContent).toContain('Apto en Chapinero')
     window.sessionStorage.clear()
-    window.history.replaceState(null, '', '/aprobacion?paso=2&canon=2200000&ciudad=Caldas&tipo=local')
-    vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
-  })
-  afterEach(() => {
-    window.history.replaceState(null, '', '/')
   })
 
-  const cerrar = () => document.querySelector<HTMLButtonElement>('[data-testid="cerrar-aprobacion"]')!
-  const dialogo = () => document.querySelector('[data-testid="confirmar-salida-aprobacion"]')
-  const boton = (testId: string) => document.querySelector<HTMLButtonElement>(`[data-testid="${testId}"]`)
-
-  function conInmueble() {
-    guardarArriendoEnCurso({
-      propertyId: 'p-9',
-      titulo: 'Local en Centro, Caldas',
-      ciudad: 'Caldas',
-      tipo: 'local',
-      foto: null,
-      canon: 2_200_000,
-      ingresoTotal: 9_000_000,
-      canonMaximo: 3_000_000,
-    })
-  }
-
-  it('preguntar antes: el clic en Cerrar abre la confirmación y no navega', () => {
-    conInmueble()
-    act(() => root.render(<AprobacionPage />))
-
-    act(() => cerrar().click())
-
-    expect(pushMock).not.toHaveBeenCalled()
-    expect(dialogo()?.textContent).toContain('Local en Centro, Caldas')
-    expect(boton('seguir-en-aprobacion')).not.toBeNull()
-  })
-
-  it('salir va al inmueble que estaba intentando arrendar, NO al paso 1', () => {
-    conInmueble()
-    act(() => root.render(<AprobacionPage />))
-
-    act(() => cerrar().click())
-    act(() => boton('salir-de-aprobacion')!.click())
-
-    expect(pushMock).toHaveBeenCalledWith('/propiedades/p-9')
-  })
-
-  it('sin inmueble en curso y sin sesión, salir lleva al catálogo', () => {
-    mockUser = null
-    act(() => root.render(<AprobacionPage />))
-
-    act(() => cerrar().click())
-    act(() => boton('salir-de-aprobacion')!.click())
-
-    expect(pushMock).toHaveBeenCalledWith('/propiedades')
-  })
-
-  it('«Seguir con mi solicitud» cierra la confirmación sin sacarlo del paso 2', () => {
-    conInmueble()
-    act(() => root.render(<AprobacionPage />))
-
-    act(() => cerrar().click())
-    act(() => boton('seguir-en-aprobacion')!.click())
-
-    expect(pushMock).not.toHaveBeenCalled()
-  })
+  it.each(['autorizar', 'documentos', 'procesando', 'fallido'] as const)(
+    'la vista "%s" no habla de aseguradoras, pagos ni depósitos',
+    async (vista) => {
+      const estados = {
+        autorizar: null,
+        documentos: estudio(),
+        procesando: estudio({ status: 'PROCESSING' }),
+        fallido: estudio({ status: 'FAILED', error: errorDelEstudio({ codigo: 'ESTUDIO_FALLIDO', mensaje: 'No pudimos terminar.' }) }),
+      }
+      actual.mockResolvedValue(estados[vista])
+      await montar()
+      expect(container.textContent ?? '').not.toMatch(/asegurador|sura\b|mapfre|fianly|fianli|wompi|dep[oó]sito|pagar|pagas/i)
+    },
+  )
 })
-

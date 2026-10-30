@@ -60,7 +60,7 @@ describe('qué significa postularse', () => {
   })
 
   it('explica POR QUÉ este catálogo es suyo', () => {
-    expect(pintar()).toContain('dentro de lo que las aseguradoras te aprobaron')
+    expect(pintar()).toContain('dentro de tu rango de arriendo')
   })
 
   it('NO inventa un tiempo de respuesta', () => {

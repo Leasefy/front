@@ -32893,6 +32893,7 @@
               "pedir_certificado",
               "pagar_en_linea",
               "bajar_extracto",
+              "bajar_certificado_de_ingresos",
               "decidir_reparacion",
               "decidir_sobrecosto",
               "avisar_que_quedo",
@@ -32916,7 +32917,8 @@
             "enum": [
               "Sí, hazlo",
               "Descargar extracto",
-              "Abrir el formulario"
+              "Abrir el formulario",
+              "Descargar certificado"
             ]
           },
           "datos": {
@@ -32950,6 +32952,7 @@
               "mis_giros",
               "link_de_pago",
               "certificado",
+              "certificado_de_ingresos",
               "radicar_pqrs",
               "ver_pqrs",
               "extracto",
@@ -33052,6 +33055,10 @@
             "type": "string"
           },
           "pqrsId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "documentoId": {
             "type": "string",
             "format": "uuid"
           }

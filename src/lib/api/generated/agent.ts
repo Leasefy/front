@@ -17296,11 +17296,11 @@ export interface components {
         };
         PortalChatTarjeta: {
             /** @enum {string} */
-            accion: "radicar_pqrs" | "pedir_certificado" | "pagar_en_linea" | "bajar_extracto" | "decidir_reparacion" | "decidir_sobrecosto" | "avisar_que_quedo" | "cambiar_cuenta" | "retirar_postulacion" | "reclamar_postulacion" | "pedir_visita" | "mover_visita" | "cancelar_visita" | "borrar_documento";
+            accion: "radicar_pqrs" | "pedir_certificado" | "pagar_en_linea" | "bajar_extracto" | "bajar_certificado_de_ingresos" | "decidir_reparacion" | "decidir_sobrecosto" | "avisar_que_quedo" | "cambiar_cuenta" | "retirar_postulacion" | "reclamar_postulacion" | "pedir_visita" | "mover_visita" | "cancelar_visita" | "borrar_documento";
             titulo: string;
             detalle: string;
             /** @enum {string} */
-            boton: "Sí, hazlo" | "Descargar extracto" | "Abrir el formulario";
+            boton: "Sí, hazlo" | "Descargar extracto" | "Abrir el formulario" | "Descargar certificado";
             datos: {
                 [key: string]: string;
             };
@@ -17308,7 +17308,7 @@ export interface components {
         } | null;
         PortalChatPedidoResponse: {
             /** @enum {string} */
-            pedido: "cuanto_debo" | "mis_giros" | "link_de_pago" | "certificado" | "radicar_pqrs" | "ver_pqrs" | "extracto" | "reparaciones" | "ya_quedo" | "cambiar_cuenta" | "mi_contrato" | "proximo_pago" | "ajeno" | "no_entiendo" | "mi_postulacion" | "mis_postulaciones" | "que_me_pidieron" | "que_me_falta" | "mis_visitas" | "por_que_me_rechazaron" | "sigue_disponible" | "retirar_postulacion" | "reactivar_postulacion" | "reclamo_postulacion" | "pedir_visita" | "mover_visita" | "cancelar_visita" | "borrar_documento";
+            pedido: "cuanto_debo" | "mis_giros" | "link_de_pago" | "certificado" | "certificado_de_ingresos" | "radicar_pqrs" | "ver_pqrs" | "extracto" | "reparaciones" | "ya_quedo" | "cambiar_cuenta" | "mi_contrato" | "proximo_pago" | "ajeno" | "no_entiendo" | "mi_postulacion" | "mis_postulaciones" | "que_me_pidieron" | "que_me_falta" | "mis_visitas" | "por_que_me_rechazaron" | "sigue_disponible" | "retirar_postulacion" | "reactivar_postulacion" | "reclamo_postulacion" | "pedir_visita" | "mover_visita" | "cancelar_visita" | "borrar_documento";
             texto: string;
             tarjeta: components["schemas"]["PortalChatTarjeta"];
             otrasTarjetas?: (components["schemas"]["PortalChatTarjeta"] & Record<string, never>)[];
@@ -17328,6 +17328,8 @@ export interface components {
             texto: string;
             /** Format: uuid */
             pqrsId?: string;
+            /** Format: uuid */
+            documentoId?: string;
         };
         PortalChatHacerBody: {
             accion: string;

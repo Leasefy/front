@@ -32898,7 +32898,10 @@
               "avisar_que_quedo",
               "cambiar_cuenta",
               "retirar_postulacion",
-              "reclamar_postulacion"
+              "reclamar_postulacion",
+              "pedir_visita",
+              "mover_visita",
+              "cancelar_visita"
             ]
           },
           "titulo": {
@@ -32965,7 +32968,10 @@
               "sigue_disponible",
               "retirar_postulacion",
               "reactivar_postulacion",
-              "reclamo_postulacion"
+              "reclamo_postulacion",
+              "pedir_visita",
+              "mover_visita",
+              "cancelar_visita"
             ]
           },
           "texto": {

@@ -44,6 +44,7 @@ import {
   seccionDelIndependiente,
   seccionDelPropietario,
 } from '@/lib/nav/portal-del-propietario';
+import { BienvenidaDelPropietario } from '@/components/conversion/BienvenidaALaCuenta';
 
 /**
  * El menú del propietario INDEPENDIENTE — Nico eligió «el mismo criterio»
@@ -231,6 +232,8 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
             de «tu inmobiliaria» al independiente). Sólo se lee; no cambia qué se monta. */}
         <PropietarioDeInmobiliariaProvider value={deInmobiliaria}>
         <main id="main-content" tabIndex={-1}>
+          {/* Nico, 30-10-2026: la bienvenida también en el portal del propietario (una vez por cuenta). */}
+          <BienvenidaDelPropietario deInmobiliaria={deInmobiliaria} activa={!administrados.cargando && (user?.role === 'landlord' || esPropietarioConfirmado)} />
           {!deInmobiliaria && <BarraDelMesGratis acceso={accesoDelPropietario} pago="/panel/upgrade" soloElMesGratis />}
           {/* 27-10-2026 (Nico): el propietario que pagó termina su cuenta en tres pasos (datos, cuenta, factura). */}
           {!deInmobiliaria && <PasosDelPropietario acceso={accesoDelPropietario} />}

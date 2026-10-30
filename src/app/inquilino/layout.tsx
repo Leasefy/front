@@ -23,6 +23,7 @@ import { I18nProvider, useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import { getRoleHomeRoute } from '@/lib/auth/role-routes';
 import { useTambienEsPropietario } from '@/lib/hooks/useTambienEsPropietario';
+import { BienvenidaDelInquilino } from '@/components/conversion/BienvenidaALaCuenta';
 
 // Define the setup steps (2 steps: basic info + preferences. Income is collected during application)
 const TENANT_SETUP_STEPS: ProfileCompletionStep[] = [
@@ -178,6 +179,8 @@ function InquilinoLayoutInner({ children }: { children: React.ReactNode }) {
       )}>
         <PlanHeader tenantSubscription={tenantSubscription} />
         <main id="main-content" tabIndex={-1}>
+          {/* Nico, 30-10-2026: la bienvenida también en el portal del inquilino (una vez por cuenta). */}
+          <BienvenidaDelInquilino />
           <SeccionesDelPortal seccion={seccionDeLaRuta(pathname, arrienda === true)} />
           <ArriendaHoyDelPortalProvider value={arrienda}>{children}</ArriendaHoyDelPortalProvider>
         </main>

@@ -198,7 +198,7 @@ export function PreciosDeLeasefy({
                           <p className="text-body-sm text-fg">{p.que}</p>
                           <p className="mt-0.5 text-caption text-fg-muted">{p.detalle}</p>
                         </div>
-                        <p className="shrink-0 font-mono text-body-sm tabular-nums text-fg sm:max-w-[13rem] sm:text-right">{p.precio}</p>
+                        <p className="shrink-0 font-mono text-body-sm tabular-nums text-fg sm:whitespace-nowrap sm:text-right">{p.precio}</p>
                       </StaggerItem>
                     ))}
                   </Stagger>

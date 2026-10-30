@@ -97,6 +97,17 @@ async function clic(el: Element | null) {
   })
 }
 
+async function vaciar() {
+  // Micro-turnos para las promesas encadenadas y macro-turnos para los imports dinámicos:
+  // sólo con micro-turnos el CI cargado llegaba antes que el flujo liberar -> inscribir -> verificar.
+  for (let ronda = 0; ronda < 5; ronda++) {
+    await act(async () => {
+      for (let i = 0; i < 40; i++) await Promise.resolve()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+  }
+}
+
 async function escribirCodigo(codigo: string) {
   const primera = porTestId('casilla-0') as HTMLInputElement
   const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!
@@ -104,6 +115,7 @@ async function escribirCodigo(codigo: string) {
     setter.call(primera, codigo)
     primera.dispatchEvent(new Event('input', { bubbles: true }))
   })
+  await vaciar()
 }
 
 describe('mock del segundo factor en el paso a paso', () => {

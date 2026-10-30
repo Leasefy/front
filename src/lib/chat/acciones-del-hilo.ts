@@ -412,6 +412,8 @@ export function textoDelFormulario(f: FormularioEnElHilo, valores: Record<string
       const v = (valores[c.clave] ?? '').trim();
       if (!v) return null;
       if (c.tipo === 'opcion') return c.opciones.find((o) => o.valor === v)?.etiqueta ?? v;
+      // 29-10-2026: el archivo del chat se dice por su nombre, nunca por su id.
+      if (c.tipo === 'adjunto') return c.ayuda ?? null;
       // 07-10: «5 de octubre de 2026», no «2026-10-05», en lo que la persona «dijo».
       if (c.tipo === 'fecha' && /^\d{4}-\d{2}-\d{2}$/.test(v)) return fechaCivilLarga(v);
       if (c.tipo === 'moneda') {

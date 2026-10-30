@@ -46,6 +46,8 @@ const FUERA = [
   join('lib', 'api', 'landlord.types.ts'),
   // El backoffice interno de Leasefy (ROI de la cobranza), no una inmobiliaria.
   join('app', 'admin') + sep,
+  // Los datos de ejemplo del modo demo: hacen de RESPUESTA DEL BACK (la tasa ya medida), no la calcula una pantalla.
+  join('lib', 'demo') + sep,
 ];
 
 /**

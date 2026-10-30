@@ -157,6 +157,23 @@ describe('las piezas del `done`', () => {
     );
   });
 
+  it('R10: una moneda al centavo trae sus áreas de plata (sólo las que existen) y se «dice» con sus centavos', () => {
+    const f = leerFormulario({
+      accion: 'registrar_asiento_manual',
+      entidad: { tipo: 'agencia', id: UUID },
+      titulo: 'Registrar un asiento manual',
+      campos: [
+        { clave: 'valorDebito', tipo: 'moneda', requerido: true, areasDePlata: ['contabilidad_facturacion_y_exogena', 'inventada'] },
+        { clave: 'valorCop', tipo: 'moneda', requerido: true, areasDePlata: ['inventada'] },
+        { clave: 'nota', tipo: 'texto', requerido: false, areasDePlata: ['nomina'] },
+      ],
+    })!;
+    expect(f.campos[0]).toMatchObject({ areasDePlata: ['contabilidad_facturacion_y_exogena'] });
+    expect(f.campos[1]).not.toHaveProperty('areasDePlata');
+    expect(f.campos[2]).not.toHaveProperty('areasDePlata');
+    expect(textoDelFormulario(f, { valorDebito: '200000.5', valorCop: '150000' })).toBe('Registrar un asiento manual: $200.000,50 · $150.000');
+  });
+
   it('una propuesta está contestada cuando un mensaje POSTERIOR de la persona la nombra', () => {
     const posteriores = [
       { role: 'assistant' },

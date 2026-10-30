@@ -1,8 +1,8 @@
 'use client';
 
-import { CurrencyInput } from '@leasefy/cadence';
 import { Paperclip } from '@phosphor-icons/react';
 import { Input, Textarea } from '@/components/ui';
+import { CampoDePlata } from '@/components/ui/campo-de-plata';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SelectorDeMes } from '@/components/finanzas/SelectorDeMes';
 import { mesActual } from '@/lib/recaudo/meses';
@@ -121,8 +121,11 @@ export function CamposEnElChat({
               {c.etiqueta}
             </label>
             {c.tipo === 'moneda' ? (
-              <CurrencyInput
+              // R10 (30-10): el campo de plata del panel: sin área, pesos enteros y la coma se
+              // frena (antes «200.000,50» quedaba en 20.000.050); con área y su llave, centavos.
+              <CampoDePlata
                 id={id}
+                areas={c.areasDePlata ?? []}
                 disabled={deshabilitados}
                 value={valores[c.clave] ? Number(valores[c.clave]) : undefined}
                 onChange={(v) => onCambiar(c.clave, Number.isFinite(v) ? String(v) : '')}

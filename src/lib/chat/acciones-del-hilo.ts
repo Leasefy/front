@@ -26,6 +26,7 @@
 
 import type { EntidadDelChat, TipoDeEntidad } from '@/lib/chat/bloques';
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
+import { AREAS_DE_PLATA, type AreaDePlata } from '@/lib/plata/con-centavos';
 
 // ── La intención (espejo de `ai-hub/en-el-chat/intencion.ts` del micro) ─────
 
@@ -392,6 +393,12 @@ export interface CampoDelFormulario {
    * el teclado del celular. Sin esto, el de su tipo.
    */
   formato?: FormatoDelCampo;
+  /**
+   * R10 (30-10, pregunta 45 de Nico): una `moneda` que puede ir al centavo: las
+   * áreas de plata cuya llave lo decide (`GET /config/plata`). Sin esto, pesos
+   * enteros, y una coma con centavos se frena (antes «200.000,50» era 20.000.050).
+   */
+  areasDePlata?: AreaDePlata[];
 }
 
 export type FormatoDelCampo = 'correo' | 'celular' | 'documento' | 'porcentaje' | 'dia_del_mes' | 'dias' | 'cuenta' | 'direccion' | 'entero' | 'texto';
@@ -432,6 +439,12 @@ export function leerCampos(v: unknown): CampoDelFormulario[] {
       ayuda: texto(c.ayuda),
       valor: typeof c.valor === 'string' ? c.valor : null,
       ...(FORMATOS_DEL_CAMPO.includes(c.formato as FormatoDelCampo) ? { formato: c.formato as FormatoDelCampo } : {}),
+      ...(tipo === 'moneda' && Array.isArray(c.areasDePlata)
+        ? (() => {
+            const areas = c.areasDePlata.filter((a): a is AreaDePlata => (AREAS_DE_PLATA as readonly string[]).includes(a as string));
+            return areas.length ? { areasDePlata: areas } : {};
+          })()
+        : {}),
     });
   }
   return campos;
@@ -516,8 +529,11 @@ export function textoDelFormulario(f: FormularioEnElHilo, valores: Record<string
       // 07-10: «5 de octubre de 2026», no «2026-10-05», en lo que la persona «dijo».
       if (c.tipo === 'fecha' && /^\d{4}-\d{2}-\d{2}$/.test(v)) return fechaCivilLarga(v);
       if (c.tipo === 'moneda') {
-        const n = Number(v.replace(/[^\d]/g, ''));
-        return Number.isFinite(n) && n > 0 ? `$${n.toLocaleString(localeDeLasCifras())}` : v;
+        // R10: el valor del campo ya es el número (con sus centavos, si los lleva).
+        const n = Number(v);
+        return Number.isFinite(n) && n > 0
+          ? `$${n.toLocaleString(localeDeLasCifras(), { maximumFractionDigits: 2, minimumFractionDigits: Number.isInteger(n) ? 0 : 2 })}`
+          : v;
       }
       return v;
     })

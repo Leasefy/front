@@ -13,11 +13,23 @@
  */
 import type { components } from '@/lib/api/generated/agent';
 import { agentFetch } from '@/lib/api/agent-fetch';
+import { cabecerasDeLaCuenta } from '@/lib/auth/cuenta-activa';
 
 export type PortalDelChat = components['schemas']['PortalChatPedidoBody']['portal'];
 export type RespuestaDelChatDelPortal = components['schemas']['PortalChatPedidoResponse'];
 export type TarjetaDelChatDelPortal = NonNullable<RespuestaDelChatDelPortal['tarjeta']>;
 export type ResultadoDelChatDelPortal = components['schemas']['PortalChatHacerResponse'];
+export type OpcionDeLaTarjetaDelPortal = components['schemas']['PortalChatOpcion'];
+
+/**
+ * La cuenta del portal desde el que pregunta, para quien tiene más de un papel
+ * (inquilino y propietario con el mismo correo): la misma `x-cuenta` que el
+ * front ya manda al back en ese portal. El micro la pasa al back en cada
+ * llamada; quien tiene una sola cuenta no la manda (todo como antes).
+ */
+export function cuentaDelPortal(portal: PortalDelChat): PortalDelChat | undefined {
+  return cabecerasDeLaCuenta()['x-cuenta'] === portal ? portal : undefined;
+}
 
 /** Lo que se le dice a la persona cuando el micro no contesta: nunca un código. */
 export const NO_PUDE_RESPONDER = 'No pude responderte en este momento. Inténtalo de nuevo en unos minutos.';
@@ -52,15 +64,25 @@ export async function preguntarAlChatDelPortal(
 ): Promise<{ ok: true; respuesta: RespuestaDelChatDelPortal } | { ok: false; texto: string }> {
   const limpio = texto.trim().slice(0, 2000);
   if (!limpio) return { ok: false, texto: 'Escríbeme qué necesitas.' };
-  const r = await postAlMicro<RespuestaDelChatDelPortal>('/api/portal/chat/pedido', { texto: limpio, portal });
+  const r = await postAlMicro<RespuestaDelChatDelPortal>('/api/portal/chat/pedido', { texto: limpio, portal, cuenta: cuentaDelPortal(portal) });
   return r.ok ? { ok: true, respuesta: r.doc } : r;
 }
 
-/** El clic en «Sí, hazlo»: el micro hace lo de la tarjeta con la sesión de la persona. */
-export async function hacerEnElChatDelPortal(tarjeta: TarjetaDelChatDelPortal): Promise<ResultadoDelChatDelPortal> {
+/**
+ * El clic: «Sí, hazlo» (la acción de la tarjeta) o una de sus decisiones
+ * («Aprobar», «Rechazar» con su motivo, «La hago yo»). El micro lo vuelve a
+ * validar y lo hace con la sesión de la persona.
+ */
+export async function hacerEnElChatDelPortal(
+  tarjeta: TarjetaDelChatDelPortal,
+  portal: PortalDelChat,
+  decision?: { accion: OpcionDeLaTarjetaDelPortal['accion']; motivo?: string },
+): Promise<ResultadoDelChatDelPortal> {
+  const motivo = decision?.motivo?.trim();
   const r = await postAlMicro<ResultadoDelChatDelPortal>('/api/portal/chat/hacer', {
-    accion: tarjeta.accion,
-    datos: tarjeta.datos,
+    accion: decision?.accion ?? tarjeta.accion,
+    datos: motivo ? { ...tarjeta.datos, motivo: motivo.slice(0, 500) } : tarjeta.datos,
+    cuenta: cuentaDelPortal(portal),
   });
   return r.ok ? r.doc : { hecho: false, texto: r.texto };
 }
@@ -68,5 +90,12 @@ export async function hacerEnElChatDelPortal(tarjeta: TarjetaDelChatDelPortal): 
 /** Lo que se puede pedir, para empezar sin pensar qué escribir. */
 export const SUGERENCIAS_DEL_PORTAL: Record<PortalDelChat, readonly string[]> = {
   inquilino: ['¿Cuánto debo?', 'Mándame el link de pago', 'Necesito el certificado de arrendamiento', 'Se dañó algo en el apartamento', '¿Qué me respondieron?'],
-  propietario: ['¿Cuándo y cuánto me giran?', 'Necesito un certificado', '¿Qué me respondieron?'],
+  propietario: [
+    '¿Cuándo y cuánto me giran?',
+    'Mándame el extracto',
+    '¿Qué reparaciones tengo por aprobar?',
+    'Quiero cambiar mi cuenta',
+    'Necesito un certificado',
+    '¿Qué me respondieron?',
+  ],
 };

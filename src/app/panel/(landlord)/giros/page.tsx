@@ -19,23 +19,18 @@ import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pag
 import { Bank, FileArrowDown, Warning } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/toast';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
 import { StatusBadge } from '@leasefy/cadence';
 import { giradoEnElAnio } from '@/lib/propietario/el-mes-del-contrato';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
-import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
-import { SelectorDeArchivo } from '@/components/ui/selector-de-archivo';
+import { FormularioCambioDeCuenta } from '@/components/landlord/portal/FormularioCambioDeCuenta';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { formatCurrency } from '@/lib/format';
 import { fechaCorta, fechaLarga, hoyEnColombia } from '@/lib/fechas/fecha-de-la-casa';
 import { nombreDelMes } from '@/lib/recaudo/meses';
-import { COLOMBIAN_BANKS } from '@/lib/types/payment-accounts';
 import {
   portalDelPropietarioApi,
   type CuentaDeGiro,
@@ -53,36 +48,7 @@ const ESTADO: Record<EstadoDelGiro, { texto: string; tono: 'success' | 'neutral'
 
 function CambiarCuenta({ ficha, onListo }: { ficha: CuentaDeGiro; onListo: () => void }) {
   const [abierto, setAbierto] = useState(false);
-  const [banco, setBanco] = useState('');
-  const [tipo, setTipo] = useState('');
-  const [numero, setNumero] = useState('');
-  const [archivo, setArchivo] = useState<File | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
-
-  const enviar = async () => {
-    if (!banco || !tipo || numero.replace(/\D/g, '').length < 4 || !archivo) {
-      setError('Elige el banco y el tipo, escribe el número de la cuenta y sube la certificación bancaria.');
-      return;
-    }
-    setError(null);
-    setEnviando(true);
-    try {
-      const f = new FormData();
-      f.append('bankName', banco);
-      f.append('bankAccountType', tipo);
-      f.append('bankAccountNumber', numero.replace(/\s+/g, ''));
-      f.append('certificacion', archivo);
-      await portalDelPropietarioApi.pedirCambioDeCuenta(ficha.propietarioId, f);
-      toast.success('Te mandamos un correo para confirmar el cambio. Después tu inmobiliaria lo aprueba.');
-      setAbierto(false);
-      onListo();
-    } catch (e) {
-      setError(mensajeParaLaPersona(e, { porDefecto: 'No pudimos pedir el cambio.', accion: 'pedir el cambio de cuenta' }));
-    } finally {
-      setEnviando(false);
-    }
-  };
 
   return (
     <>
@@ -98,62 +64,19 @@ function CambiarCuenta({ ficha, onListo }: { ficha: CuentaDeGiro; onListo: () =>
               con tu certificación bancaria. Hasta entonces te seguimos girando a la cuenta de hoy.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="cuenta-banco">Banco</Label>
-              <Select value={banco || undefined} onValueChange={setBanco} disabled={enviando}>
-                <SelectTrigger id="cuenta-banco">
-                  <SelectValue placeholder="Elige el banco" />
-                </SelectTrigger>
-                <SelectContent>
-                  {COLOMBIAN_BANKS.map((b) => (
-                    <SelectItem key={b.code} value={b.name}>
-                      {b.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="cuenta-tipo">Tipo de cuenta</Label>
-                <Select value={tipo || undefined} onValueChange={setTipo} disabled={enviando}>
-                  <SelectTrigger id="cuenta-tipo">
-                    <SelectValue placeholder="Ahorros o corriente" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="AHORROS">Ahorros</SelectItem>
-                    <SelectItem value="CORRIENTE">Corriente</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="cuenta-numero">Número</Label>
-                <Input id="cuenta-numero" inputMode="numeric" value={numero} onChange={(e) => setNumero(e.target.value)} disabled={enviando} />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="certificacion-bancaria">Certificación bancaria</Label>
-              <SelectorDeArchivo
-                id="certificacion-bancaria"
-                archivo={archivo}
-                onElegir={setArchivo}
-                accept="application/pdf,image/jpeg,image/png,image/webp"
-                deshabilitado={enviando}
-                testid="certificacion-bancaria"
-              />
-              <p className="text-caption text-fg-muted">PDF o foto, de no más de un mes, a tu nombre.</p>
-            </div>
-            <ErrorDelCampo id="cambiar-cuenta-error" mensaje={error} />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" hideArrow onClick={() => setAbierto(false)} disabled={enviando}>
-              Cancelar
-            </Button>
-            <Button hideArrow isLoading={enviando} onClick={() => void enviar()} data-testid="enviar-cambio-de-cuenta">
-              Pedir el cambio
-            </Button>
-          </DialogFooter>
+          {abierto && (
+            <FormularioCambioDeCuenta
+              propietarioId={ficha.propietarioId}
+              onEnviando={setEnviando}
+              onCancelar={() => setAbierto(false)}
+              onListo={() => {
+                toast.success('Te mandamos un correo para confirmar el cambio. Después tu inmobiliaria lo aprueba.');
+                setAbierto(false);
+                onListo();
+              }}
+              Pie={DialogFooter}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </>

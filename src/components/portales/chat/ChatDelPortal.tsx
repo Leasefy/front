@@ -15,7 +15,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowUp } from '@phosphor-icons/react';
-import { Button } from '@leasefy/cadence';
+import { Button, Collapse } from '@leasefy/cadence';
 
 import { ChatOrb } from '@/components/beta/ChatOrb';
 import { MarkdownRenderer } from '@/components/beta/MarkdownRenderer';
@@ -26,10 +26,14 @@ import {
   SUGERENCIAS_DEL_PORTAL,
   hacerEnElChatDelPortal,
   preguntarAlChatDelPortal,
+  type OpcionDeLaTarjetaDelPortal as Opcion,
   type PortalDelChat,
   type TarjetaDelChatDelPortal as Tarjeta,
 } from '@/lib/portales/chat-del-portal';
 import { abrirElPagoEnLinea } from '@/lib/portales/pago-desde-el-chat';
+import { portalDelPropietarioApi } from '@/lib/api/portal-del-propietario.service';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { FormularioCambioDeCuenta } from '@/components/landlord/portal/FormularioCambioDeCuenta';
 import { FotoDelDano } from './FotoDelDano';
 import { TarjetaDelChatDelPortal, type EstadoDeLaTarjetaDelPortal } from './TarjetaDelChatDelPortal';
 
@@ -45,7 +49,12 @@ export type TurnoDelPortal =
       error?: boolean;
       /** La solicitud que quedó radicada: para agregarle la foto del daño. */
       pqrsId?: string;
+      /** El formulario del cambio de cuenta, abierto dentro de la tarjeta. */
+      formularioAbierto?: boolean;
     };
+
+export const CAMBIO_DE_CUENTA_PEDIDO =
+  'Listo: te mandamos un correo para confirmar el cambio. Después tu inmobiliaria lo aprueba; hasta entonces te seguimos girando a la cuenta de hoy.';
 
 /** Abre la pasarela (aparte para poder probarlo sin salir de la página). */
 export const navegacionDelPago = { irA: (url: string) => window.location.assign(url) };
@@ -73,11 +82,21 @@ export function useChatDelPortal(portal: PortalDelChat) {
       setPensando(true);
       const r = await preguntarAlChatDelPortal(limpio, portal);
       setPensando(false);
+      // Varias tarjetas (una por reparación, un extracto por giro): cada una su turno, con su estado.
+      const deOri = (texto: string, tarjeta: Tarjeta | null): TurnoDelPortal => ({
+        id: nuevoId(),
+        de: 'ori',
+        texto,
+        tarjeta,
+        estado: 'pendiente',
+        resultado: null,
+        formularioAbierto: tarjeta?.accion === 'cambiar_cuenta' && tarjeta.datos.abrir === 'si',
+      });
       setTurnos((ts) => [
         ...ts,
-        r.ok
-          ? { id: nuevoId(), de: 'ori', texto: r.respuesta.texto, tarjeta: r.respuesta.tarjeta, estado: 'pendiente', resultado: null }
-          : { id: nuevoId(), de: 'ori', texto: r.texto, tarjeta: null, estado: 'pendiente', resultado: null, error: true },
+        ...(r.ok
+          ? [deOri(r.respuesta.texto, r.respuesta.tarjeta), ...(r.respuesta.otrasTarjetas ?? []).map((t) => deOri('', t))]
+          : [{ id: nuevoId(), de: 'ori' as const, texto: r.texto, tarjeta: null, estado: 'pendiente' as const, resultado: null, error: true }]),
       ]);
     },
     [portal, pensando],
@@ -95,9 +114,43 @@ export function useChatDelPortal(portal: PortalDelChat) {
         } else cambiar(id, { estado: 'fallida', resultado: pago.texto });
         return;
       }
-      const r = await hacerEnElChatDelPortal(tarjeta);
+      if (tarjeta.accion === 'bajar_extracto') {
+        // El PDF lo baja el front con la sesión de la persona, igual que «Mis giros».
+        try {
+          await portalDelPropietarioApi.bajarExtracto({ id: tarjeta.datos.giroId, mes: tarjeta.datos.mes });
+          cambiar(id, { estado: 'hecha', resultado: 'Listo: el extracto quedó en tus descargas.' });
+        } catch (err) {
+          cambiar(id, {
+            estado: 'fallida',
+            resultado: mensajeParaLaPersona(err, { porDefecto: 'No pude bajar el extracto.', accion: 'bajar el extracto' }),
+          });
+        }
+        return;
+      }
+      if (tarjeta.accion === 'cambiar_cuenta') {
+        // El cambio va por el formulario controlado (certificación + correo + aprobación): se abre aquí.
+        cambiar(id, { estado: 'pendiente', formularioAbierto: true });
+        return;
+      }
+      const r = await hacerEnElChatDelPortal(tarjeta, portal);
       cambiar(id, { estado: r.hecho ? 'hecha' : 'fallida', resultado: r.texto, pqrsId: r.pqrsId });
     },
+    [cambiar, portal],
+  );
+
+  /** «Aprobar», «Rechazar» (con su porqué) o «La hago yo»: cada una es su propio clic. */
+  const decidir = useCallback(
+    async (id: string, tarjeta: Tarjeta, opcion: Opcion, motivo?: string) => {
+      cambiar(id, { estado: 'haciendo' });
+      const r = await hacerEnElChatDelPortal(tarjeta, portal, { accion: opcion.accion, motivo });
+      cambiar(id, { estado: r.hecho ? 'hecha' : 'fallida', resultado: r.texto });
+    },
+    [cambiar, portal],
+  );
+
+  const cerrarFormulario = useCallback(
+    (id: string, listo: boolean) =>
+      cambiar(id, listo ? { estado: 'hecha', resultado: CAMBIO_DE_CUENTA_PEDIDO, formularioAbierto: false } : { formularioAbierto: false }),
     [cambiar],
   );
 
@@ -106,13 +159,13 @@ export function useChatDelPortal(portal: PortalDelChat) {
     [cambiar],
   );
 
-  return { turnos, pensando, enviar, decirQueSi, decirQueNo };
+  return { turnos, pensando, enviar, decirQueSi, decirQueNo, decidir, cerrarFormulario };
 }
 
 export function ChatDelPortal({ portal }: { portal: PortalDelChat }) {
   const [abierto, setAbierto] = useState(false);
   const [borrador, setBorrador] = useState('');
-  const { turnos, pensando, enviar, decirQueSi, decirQueNo } = useChatDelPortal(portal);
+  const { turnos, pensando, enviar, decirQueSi, decirQueNo, decidir, cerrarFormulario } = useChatDelPortal(portal);
   const ultimoDeLaPersona = useRef<HTMLDivElement | null>(null);
   const cuantos = turnos.length;
 
@@ -183,12 +236,14 @@ export function ChatDelPortal({ portal }: { portal: PortalDelChat }) {
               </div>
             ) : (
               <div key={t.id} className={cn('flex flex-col gap-3', ANIMACION)} data-testid="respuesta-de-ori">
-                <div
-                  role={t.error ? 'alert' : undefined}
-                  className={cn('chat-lectura text-[15px] leading-[1.65]', t.error ? 'text-danger' : 'text-fg')}
-                >
-                  <MarkdownRenderer content={t.texto} />
-                </div>
+                {t.texto && (
+                  <div
+                    role={t.error ? 'alert' : undefined}
+                    className={cn('chat-lectura text-[15px] leading-[1.65]', t.error ? 'text-danger' : 'text-fg')}
+                  >
+                    <MarkdownRenderer content={t.texto} />
+                  </div>
+                )}
                 {t.tarjeta && (
                   <TarjetaDelChatDelPortal
                     tarjeta={t.tarjeta}
@@ -196,9 +251,24 @@ export function ChatDelPortal({ portal }: { portal: PortalDelChat }) {
                     resultado={t.resultado}
                     onSi={() => void decirQueSi(t.id, t.tarjeta as Tarjeta)}
                     onAhoraNo={() => decirQueNo(t.id)}
+                    onDecidir={(o, motivo) => void decidir(t.id, t.tarjeta as Tarjeta, o, motivo)}
+                    ocultarBotones={t.formularioAbierto}
                   >
                     {t.estado === 'hecha' && t.tarjeta.accion === 'radicar_pqrs' && t.pqrsId && (
                       <FotoDelDano pqrsId={t.pqrsId} />
+                    )}
+                    {t.tarjeta.accion === 'cambiar_cuenta' && (
+                      <Collapse open={Boolean(t.formularioAbierto) && t.estado === 'pendiente'}>
+                        {t.formularioAbierto && t.estado === 'pendiente' && (
+                          <div className="flex flex-col gap-4 border-t border-border-faint pt-4" data-testid="formulario-cambio-de-cuenta">
+                            <FormularioCambioDeCuenta
+                              propietarioId={t.tarjeta.datos.propietarioId}
+                              onListo={() => cerrarFormulario(t.id, true)}
+                              onCancelar={() => cerrarFormulario(t.id, false)}
+                            />
+                          </div>
+                        )}
+                      </Collapse>
                     )}
                   </TarjetaDelChatDelPortal>
                 )}

@@ -32723,6 +32723,36 @@
           "textos"
         ]
       },
+      "PortalChatOpcion": {
+        "type": "object",
+        "properties": {
+          "accion": {
+            "type": "string",
+            "enum": [
+              "aprobar_reparacion",
+              "rechazar_reparacion",
+              "la_hago_yo",
+              "aprobar_sobrecosto",
+              "rechazar_sobrecosto"
+            ]
+          },
+          "boton": {
+            "type": "string"
+          },
+          "pideMotivo": {
+            "type": "boolean"
+          },
+          "principal": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "accion",
+          "boton",
+          "pideMotivo",
+          "principal"
+        ]
+      },
       "PortalChatTarjeta": {
         "type": [
           "object",
@@ -32734,7 +32764,11 @@
             "enum": [
               "radicar_pqrs",
               "pedir_certificado",
-              "pagar_en_linea"
+              "pagar_en_linea",
+              "bajar_extracto",
+              "decidir_reparacion",
+              "decidir_sobrecosto",
+              "cambiar_cuenta"
             ]
           },
           "titulo": {
@@ -32746,13 +32780,21 @@
           "boton": {
             "type": "string",
             "enum": [
-              "Sí, hazlo"
+              "Sí, hazlo",
+              "Descargar extracto",
+              "Abrir el formulario"
             ]
           },
           "datos": {
             "type": "object",
             "additionalProperties": {
               "type": "string"
+            }
+          },
+          "opciones": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PortalChatOpcion"
             }
           }
         },
@@ -32776,6 +32818,9 @@
               "certificado",
               "radicar_pqrs",
               "ver_pqrs",
+              "extracto",
+              "reparaciones",
+              "cambiar_cuenta",
               "ajeno",
               "no_entiendo"
             ]
@@ -32785,6 +32830,19 @@
           },
           "tarjeta": {
             "$ref": "#/components/schemas/PortalChatTarjeta"
+          },
+          "otrasTarjetas": {
+            "type": "array",
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/PortalChatTarjeta"
+                },
+                {
+                  "type": "object"
+                }
+              ]
+            }
           }
         },
         "required": [
@@ -32813,6 +32871,13 @@
             "maxLength": 2000
           },
           "portal": {
+            "type": "string",
+            "enum": [
+              "inquilino",
+              "propietario"
+            ]
+          },
+          "cuenta": {
             "type": "string",
             "enum": [
               "inquilino",
@@ -32858,6 +32923,13 @@
               "type": "string",
               "maxLength": 2000
             }
+          },
+          "cuenta": {
+            "type": "string",
+            "enum": [
+              "inquilino",
+              "propietario"
+            ]
           }
         },
         "required": [

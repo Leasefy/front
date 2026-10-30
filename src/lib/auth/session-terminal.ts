@@ -29,6 +29,7 @@
  * tarde: para cuando el provider re-renderiza, ya salieron diez peticiones más.
  */
 
+import { trazarCierre } from './traza-del-cierre'
 import { TENANT_ONBOARDING_STORAGE_KEY } from '@/lib/onboarding/tenant-onboarding-status'
 
 /** Por qué se terminó la sesión. Define qué ve el usuario al llegar a /auth. */
@@ -375,6 +376,7 @@ export async function terminarSesionSiMurio(motivo: MotivoDeCierre): Promise<boo
  */
 export function terminarSesion(motivo: MotivoDeCierre): void {
   if (cerrada) return
+  trazarCierre(`terminarSesion:${motivo}`)
   if (typeof window !== 'undefined' && RUTAS_DE_VISITANTE.some((ruta) => window.location.pathname.startsWith(ruta))) {
     seguirDeVisitante()
     return

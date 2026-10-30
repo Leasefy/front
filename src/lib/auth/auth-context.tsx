@@ -26,6 +26,7 @@ import {
 } from './session-terminal'
 import { claimSession } from '@/lib/api/session.service'
 import { revocarSesion } from './revocar-sesion'
+import { trazarCierre } from './traza-del-cierre'
 import { CLAVE_DE_PERFIL_ELEGIDO, leerPerfilElegido, type PerfilDeOnboarding } from './perfil-de-onboarding'
 import { getDeviceId } from '@/lib/auth/device-id'
 import {
@@ -1834,6 +1835,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
    *  cleanup (FCM, Supabase) is fire-and-forget so a hung lock or network
    *  failure can never block the UI from logging out. */
   const signOut = useCallback(async () => {
+    trazarCierre('signOut')
     // El SIGNED_OUT que va a emitir Supabase más abajo es consecuencia de ESTA
     // llamada, no de un token muerto: marcarlo evita el cartel "tu sesión
     // expiró" sobre una salida que el usuario pidió.

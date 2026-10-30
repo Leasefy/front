@@ -642,6 +642,9 @@ const CON_TILDE: Readonly<Record<string, string>> = {
   renovacion: 'renovación',
   automatica: 'automática',
   automatico: 'automático',
+  // Lab 30-10 (la exógena): «Anio», «Cuantias menores».
+  anio: 'año',
+  cuantias: 'cuantías',
 };
 /** Siglas que se escriben en mayúsculas dentro de la etiqueta. */
 const SIGLAS: ReadonlyArray<[RegExp, string]> = [
@@ -689,10 +692,14 @@ export function textoLegible(v: string): string {
   return palabras.charAt(0).toUpperCase() + palabras.slice(1);
 }
 
+/** Lab 30-10: «anio: 2025» es un año, no una cifra («2.025»). */
+const CLAVE_DE_ANIO = /(^|\.)(anio|ano|year)$|(Anio|Ano|Year)$/;
+
 function formatoDe(clave: string, valor: unknown): FormatoDeDato | null {
   if (typeof valor === 'boolean') return 'booleano';
   if (typeof valor === 'number') {
     if (!Number.isFinite(valor)) return null;
+    if (CLAVE_DE_ANIO.test(clave) && Number.isInteger(valor) && valor >= 1900 && valor <= 2200) return 'texto';
     return esClaveDePlata(clave) ? 'moneda' : 'numero';
   }
   if (typeof valor === 'string') {
@@ -730,6 +737,14 @@ function tablaDe(clave: string, lista: unknown[]): TablaDeLaVistaPrevia | null {
   };
 }
 
+/** «Canon nuevo» → «canon nuevo», pero una sigla se queda («NIT», «IVA»). */
+function enMinuscula(etiqueta: string): string {
+  return etiqueta
+    .split(' ')
+    .map((p) => (/^[A-ZÁÉÍÓÚÑ]{2,}$|^Rete(ICA|IVA)$/.test(p) ? p : p.toLowerCase()))
+    .join(' ');
+}
+
 export function vistaPreviaLegible(datos: unknown): VistaPreviaLegible {
   const salida: VistaPreviaLegible = { datos: [], tablas: [] };
   if (datos === null || datos === undefined) return salida;
@@ -760,7 +775,7 @@ export function vistaPreviaLegible(datos: unknown): VistaPreviaLegible {
     } else if (esObjeto(v)) {
       // Un nivel adentro («contrato · canon»); más hondo ya no se lee en un chat.
       for (const [k2, v2] of Object.entries(v)) {
-        if (esEscalar(v2)) agregarDato(`${k}.${k2}`, `${etiquetaDeLaClave(k)} · ${etiquetaDeLaClave(k2).toLowerCase()}`, v2);
+        if (esEscalar(v2)) agregarDato(`${k}.${k2}`, `${etiquetaDeLaClave(k)} · ${enMinuscula(etiquetaDeLaClave(k2))}`, v2);
       }
     } else {
       agregarDato(k, etiquetaDeLaClave(k), v);

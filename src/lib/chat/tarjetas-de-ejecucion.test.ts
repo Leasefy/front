@@ -236,6 +236,15 @@ describe('la vista previa, legible', () => {
     expect(JSON.stringify(v)).not.toContain(CONTRATO_24);
   });
 
+  it('lab 30-10: un año no lleva punto de mil y «Anio»/«Cuantias» van con tilde', () => {
+    const v = vistaPreviaLegible({ anio: 2025, cuantiasMenores: { nit: '222222222' }, filas: 2025 });
+    expect(v.datos.map((d) => [d.etiqueta, d.formato])).toEqual([
+      ['Año', 'texto'],
+      ['Cuantías menores · NIT', 'texto'],
+      ['Filas', 'numero'],
+    ]);
+  });
+
   it('una lista suelta es una tabla; lo que no se entiende no se muestra', () => {
     expect(vistaPreviaLegible([{ nombre: 'Mateo Pérez', saldoCop: 1_550_000 }]).tablas[0].columnas.map((c) => c.formato)).toEqual([
       'texto',

@@ -67,7 +67,7 @@ async function escribir(valor: string) {
     el.dispatchEvent(new Event('input', { bubbles: true }));
   });
 }
-async function abrir(portal: 'inquilino' | 'propietario' = 'inquilino') {
+async function abrir(portal: 'inquilino' | 'propietario' | 'postulante' = 'inquilino') {
   await act(async () => {
     root.render(<ChatDelPortal portal={portal} />);
   });
@@ -359,6 +359,29 @@ describe('ChatDelPortal — Ori dentro del portal, sin modelo', () => {
       await clic('¿Cuándo y cuánto me giran?');
       await hasta(() => texto().includes('va en camino'));
       expect(JSON.parse(agentFetch.mock.calls[0][1].body)).toEqual({ texto: '¿Cuándo y cuánto me giran?', portal: 'propietario' });
+    });
+  });
+
+  describe('el postulante le pide lo suyo (29-10)', () => {
+    beforeEach(() => cabecerasDeLaCuenta.mockReturnValue({}));
+
+    it('sus propias sugerencias (nada de cuánto debo); pregunta con portal «postulante»', async () => {
+      agentFetch.mockResolvedValueOnce(json(200, { pedido: 'mi_postulacion', texto: 'Tu postulación a «Apartamento 301» está aprobada.', tarjeta: null }));
+      await abrir('postulante');
+      expect(boton('¿Cuánto debo?')).toBeNull();
+      expect(boton('¿Cuándo es mi visita?')).not.toBeNull();
+      await clic('¿En qué va mi postulación?');
+      await hasta(() => texto().includes('está aprobada'));
+      expect(JSON.parse(agentFetch.mock.calls[0][1].body)).toEqual({ texto: '¿En qué va mi postulación?', portal: 'postulante' });
+    });
+
+    it('quien tiene dos cuentas pregunta desde su cuenta de inquilino (la misma sesión del portal)', async () => {
+      cabecerasDeLaCuenta.mockReturnValue({ 'x-cuenta': 'inquilino' });
+      agentFetch.mockResolvedValueOnce(json(200, { pedido: 'mis_visitas', texto: 'No tienes visitas agendadas.', tarjeta: null }));
+      await abrir('postulante');
+      await clic('¿Cuándo es mi visita?');
+      await hasta(() => texto().includes('No tienes visitas'));
+      expect(JSON.parse(agentFetch.mock.calls[0][1].body)).toEqual({ texto: '¿Cuándo es mi visita?', portal: 'postulante', cuenta: 'inquilino' });
     });
   });
 });

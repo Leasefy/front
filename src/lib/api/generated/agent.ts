@@ -17308,7 +17308,7 @@ export interface components {
         } | null;
         PortalChatPedidoResponse: {
             /** @enum {string} */
-            pedido: "cuanto_debo" | "mis_giros" | "link_de_pago" | "certificado" | "radicar_pqrs" | "ver_pqrs" | "extracto" | "reparaciones" | "cambiar_cuenta" | "mi_contrato" | "proximo_pago" | "ajeno" | "no_entiendo";
+            pedido: "cuanto_debo" | "mis_giros" | "link_de_pago" | "certificado" | "radicar_pqrs" | "ver_pqrs" | "extracto" | "reparaciones" | "cambiar_cuenta" | "mi_contrato" | "proximo_pago" | "ajeno" | "no_entiendo" | "mi_postulacion" | "mis_postulaciones" | "que_me_pidieron" | "que_me_falta" | "mis_visitas" | "por_que_me_rechazaron" | "sigue_disponible";
             texto: string;
             tarjeta: components["schemas"]["PortalChatTarjeta"];
             otrasTarjetas?: (components["schemas"]["PortalChatTarjeta"] & Record<string, never>)[];
@@ -17319,7 +17319,7 @@ export interface components {
         PortalChatPedidoBody: {
             texto: string;
             /** @enum {string} */
-            portal: "inquilino" | "propietario";
+            portal: "inquilino" | "propietario" | "postulante";
             /** @enum {string} */
             cuenta?: "inquilino" | "propietario";
         };

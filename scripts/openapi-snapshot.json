@@ -32951,7 +32951,14 @@
               "mi_contrato",
               "proximo_pago",
               "ajeno",
-              "no_entiendo"
+              "no_entiendo",
+              "mi_postulacion",
+              "mis_postulaciones",
+              "que_me_pidieron",
+              "que_me_falta",
+              "mis_visitas",
+              "por_que_me_rechazaron",
+              "sigue_disponible"
             ]
           },
           "texto": {
@@ -33003,7 +33010,8 @@
             "type": "string",
             "enum": [
               "inquilino",
-              "propietario"
+              "propietario",
+              "postulante"
             ]
           },
           "cuenta": {

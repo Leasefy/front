@@ -32895,7 +32895,9 @@
               "bajar_extracto",
               "decidir_reparacion",
               "decidir_sobrecosto",
-              "cambiar_cuenta"
+              "cambiar_cuenta",
+              "retirar_postulacion",
+              "reclamar_postulacion"
             ]
           },
           "titulo": {
@@ -32951,7 +32953,17 @@
               "mi_contrato",
               "proximo_pago",
               "ajeno",
-              "no_entiendo"
+              "no_entiendo",
+              "mi_postulacion",
+              "mis_postulaciones",
+              "que_me_pidieron",
+              "que_me_falta",
+              "mis_visitas",
+              "por_que_me_rechazaron",
+              "sigue_disponible",
+              "retirar_postulacion",
+              "reactivar_postulacion",
+              "reclamo_postulacion"
             ]
           },
           "texto": {
@@ -33003,7 +33015,8 @@
             "type": "string",
             "enum": [
               "inquilino",
-              "propietario"
+              "propietario",
+              "postulante"
             ]
           },
           "cuenta": {

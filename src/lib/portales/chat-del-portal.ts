@@ -1,5 +1,5 @@
 /**
- * El chat de Ori DENTRO del portal (inquilino y propietario) — sin modelo.
+ * El chat de Ori DENTRO del portal (inquilino, propietario y postulante) — sin modelo.
  *
  * No es el chat del panel: no ve nada de la inmobiliaria. El micro reconoce el
  * pedido con reglas (`POST /api/portal/chat/pedido`) y lee SÓLO lo de la
@@ -27,8 +27,10 @@ export type OpcionDeLaTarjetaDelPortal = components['schemas']['PortalChatOpcion
  * front ya manda al back en ese portal. El micro la pasa al back en cada
  * llamada; quien tiene una sola cuenta no la manda (todo como antes).
  */
-export function cuentaDelPortal(portal: PortalDelChat): PortalDelChat | undefined {
-  return cabecerasDeLaCuenta()['x-cuenta'] === portal ? portal : undefined;
+export function cuentaDelPortal(portal: PortalDelChat): 'inquilino' | 'propietario' | undefined {
+  // El postulante (29-10) usa la cuenta de inquilino: es la misma sesión en `/inquilino`.
+  const cuenta = portal === 'postulante' ? 'inquilino' : portal;
+  return cabecerasDeLaCuenta()['x-cuenta'] === cuenta ? cuenta : undefined;
 }
 
 /** Lo que se le dice a la persona cuando el micro no contesta: nunca un código. */
@@ -105,5 +107,12 @@ export const SUGERENCIAS_DEL_PORTAL: Record<PortalDelChat, readonly string[]> = 
     'Quiero cambiar mi cuenta',
     'Necesito un certificado',
     '¿Qué me respondieron?',
+  ],
+  postulante: [
+    '¿En qué va mi postulación?',
+    '¿Qué me falta para que me aprueben?',
+    '¿Qué documentos me pidieron?',
+    '¿Cuándo es mi visita?',
+    '¿A qué me he postulado?',
   ],
 };

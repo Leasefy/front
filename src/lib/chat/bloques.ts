@@ -167,6 +167,11 @@ export interface EntidadDelChat {
    * el camino directo del micro (23-09); sin él, sale del `tipo`.
    */
   tipoDeFicha?: string;
+  /**
+   * 30-10 (D2): la ficha deja cambiar al menos un dato a quien pregunta: la
+   * tarjeta pinta «Cambiar datos…». Ausente = sin permiso, o tarjeta del grafo.
+   */
+  cambiarDatos?: true;
 }
 
 const TIPOS: TipoDeEntidad[] = [
@@ -279,6 +284,7 @@ export function leerEntidades(v: unknown): EntidadDelChat[] {
         ? (e.otrosRoles.filter((r) => TIPOS.includes(r as TipoDeEntidad)) as TipoDeEntidad[])
         : [],
       ...(texto(e.tipoDeFicha) ? { tipoDeFicha: texto(e.tipoDeFicha) as string } : {}),
+      ...(e.cambiarDatos === true ? { cambiarDatos: true as const } : {}),
     });
   }
   return salida;

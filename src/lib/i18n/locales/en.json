@@ -12728,9 +12728,11 @@
         "no": "No, don’t do it",
         "deshacer": "Undo: {{etiqueta}}",
         "verFicha": "Show the record of {{titulo}}",
+        "cambiarDatos": "I want to change details of {{titulo}}",
         "reintentar": "Retry: {{titulo}}"
       },
       "verFicha": "Show record",
+      "cambiarDatos": "Change details…",
       "enlaceExterno": "opens in another tab ({{destino}})",
       "verElResto": "See the rest",
       "tarjeta": {

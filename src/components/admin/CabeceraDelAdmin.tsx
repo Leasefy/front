@@ -41,7 +41,7 @@ export function CabeceraDelAdmin({
   const enUnaFicha = Boolean(pantalla && ruta !== pantalla.href)
 
   async function cerrarSesion() {
-    await getSupabase()?.auth.signOut()
+    await getSupabase()?.auth.signOut({ scope: 'local' })
     window.location.href = '/admin/login'
   }
 

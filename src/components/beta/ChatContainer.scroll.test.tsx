@@ -45,6 +45,7 @@ vi.mock('@/lib/context/BetaChatContext', () => ({ useBetaChatContext: () => cont
 vi.mock('./ChatConversationBar', () => ({ ChatConversationBar: nada }));
 vi.mock('./ChatInput', () => ({ ChatInput: nada }));
 vi.mock('./BetaWelcome', () => ({ BetaWelcome: nada }));
+vi.mock('./AvisoDeLoProgramado', () => ({ AvisoDeLoProgramado: nada }));
 vi.mock('./BetaSkeletons', () => ({ ChatMessageSkeleton: nada }));
 vi.mock('./WorkspaceView', () => ({ WorkspaceView: nada }));
 vi.mock('./AgentTaskProgress', () => ({ AgentTaskProgress: nada }));

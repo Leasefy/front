@@ -32901,7 +32901,8 @@
               "reclamar_postulacion",
               "pedir_visita",
               "mover_visita",
-              "cancelar_visita"
+              "cancelar_visita",
+              "borrar_documento"
             ]
           },
           "titulo": {
@@ -32971,7 +32972,8 @@
               "reclamo_postulacion",
               "pedir_visita",
               "mover_visita",
-              "cancelar_visita"
+              "cancelar_visita",
+              "borrar_documento"
             ]
           },
           "texto": {

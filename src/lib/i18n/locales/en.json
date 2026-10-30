@@ -12772,6 +12772,14 @@
           "si": "Yes",
           "no": "No"
         },
+        "modificacion": {
+          "titulo": "What changes",
+          "antes": "Before",
+          "despues": "After",
+          "sinLeer": "Couldn’t read it",
+          "conEsto": "What this does",
+          "noCambia": "What stays the same"
+        },
         "dobleControl": {
           "otraPersona": "Someone else approves this.",
           "laPuedesHacerTu": "You are an administrator: you can approve it yourself (the log records it was the same person)."

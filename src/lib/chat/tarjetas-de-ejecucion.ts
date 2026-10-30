@@ -73,6 +73,31 @@ export interface VistaPreviaDeLaEjecucion {
   explicacion: string | null;
 }
 
+/**
+ * 29-10-2026 (el chat MODIFICA datos): lo que cambia, campo por campo, ANTES →
+ * DESPUÉS (`AiHubChatModificacion` del micro). Lo sensible (la cuenta) llega
+ * enmascarado en los dos lados.
+ */
+export interface CambioDeLaModificacion {
+  clave: string;
+  etiqueta: string;
+  /** Cómo está hoy; `null` = el micro no lo pudo leer. */
+  antes: string | null;
+  despues: string;
+  sensible: boolean;
+}
+
+export interface ModificacionDeLaEjecucion {
+  sobre: string;
+  cambios: CambioDeLaModificacion[];
+  desde: string;
+  efectos: string[];
+  noCambia: string[];
+  deshacer: string;
+  /** Lo que se pidió y la ruta no respeta tal cual («desde noviembre» → desde hoy). */
+  aviso: string | null;
+}
+
 export interface DobleControlDeLaEjecucion {
   paso: 'propone' | 'aprueba';
   /** P-4: `la_puedes_hacer_tu` = administrador, las dos mitades (queda en la bitácora). */
@@ -115,6 +140,12 @@ export interface TarjetaPropuesta extends BaseDeLaTarjeta {
   dobleControl: DobleControlDeLaEjecucion | null;
   ensayo: boolean;
   siNoFueraEnsayo: string | null;
+  /**
+   * (29-10, aditivo) Sólo las que modifican datos: antes → después. La llave
+   * siempre está (el micro la declara); sin modificación, `undefined` —el
+   * micro no la manda—.
+   */
+  modificacion: ModificacionDeLaEjecucion | undefined;
 }
 
 export interface TarjetaEnCurso extends BaseDeLaTarjeta {
@@ -260,6 +291,38 @@ function leerVistaPrevia(v: unknown): VistaPreviaDeLaEjecucion | null {
   };
 }
 
+const textos = (v: unknown): string[] =>
+  Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && x.trim() !== '') : [];
+
+/** El antes → después de una modificación; `null` si no viene o no trae ningún cambio entendible. */
+export function leerModificacion(v: unknown): ModificacionDeLaEjecucion | null {
+  if (!esObjeto(v) || !Array.isArray(v.cambios)) return null;
+  const cambios: CambioDeLaModificacion[] = [];
+  for (const c of v.cambios) {
+    if (!esObjeto(c)) continue;
+    const clave = texto(c.clave);
+    const despues = texto(c.despues);
+    if (!clave || !despues) continue;
+    cambios.push({
+      clave,
+      etiqueta: texto(c.etiqueta) ?? clave,
+      antes: texto(c.antes),
+      despues,
+      sensible: c.sensible === true,
+    });
+  }
+  if (cambios.length === 0) return null;
+  return {
+    sobre: textoONulo(v.sobre) ?? '',
+    cambios,
+    desde: textoONulo(v.desde) ?? '',
+    efectos: textos(v.efectos),
+    noCambia: textos(v.noCambia),
+    deshacer: textoONulo(v.deshacer) ?? '',
+    aviso: texto(v.aviso),
+  };
+}
+
 function leerDobleControl(v: unknown): DobleControlDeLaEjecucion | null {
   if (!esObjeto(v)) return null;
   if (v.laOtraMitad !== 'la_puedes_hacer_tu' && v.laOtraMitad !== 'otra_persona') return null;
@@ -318,6 +381,7 @@ export function leerTarjetaDeEjecucion(v: unknown): TarjetaDeEjecucion | null {
         dobleControl: leerDobleControl(v.dobleControl),
         ensayo: v.ensayo === true,
         siNoFueraEnsayo: texto(v.siNoFueraEnsayo),
+        modificacion: leerModificacion(v.modificacion) ?? undefined,
       };
     }
     case 'en_curso':

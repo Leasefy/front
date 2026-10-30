@@ -61,6 +61,7 @@ import {
   errorDePermiso,
   hecha,
   programada,
+  propuestaDeModificacion,
   propuestaDeRenovacion,
   propuestaDelLote,
 } from '@/lib/chat/tarjetas-de-ejecucion.fixtures';
@@ -187,6 +188,27 @@ describe('Propuesta', () => {
     expect(contexto.sendMessage).toHaveBeenLastCalledWith('No, no lo hagas', {
       intencion: { accion: 'cancelar', propuestaId: EJECUCION },
     });
+  });
+
+  it('una modificación (29-10): antes → después por campo, desde cuándo, qué cambia, qué no y si se deshace', () => {
+    pintar(mensaje(propuestaDeModificacion()));
+    const m = tarjeta().querySelector('[data-testid="modificacion"]')!;
+    expect(m.getAttribute('aria-label')).toBe('Lo que cambia');
+    const fila = m.querySelector('[data-clave="comisionPorcentaje"]')!;
+    // El lector de pantalla oye «Antes: 9 % … Después: 8 %»; la vista, «9 % → 8 %».
+    expect(fila.textContent).toBe('Comisión de administraciónAntes: 9 %Después: 8 %');
+    const [antes, despues] = [...fila.querySelectorAll('span.font-mono')];
+    expect(antes.textContent).toBe('9 %');
+    expect(despues.textContent).toBe('8 %');
+    expect(m.textContent).toContain('Desde hoy, en las cuotas del propietario que todavía no vencen.');
+    expect(m.querySelector('[data-testid="aviso-de-la-modificacion"]')!.textContent).toMatch(/^Pediste que rija desde noviembre de 2026/);
+    expect(m.textContent).toContain('Con esto');
+    expect(m.textContent).toContain('Se escribe también en el mandato del inmueble');
+    expect(m.textContent).toContain('No cambia');
+    expect(m.textContent).toContain('Puedes volver a lo de antes durante 15 minutos');
+    // La decisión sigue siendo de la persona: «Hacerlo» / «No», y la plata como riesgo con su palabra.
+    expect(boton('Hacerlo')).toBeDefined();
+    expect(tarjeta().querySelector('[data-riesgo="plata"]')).not.toBeNull();
   });
 
   it('ya contestada o vencida: sin botones, y dice qué pasó', () => {

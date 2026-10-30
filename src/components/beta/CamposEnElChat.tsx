@@ -8,6 +8,7 @@ import { mesActual } from '@/lib/recaudo/meses';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import type { CampoDelFormulario } from '@/lib/chat/acciones-del-hilo';
+import type { InputHTMLAttributes } from 'react';
 import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 
 /**
@@ -52,6 +53,32 @@ export function datosDeLosCampos(
     } else datos[c.clave] = v;
   }
   return datos;
+}
+
+/**
+ * 29-10 (modificar): el teclado y el autocompletado según el FORMATO del dato.
+ * Sin formato, el de su tipo (un número abre el teclado decimal).
+ */
+export function tecladoDelFormato(c: CampoDelFormulario): Pick<
+  InputHTMLAttributes<HTMLInputElement>,
+  'type' | 'inputMode' | 'autoComplete'
+> {
+  switch (c.formato) {
+    case 'correo':
+      return { type: 'email', inputMode: 'email', autoComplete: 'email' };
+    case 'celular':
+      return { type: 'tel', inputMode: 'tel', autoComplete: 'tel' };
+    case 'cuenta':
+      return { inputMode: 'numeric', autoComplete: 'off' };
+    case 'direccion':
+      return { autoComplete: 'street-address' };
+    case 'dia_del_mes':
+    case 'dias':
+    case 'entero':
+      return { inputMode: 'numeric' };
+    default:
+      return c.tipo === 'numero' ? { inputMode: 'decimal' } : {};
+  }
 }
 
 export function CamposEnElChat({
@@ -121,7 +148,8 @@ export function CamposEnElChat({
               <Input
                 id={id}
                 disabled={deshabilitados}
-                inputMode={c.tipo === 'numero' ? 'decimal' : undefined}
+                // 29-10: el teclado del celular según cómo se escribe el dato (correo, celular, cuenta…).
+                {...tecladoDelFormato(c)}
                 value={valores[c.clave] ?? ''}
                 onChange={(e) => onCambiar(c.clave, c.tipo === 'numero' ? soloNumero(e.target.value) : e.target.value)}
               />

@@ -32,6 +32,7 @@ import {
   programada,
   propuestaDeRenovacion,
   propuestaDelLote,
+  propuestaDeModificacion,
 } from './tarjetas-de-ejecucion.fixtures';
 import {
   ESTADOS_DEL_RESULTADO,
@@ -42,6 +43,7 @@ import {
   hitoDeLaCuenta,
   leerEventoProcesoIniciado,
   leerIntencionDelBoton,
+  leerModificacion,
   leerTarjetaDeEjecucion,
   relojDeLaCuenta,
   riesgosNombrados,
@@ -63,6 +65,8 @@ function variantes(): Record<string, EsquemaDelMicro> {
 const EJEMPLOS = {
   propuesta: propuestaDeRenovacion(),
   propuestaDelLote: propuestaDelLote(),
+  // 29-10: la modificación (antes → después).
+  propuestaDeModificacion: propuestaDeModificacion(),
   enCurso: enCurso(),
   enGracia: enGracia('2026-09-24T14:01:00.000Z'),
   hecha: hecha(true),
@@ -285,5 +289,30 @@ describe('la vista previa, legible', () => {
       ['Creado', 'fecha'],
       ['Banco · nombre', 'texto'],
     ]);
+  });
+});
+
+describe('la modificación: antes → después (29-10)', () => {
+  it('se lee entera, con su aviso, y una propuesta sin ella trae `null`', () => {
+    const t = leerTarjetaDeEjecucion(propuestaDeModificacion());
+    expect(t?.tipo).toBe('propuesta');
+    if (t?.tipo !== 'propuesta') return;
+    expect(t.modificacion?.cambios).toEqual([
+      { clave: 'comisionPorcentaje', etiqueta: 'Comisión de administración', antes: '9 %', despues: '8 %', sensible: false },
+    ]);
+    expect(t.modificacion?.aviso).toMatch(/^Pediste que rija desde noviembre/);
+    const sin = leerTarjetaDeEjecucion(propuestaDeRenovacion());
+    expect(sin?.tipo === 'propuesta' && sin.modificacion).toBeUndefined();
+  });
+
+  it('un cambio sin clave o sin «después» no se pinta; sin ningún cambio entendible, no hay bloque', () => {
+    expect(leerModificacion({ cambios: [{ clave: 'x' }, { despues: 'y' }] })).toBeNull();
+    expect(leerModificacion({ cambios: [{ clave: 'correo', despues: 'a@b.co', antes: '' }] })?.cambios[0]).toEqual({
+      clave: 'correo',
+      etiqueta: 'correo',
+      antes: null,
+      despues: 'a@b.co',
+      sensible: false,
+    });
   });
 });

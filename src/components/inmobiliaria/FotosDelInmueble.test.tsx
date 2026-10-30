@@ -253,3 +253,52 @@ describe('FotosDelInmueble — si la galería no carga (F9)', () => {
     expect(container.querySelector('p.text-danger')).toBeNull()
   })
 })
+
+describe('FotosDelInmueble — varias a la vez (Nico, 28-10-2026)', () => {
+  const tres = [
+    { id: 'a', url: 'https://x/a.jpg', order: 0 },
+    { id: 'b', url: 'https://x/b.jpg', order: 1 },
+    { id: 'c', url: 'https://x/c.jpg', order: 2 },
+  ]
+  const clic = (sel: string) =>
+    act(async () => {
+      document.body.querySelector<HTMLButtonElement>(sel)!.click()
+    })
+
+  it('«Seleccionar» marca fotos en vez de abrir el visor y quita las elegidas después de confirmar', async () => {
+    api.getImages.mockResolvedValue(tres)
+    api.deleteImage.mockResolvedValue(undefined)
+    const { onVer, onCambio } = await montar()
+    await clic('[data-testid="fotos-seleccionar"]')
+    await clic('[data-testid="foto-marcar-0"]')
+    await clic('[data-testid="foto-marcar-2"]')
+    expect(onVer).not.toHaveBeenCalled()
+    expect(container.querySelector('[data-testid="fotos-elegidas"]')?.textContent).toBe('2 elegidas')
+    await clic('[data-testid="fotos-quitar-elegidas"]')
+    expect(document.body.querySelector('[data-testid="quitar-fotos-dialogo"]')?.textContent).toContain('¿Quitar 2 fotos?')
+    expect(document.body.querySelector('[data-testid="quitar-fotos-dialogo"]')?.textContent).toContain('pasa a ser la portada')
+    await clic('[data-testid="quitar-fotos-confirmar"]')
+    await tick()
+    expect(api.deleteImage.mock.calls.map((c) => c[1])).toEqual(['a', 'c'])
+    expect(container.querySelectorAll('[data-testid^="foto-ver-"]')).toHaveLength(1)
+    expect(toastMock.success).toHaveBeenCalledWith('Listo: quitaste 2 fotos')
+    expect(onCambio).toHaveBeenCalled()
+  })
+
+  it('si una no se quita, lo dice y deja marcada sólo esa', async () => {
+    api.getImages.mockResolvedValue(tres)
+    api.deleteImage.mockImplementation(async (_p: string, id: string) => {
+      if (id === 'b') throw new ApiError(500, 'x')
+    })
+    await montar()
+    await clic('[data-testid="fotos-seleccionar"]')
+    await clic('[data-testid="fotos-elegir-todas"]')
+    await clic('[data-testid="fotos-quitar-elegidas"]')
+    expect(document.body.querySelector('[data-testid="quitar-fotos-dialogo"]')?.textContent).toContain('queda sin fotos')
+    await clic('[data-testid="quitar-fotos-confirmar"]')
+    await tick()
+    expect(toastMock.error).toHaveBeenCalledWith('Una foto no se quitó', expect.anything())
+    expect(container.querySelector('[data-testid="fotos-elegidas"]')?.textContent).toBe('1 elegida')
+  })
+})
+

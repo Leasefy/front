@@ -63,6 +63,9 @@ import {
   TableRowAnimada,
 } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
+import { useOrdenDeLaTabla, type OrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
@@ -336,8 +339,19 @@ function DocumentosContent() {
 
   const visibles = useMemo(() => filtrarDocumentos(documentos, filtros), [documentos, filtros]);
 
-  const paginaDocumentos = useTablePagination(visibles, {
-    resetKey: `${filtros.texto}|${filtros.categoria}|${filtros.estado}`,
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Uno por pestaña.
+  const ordenDocs = useOrdenDeLaTabla(
+    visibles,
+    {
+      colInmueble: (d) => d.contract?.propertyAddress ?? d.consignacion?.propertyTitle ?? null,
+      colDocumento: (d) => d.name,
+      colFecha: (d) => d.createdAt,
+      colEstado: (d) => d.status,
+    },
+    { primero: { colFecha: 'desc' } },
+  );
+  const paginaDocumentos = useTablePagination(ordenDocs.ordenadas, {
+    resetKey: `${filtros.texto}|${filtros.categoria}|${filtros.estado}|${ordenDocs.orden?.campo ?? ''}|${ordenDocs.orden?.sentido ?? ''}`,
   });
   /*
    * Ronda 30 (regla de Nico: toda tabla con buscador): las actas y las plantillas también se buscan —las actas
@@ -355,8 +369,29 @@ function DocumentosContent() {
     const q = plano(filtros.texto.trim());
     return q ? plantillas.filter((p) => plano(p.name).includes(q)) : plantillas;
   }, [plantillas, filtros.texto]);
-  const paginaPlantillas = useTablePagination(plantillasVisibles, { resetKey: filtros.texto });
-  const paginaActas = useTablePagination(actasVisibles, { resetKey: filtros.texto });
+  const ordenPlantillas = useOrdenDeLaTabla(plantillasVisibles, {
+    colPlantilla: (p) => p.name,
+    colCategoria: (p) => p.category,
+    colVersion: (p) => p.version,
+    colVariables: (p) => p.variables.length,
+  });
+  const ordenActas = useOrdenDeLaTabla(
+    actasVisibles,
+    {
+      colInmueble: (a) => a.propertyTitle,
+      colTipo: (a) => a.type,
+      colInquilino: (a) => a.tenantName,
+      colFecha: (a) => a.deliveryDate,
+      colEstado: (a) => a.status,
+    },
+    { primero: { colFecha: 'desc' } },
+  );
+  const paginaPlantillas = useTablePagination(ordenPlantillas.ordenadas, {
+    resetKey: `${filtros.texto}|${ordenPlantillas.orden?.campo ?? ''}|${ordenPlantillas.orden?.sentido ?? ''}`,
+  });
+  const paginaActas = useTablePagination(ordenActas.ordenadas, {
+    resetKey: `${filtros.texto}|${ordenActas.orden?.campo ?? ''}|${ordenActas.orden?.sentido ?? ''}`,
+  });
 
   // El PDF va por `getBlob` porque la ruta pide el token en el encabezado: un
   // `<a href>` pelado responde 401. La pestaña se abre ANTES del await, o el
@@ -472,6 +507,11 @@ function DocumentosContent() {
   };
 
   const columnas = COLUMNAS[pestana];
+  // El orden de la pestaña abierta (las tres comparten la cabecera de la tabla).
+  const ordenDeLaPestana = { documentos: ordenDocs, plantillas: ordenPlantillas, actas: ordenActas }[pestana] as unknown as {
+    orden: OrdenDeLaTabla<string> | null;
+    ordenarPor: (campo: string) => void;
+  };
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
@@ -666,6 +706,18 @@ function DocumentosContent() {
                 data-testid="actas-buscar"
               />
             ) : null}
+            {pestana === 'actas' && actas.length > 1 ? (
+              <SelectorDeOrden
+                orden={ordenActas.orden}
+                onCambiar={ordenActas.setOrden}
+                className="w-full sm:w-52"
+                formas={[
+                  { campo: 'colFecha', sentido: 'desc', etiqueta: tr('Más recientes') },
+                  { campo: 'colInquilino', sentido: 'asc', etiqueta: tr('Inquilino (A–Z)') },
+                  { campo: 'colEstado', sentido: 'asc', etiqueta: tr('Estado') },
+                ]}
+              />
+            ) : null}
             <Presence
               show={pestana === 'documentos'}
               initial={false}
@@ -699,6 +751,19 @@ function DocumentosContent() {
                   ))}
                 </SelectContent>
               </Select>
+              {documentos.length > 1 ? (
+                <SelectorDeOrden
+                  orden={ordenDocs.orden}
+                  onCambiar={ordenDocs.setOrden}
+                  className="w-full sm:w-52"
+                  formas={[
+                    { campo: 'colFecha', sentido: 'desc', etiqueta: tr('Más recientes') },
+                    { campo: 'colFecha', sentido: 'asc', etiqueta: tr('Más antiguos') },
+                    { campo: 'colDocumento', sentido: 'asc', etiqueta: tr('Documento (A–Z)') },
+                    { campo: 'colEstado', sentido: 'asc', etiqueta: tr('Estado') },
+                  ]}
+                />
+              ) : null}
             </Presence>
           </div>
         )}
@@ -717,11 +782,23 @@ function DocumentosContent() {
           <Table className={cn(pestana === 'documentos' && 'max-md:block')}>
             <TableHeader className={cn(pestana === 'documentos' && 'max-md:hidden')}>
               <TableRow>
-                {columnas.map((c) => (
-                  <TableHead key={c} className={cn('whitespace-nowrap', c === 'colAcciones' && ACCIONES_FIJAS_CABECERA)}>
-                    {t(k(c))}
-                  </TableHead>
-                ))}
+                {columnas.map((c) =>
+                  c === 'colAcciones' ? (
+                    <TableHead key={c} className={cn('whitespace-nowrap', ACCIONES_FIJAS_CABECERA)}>
+                      {t(k(c))}
+                    </TableHead>
+                  ) : (
+                    <EncabezadoOrdenable
+                      key={c}
+                      campo={c}
+                      orden={ordenDeLaPestana.orden}
+                      onOrdenar={ordenDeLaPestana.ordenarPor}
+                      className="whitespace-nowrap"
+                    >
+                      {t(k(c))}
+                    </EncabezadoOrdenable>
+                  ),
+                )}
               </TableRow>
             </TableHeader>
             {/* Filas que entran escalonadas (techo de 320 ms) y salen al buscar

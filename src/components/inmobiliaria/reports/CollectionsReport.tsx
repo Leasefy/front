@@ -20,10 +20,12 @@ import {
   Table,
   TableHeader,
   TableBody,
-  TableHead,
   TableRow,
   TableCell,
 } from '@/components/ui/table';
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden';
 import { textoDeTasa } from '@/lib/tasas';
 import type { CollectionsData } from '@/lib/data/mock-reports';
 
@@ -39,6 +41,18 @@ export function CollectionsReport({ data }: CollectionsReportProps) {
   const { formatCurrency, t } = useI18n();
 
   const { summary, byMonth, topDelinquents } = data;
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas».
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(
+    topDelinquents,
+    {
+      inquilino: (d) => d.tenantName,
+      propiedad: (d) => d.propertyTitle,
+      dias: (d) => d.daysLate,
+      monto: (d) => d.amount,
+      intentos: (d) => d.attempts ?? null,
+    },
+    { primero: { dias: 'desc', monto: 'desc', intentos: 'desc' } },
+  );
 
   // Find max expected for scaling bars
   const maxExpected = Math.max(...byMonth.map((m) => m.expected));
@@ -189,25 +203,38 @@ export function CollectionsReport({ data }: CollectionsReportProps) {
 
       {/* Top Delinquents Table */}
       <div className="rounded-lg border border-border bg-surface overflow-hidden">
-        <div className="p-4 border-b border-border">
+        <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
           <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
             <Warning className="w-4 h-4 text-danger" />
             Principales morosos
           </h3>
+          {topDelinquents.length > 1 ? (
+            <SelectorDeOrden
+              orden={orden}
+              onCambiar={setOrden}
+              className="w-full sm:w-56"
+              formas={[
+                { campo: 'dias', sentido: 'desc', etiqueta: 'Más días de mora' },
+                { campo: 'monto', sentido: 'desc', etiqueta: 'Monto más alto' },
+                { campo: 'intentos', sentido: 'desc', etiqueta: 'Más intentos' },
+                { campo: 'inquilino', sentido: 'asc', etiqueta: 'Inquilino (A–Z)' },
+              ]}
+            />
+          ) : null}
         </div>
         <div className="overflow-x-auto">
           <Table className="text-sm">
             <TableHeader>
               <TableRow className="border-b border-border-faint">
-                <TableHead className="text-left py-3 px-4">Inquilino</TableHead>
-                <TableHead className="text-left py-3 px-4">Propiedad</TableHead>
-                <TableHead className="text-right py-3 px-4">Dias mora</TableHead>
-                <TableHead className="text-right py-3 px-4">Monto</TableHead>
-                <TableHead className="text-right py-3 px-4">Intentos</TableHead>
+                <EncabezadoOrdenable campo="inquilino" orden={orden} onOrdenar={ordenarPor} className="text-left py-3 px-4">Inquilino</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="propiedad" orden={orden} onOrdenar={ordenarPor} className="text-left py-3 px-4">Propiedad</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="dias" orden={orden} onOrdenar={ordenarPor} className="text-right py-3 px-4" alineacion="derecha">Días de mora</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="monto" orden={orden} onOrdenar={ordenarPor} className="text-right py-3 px-4" alineacion="derecha">Monto</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="intentos" orden={orden} onOrdenar={ordenarPor} className="text-right py-3 px-4" alineacion="derecha">Intentos</EncabezadoOrdenable>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {topDelinquents.map((d, i) => (
+              {ordenadas.map((d, i) => (
                 <TableRow
                   key={i}
                   className="border-b border-border-faint hover:bg-surface-muted transition-colors"

@@ -68,6 +68,29 @@ describe('el riesgo de Vinci en la propuesta de renovación (P-7)', () => {
     expect(container.querySelector('a')?.getAttribute('href')).toBe('/panel/inmobiliaria/retencion/riesgo/inquilino%3Ac1')
   })
 
+  it('Portofino (29-10): los tres factores de «renueva o no renueva», con su número; también el que paga bien', () => {
+    const conFactores: RiesgoDeRetencion = {
+      ...RIESGO,
+      factores: {
+        pago: { estado: 'al_dia', diasDeMora: 0, vencidoCop: 0, pagadasTarde: 0, texto: 'Paga bien: al día y ninguna cuota tarde en el último año' },
+        reparaciones: { total: 5, abiertas: 2, desde: '2025-10-29', texto: '5 reparaciones del inmueble desde el 29 de octubre de 2025 (2 sin resolver)' },
+        convivencia: { llamados: null, texto: 'Sin dato de llamados de atención' },
+        uso: 'VIVIENDA',
+      },
+    }
+    act(() => root.render(<RiesgoEnLaRenovacion riesgo={conFactores} contractId="c1" vivienda />))
+    const factores = container.querySelector('[data-testid="renovacion-factores"]')?.textContent ?? ''
+    expect(factores).toContain('Al día')
+    expect(factores).toContain('Paga bien: al día y ninguna cuota tarde en el último año')
+    expect(factores).toContain('5 reparaciones del inmueble desde el 29 de octubre de 2025 (2 sin resolver)')
+    expect(factores).toContain('Sin dato')
+    // En vivienda no se pregunta si renueva: se negocia el incremento.
+    const t = container.textContent ?? ''
+    expect(t).toContain('Cómo va el inquilino · Vinci')
+    expect(t).toContain('lo que se negocia es el valor del incremento')
+    expect(t).not.toContain('(¿renueva?)')
+  })
+
   it('Nico (26-09): el moroso de más de 60 días sale «En cobranza», no «En riesgo», y dice que Vinci no lo retiene', () => {
     const moroso: RiesgoDeRetencion = {
       ...RIESGO,

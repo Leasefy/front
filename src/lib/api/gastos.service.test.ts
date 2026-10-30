@@ -205,8 +205,14 @@ describe('facturas.listar', () => {
     expect(url.searchParams.get('limite')).toBe(String(MAX_LIMITE_DE_FACTURAS));
   });
 
+  it('manda lo que se busca, recortado (Nico 29-10: la lista sólo mostraba 50)', async () => {
+    await gastosApi.facturas.listar({ buscar: '  tornillo ' });
+    const url = new URL(clienteMock.get.mock.calls[0][0], 'http://x');
+    expect(url.searchParams.get('buscar')).toBe('tornillo');
+  });
+
   it('no manda claves vacías', async () => {
-    await gastosApi.facturas.listar({ desde: '', rubro: undefined });
+    await gastosApi.facturas.listar({ desde: '', rubro: undefined, buscar: '   ' });
     expect(clienteMock.get).toHaveBeenCalledWith(`${BASE}/gastos/facturas`);
   });
 });

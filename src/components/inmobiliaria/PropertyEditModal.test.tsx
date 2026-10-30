@@ -138,10 +138,10 @@ function setValue(el: HTMLInputElement | HTMLTextAreaElement, value: string) {
 }
 
 describe('<PropertyEditModal>', () => {
-  it('es el Dialog canónico: título en la cabecera, una sola ✕ y el guardar del pie apunta al formulario', () => {
+  it('es un cajón (Nico 28-10): título en la cabecera, una sola ✕ y el guardar del pie apunta al formulario', () => {
     render()
     const d = dialogo()
-    expect(d.querySelector('h2')?.textContent).toBe('Editar propiedad')
+    expect(d.querySelector('h2')?.textContent).toBe('Editar inmueble')
     expect(document.querySelectorAll('[aria-label="Cerrar"]')).toHaveLength(1)
 
     const form = d.querySelector('form') as HTMLFormElement
@@ -171,9 +171,9 @@ describe('<PropertyEditModal>', () => {
     await submit()
 
     expect(update).toHaveBeenCalledTimes(1)
+    // La descripción no cambió: no se vuelve a mandar (una vieja de menos de 20 letras el back ya no la acepta).
     expect(update).toHaveBeenCalledWith('prop-1', {
       title: 'Nuevo título',
-      description: 'Luminoso',
       type: 'apartment',
       city: 'Bogotá',
       neighborhood: 'Chapinero',
@@ -360,3 +360,15 @@ describe('<PropertyEditModal> — los errores, en su campo', () => {
     expect(dialogo().querySelector('[data-testid="edit-error"]')!.textContent).toMatch(/conexión/)
   })
 })
+
+describe('<PropertyEditModal> — lo que ya estaba cargado (Nico, 28-10-2026)', () => {
+  it('una ciudad fuera de las grandes (Sabaneta) sale elegida, y sin descripción se puede guardar', async () => {
+    update.mockResolvedValueOnce({ ...PROPERTY, city: 'Sabaneta' })
+    render({ property: { ...PROPERTY, city: 'Sabaneta', description: '' } })
+    expect(document.querySelector('[data-testid="edit-city"]')?.textContent).toContain('Sabaneta')
+    expect((document.querySelector('[data-testid="edit-submit"]') as HTMLButtonElement).disabled).toBe(false)
+    await submit()
+    expect(update).toHaveBeenCalledWith('prop-1', expect.not.objectContaining({ description: expect.anything() }))
+  })
+})
+

@@ -191,6 +191,8 @@ export const aprobacionesDeReparacionApi = {
   async guardarConfiguracion(cambios: {
     prioridadesSoloDeLaInmobiliaria?: PrioridadDelBack[];
     slaHoras?: Partial<Record<PrioridadDelBack, number>>;
+    /** % del canon; `null` = volver al sugerido. */
+    topeDelMesPct?: number | null;
   }): Promise<ConfiguracionDeReparaciones> {
     return apiClient.put(`/inmobiliaria/mantenimiento/configuracion`, cambios);
   },

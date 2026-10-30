@@ -19,6 +19,9 @@ import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { TablePagination } from '@/components/ui/pagination'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden'
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { cn } from '@/lib/utils'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -70,7 +73,19 @@ export function SaldoDelSistemaAnterior() {
       [f.inquilino, f.propietario, f.inmueble, f.contrato].some((x) => (x ?? '').toString().toLocaleLowerCase('es').includes(q)),
     )
   }, [lista, busqueda])
-  const pag = useTablePagination(filas, { resetKey: busqueda })
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas».
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(
+    filas,
+    {
+      inquilino: (f) => f.inquilino ?? null,
+      propietario: (f) => f.propietario ?? null,
+      saldo: (f) => f.saldoCop,
+      recaudado: (f) => f.recaudadoCop,
+      pendiente: (f) => f.pendienteCop,
+    },
+    { primero: { saldo: 'desc', recaudado: 'desc', pendiente: 'desc' } },
+  )
+  const pag = useTablePagination(ordenadas, { resetKey: `${busqueda}|${orden?.campo ?? ''}|${orden?.sentido ?? ''}` })
 
   return (
     <div className="space-y-6" data-testid="saldo-del-sistema-anterior">
@@ -137,7 +152,7 @@ export function SaldoDelSistemaAnterior() {
               />
             ) : (
             <Card className="overflow-hidden p-0">
-              <div className="border-b border-border px-4 py-3">
+              <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="relative w-full sm:w-72">
                   <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted" aria-hidden="true" />
                   <Input
@@ -149,17 +164,29 @@ export function SaldoDelSistemaAnterior() {
                     data-testid="buscar-saldo-anterior"
                   />
                 </div>
+                {(lista?.filas.length ?? 0) > 1 ? (
+                  <SelectorDeOrden
+                    orden={orden}
+                    onCambiar={setOrden}
+                    className="w-full sm:w-52"
+                    formas={[
+                      { campo: 'pendiente', sentido: 'desc', etiqueta: 'Más por recaudar' },
+                      { campo: 'saldo', sentido: 'desc', etiqueta: 'Mayor saldo' },
+                      { campo: 'inquilino', sentido: 'asc', etiqueta: 'Inquilino (A–Z)' },
+                    ]}
+                  />
+                ) : null}
               </div>
               {/* Ronda 26 (#2 y UI): la primera columna es el inquilino (quien identifica), el contrato debajo;
                   los «$ 0» en «—»; a 390, una tarjeta por contrato (patrón de CuotasDelMesTabla). */}
               <Table className="max-md:block">
                 <TableHeader className="max-md:hidden">
                   <TableRow>
-                    <TableHead>Inquilino</TableHead>
-                    <TableHead>Propietario</TableHead>
-                    <TableHead className="text-right">Saldo</TableHead>
-                    <TableHead className="text-right">Recaudado</TableHead>
-                    <TableHead className="text-right">Por recaudar</TableHead>
+                    <EncabezadoOrdenable campo="inquilino" orden={orden} onOrdenar={ordenarPor}>Inquilino</EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="propietario" orden={orden} onOrdenar={ordenarPor}>Propietario</EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="saldo" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Saldo</EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="recaudado" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Recaudado</EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="pendiente" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Por recaudar</EncabezadoOrdenable>
                   </TableRow>
                 </TableHeader>
                 <TableBody className="max-md:block">

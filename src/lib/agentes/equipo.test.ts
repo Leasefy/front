@@ -81,6 +81,8 @@ const FLOTA_DEL_MICRO = [
   'propietarios',
   'contabilidad',
   'chat',
+  // Nico 29-10-2026: Servi (servicios públicos).
+  'servicios',
 ]
 
 describe('el registro del equipo', () => {

@@ -10,6 +10,8 @@
  */
 import * as React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+// Nico 29-10: el borrador automático vive en el navegador; cada prueba arranca sin uno.
+beforeEach(() => window.localStorage.clear())
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 

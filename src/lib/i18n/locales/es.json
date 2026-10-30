@@ -960,6 +960,8 @@
       "vacioTexto": "Es la lista de lo que hay en el inmueble y en qué estado está. Hazlo antes del próximo contrato: sin él no se puede iniciar uno.",
       "empezar": "Empezar el inventario",
       "volverAlContrato": "Volver al contrato",
+      "cajonDescripcion": "Lo que hay en el inmueble y en qué estado está. Agrégalo y complétalo aquí mismo: lo que llevas del contrato no se pierde.",
+      "cajonAyuda": "Al cerrarlo vuelves al contrato tal como lo dejaste.",
       "volverListo": "Listo: el inventario está completo. Ya puedes seguir con el contrato.",
       "volverPendiente": "Vienes de crear un contrato: cuando completes el inventario, vuelve para seguir."
     },
@@ -1467,6 +1469,7 @@
           "sinLectura": "No pude leer ahora el estado de tus agentes. Estos son los que puede tener el Piloto:"
         },
         "agente": {
+          "servicios": "Lee cada factura de servicios que sube el inquilino y te propone «al día» o el rechazo con su motivo; también los ajustes para descontárselos al propietario y el aviso de riesgo de corte. Rechazar y descontar siempre lo decides tú.",
           "cobranza": "Llama y escribe por WhatsApp y correo a los inquilinos con pagos pendientes, dentro del horario que permite la ley.",
           "cotizador": "Evalúa a un candidato con las aseguradoras cuando se lo pides.",
           "conciliacion": "Cruza los depósitos del banco con tus cobros y emite el recibo de lo que calza exacto. Lo dudoso te lo deja en la Bandeja.",
@@ -5377,7 +5380,9 @@
         "photoTake": "Tomar foto",
         "photoChange": "Cambiar foto",
         "photoRemove": "Quitar",
-        "photoHelp": "La foto se guarda en este teléfono y se sube cuando haya señal. JPG, PNG o WebP, hasta 5 MB. O pega el enlace de una foto que ya esté publicada:",
+        "photoAttach": "Adjuntar imagen",
+        "photoDrop": "O arrastra la imagen hasta aquí.",
+        "photoHelp": "Se guarda en este equipo y se sube cuando haya señal. JPG, PNG o WebP, hasta 5 MB.",
         "photoUrl": "Foto (enlace)",
         "photoUrlPlaceholder": "https://…",
         "photoUrlHelp": "Un enlace a la foto. La subida de fotos desde aquí viene después.",
@@ -5500,7 +5505,7 @@
       "property": "Inmueble",
       "change": "Cambiar",
       "searchProperty": "Buscar inmueble...",
-      "noRentedProperties": "Todavía no tienes inmuebles arrendados: el mantenimiento se reporta sobre un inmueble con contrato vigente.",
+      "noRentedProperties": "Todavía no tienes inmuebles creados: el mantenimiento se reporta sobre un inmueble que ya está en Leasefy.",
       "noPropertiesFound": "No se encontraron inmuebles",
       "maintenanceType": "Tipo de mantenimiento",
       "priorityLabel": "Prioridad",
@@ -8829,6 +8834,7 @@
           "system": "Sistema"
         },
         "agente": {
+          "servicios": "Servicios públicos",
           "cobranza": "Cobranza",
           "cotizador": "Asegurabilidad",
           "conciliacion": "Conciliación",
@@ -10760,7 +10766,7 @@
       "horariosGuardados": "Horarios de visita guardados",
       "horarioAgenteTitle": "Horario de visitas",
       "horarioAgenteDesc": "Un solo horario para todos los inmuebles de este asesor.",
-      "horarioAgenteGuardado": "Horario aplicado a {count} inmuebles",
+      "horarioAgenteGuardado": "Horario aplicado a {{count}} inmuebles",
       "horarioAgenteError": "No se pudo guardar el horario",
       "citaTitle": "Agendar una cita",
       "citaProperty": "Inmueble",
@@ -14041,6 +14047,7 @@
     "porVencer": "Por vencer"
   },
   "agentes": {
+    "servicios": {"rol": "Servicios públicos", "historia": "Revisa la factura de servicios que sube cada inquilino contra la cuenta del inmueble y te propone qué hacer con ella.", "hace": {"lee": "Lee la factura que sube el inquilino, en foto o PDF", "compara": "La compara con la cuenta del inmueble (EPM, Enel, Vanti o la que tenga), el período, que diga pagada y el valor", "propone": "Te propone «al día» o el rechazo con su motivo, listo para un clic", "ajustes": "Encuentra los ajustes de conceptos facturados y te propone descontárselos al propietario", "corte": "Avisa el riesgo de corte cuando un inquilino lleva dos meses sin la factura al día"}, "noHace": {"rechaza": "No rechaza una factura ni le descuenta al propietario sin el clic de una persona", "escribe": "No le escribe al inquilino: eso lo hace Mori por WhatsApp"}},
     "equipo": {
       "titulo": "El equipo de tu inmobiliaria",
       "resumen": "{{agentes}} agentes en {{frentes}} frentes",

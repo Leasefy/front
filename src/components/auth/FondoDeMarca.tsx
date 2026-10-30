@@ -25,12 +25,21 @@ import Image from 'next/image';
  * —el video es claro y el logotipo blanco se perdía según qué cuadro quedara
  * debajo (Nico, 2026-09-03: «hay veces el logo se pierde»)— y quien reutilice
  * el fondo se las lleva sin tener que saber por qué.
+ *
+ * ── 29-10 · La sala de doble altura con el cuadro de Leasefy ───────────────
+ *
+ * Nico eligió el video de la sala con las montañas de Medellín y el cuadro con
+ * el símbolo en la pared izquierda (entre el 2 % y el 10 % del ancho). Con
+ * `object-center` el cuadro se cortaba en el borde: va anclado a la IZQUIERDA
+ * («córrelo más a la derecha para que no se pierda el logo») y los widgets del
+ * inicio quedan abajo a la izquierda, sin taparlo. Bucle de 252 cuadros con la
+ * costura dentro de lo normal de dos cuadros seguidos (SSIM 0,97–0,98).
  */
 const POSTER = '/brand/login-poster.jpg';
 
 export function FondoDeMarca() {
   return (
-    <div className="fixed inset-0 hidden overflow-hidden bg-[#0c1a2b] lg:block" aria-hidden="true">
+    <div className="fixed inset-0 hidden overflow-hidden bg-ink lg:block" aria-hidden="true">
       <Image
         src={POSTER}
         alt=""
@@ -39,10 +48,10 @@ export function FondoDeMarca() {
         priority
         quality={90}
         sizes="100vw"
-        className="object-cover object-center"
+        className="object-cover object-left"
       />
       <video
-        className="absolute inset-0 h-full w-full object-cover object-center motion-reduce:hidden"
+        className="absolute inset-0 h-full w-full object-cover object-left motion-reduce:hidden"
         autoPlay
         muted
         loop

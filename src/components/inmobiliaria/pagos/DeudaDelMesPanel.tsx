@@ -123,7 +123,9 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { MasDetalles } from '@/components/pantalla/MasDetalles'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
-import { CuotasDelMesTabla } from '@/components/inmobiliaria/pagos/CuotasDelMesTabla'
+import { CuotasDelMesTabla, ORDEN_DE_CUOTAS, PRIMERO_DE_CUOTAS } from '@/components/inmobiliaria/pagos/CuotasDelMesTabla'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden'
 import { RegistrarPagoModal } from '@/components/inmobiliaria/RegistrarPagoModal'
 import {
   MOTIVO_SIN_PERMISO_DE_RECIBO,
@@ -420,6 +422,9 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
     () => filtrarCuotas(todas, busqueda, cajon),
     [todas, busqueda, cajon],
   )
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Aquí, porque «Ordenar por» va
+  // en la barra junto al buscador; la tabla recibe las filas ya ordenadas y pinta las cabeceras con este orden.
+  const ordenDeCuotas = useOrdenDeLaTabla(visibles, ORDEN_DE_CUOTAS, { primero: PRIMERO_DE_CUOTAS })
   const hayFiltros = busqueda.trim().length > 0 || cajon !== 'TODAS'
   const limpiar = () => {
     setBusqueda('')
@@ -784,19 +789,34 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
             {/* 4 · El buscador, DENTRO de la tarjeta. */}
             {/* Nico (22-10): el buscador quedaba con más aire arriba que abajo (el `pt-1` de la barra lo
                 corría). En escritorio ocupa todo el alto de la barra y se centra entre las dos líneas. */}
-            <div className="relative w-full pb-3 lg:flex lg:w-72 lg:shrink-0 lg:items-center lg:pb-0">
-              <MagnifyingGlass
-                className="pointer-events-none absolute left-3 top-[18px] h-4 w-4 -translate-y-1/2 text-fg-muted lg:top-1/2"
-                aria-hidden="true"
-              />
-              <Input
-                className="h-9 pl-9"
-                placeholder="Buscar inquilino o contrato"
-                aria-label="Buscar en las cuotas del mes"
-                value={busqueda}
-                onChange={(e) => setBusqueda(e.target.value)}
-                data-testid="buscar-cuotas"
-              />
+            <div className="flex w-full flex-col gap-3 pb-3 sm:flex-row lg:w-auto lg:shrink-0 lg:items-center lg:pb-0">
+              {todas.length > 1 ? (
+                <SelectorDeOrden
+                  orden={ordenDeCuotas.orden}
+                  onCambiar={ordenDeCuotas.setOrden}
+                  className="w-full sm:w-52"
+                  formas={[
+                    { campo: 'falta', sentido: 'desc', etiqueta: 'Debe más' },
+                    { campo: 'vence', sentido: 'asc', etiqueta: 'Vence primero' },
+                    { campo: 'inquilino', sentido: 'asc', etiqueta: 'Inquilino (A–Z)' },
+                    { campo: 'estado', sentido: 'asc', etiqueta: 'Estado' },
+                  ]}
+                />
+              ) : null}
+              <div className="relative w-full lg:w-72">
+                <MagnifyingGlass
+                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted"
+                  aria-hidden="true"
+                />
+                <Input
+                  className="h-9 pl-9"
+                  placeholder="Buscar inquilino o contrato"
+                  aria-label="Buscar en las cuotas del mes"
+                  value={busqueda}
+                  onChange={(e) => setBusqueda(e.target.value)}
+                  data-testid="buscar-cuotas"
+                />
+              </div>
             </div>
           </div>
 
@@ -814,7 +834,9 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
 
           {/* 5 · La tabla, sin marco propio: el marco es el de la tarjeta. */}
           <CuotasDelMesTabla
-            filas={visibles}
+            filas={ordenDeCuotas.ordenadas}
+            orden={ordenDeCuotas.orden}
+            onOrdenar={ordenDeCuotas.ordenarPor}
             mes={mes}
             hayFiltros={hayFiltros}
             onLimpiarFiltros={limpiar}

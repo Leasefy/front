@@ -16,17 +16,33 @@ import {
   CAMPOS_DEL_MANTENIMIENTO,
   type CampoDelMantenimiento,
 } from '@/components/inmobiliaria/MantenimientoForm';
-import { Plus, SquaresFour, Kanban } from '@phosphor-icons/react';
+import { Plus, SquaresFour, Kanban, Wrench } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { useTr } from '@/lib/i18n/use-tr';
 import { Button } from '@/components/ui/button';
-import { CrossFade, SegmentedControl } from '@leasefy/cadence';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SinDatos } from '@/components/estado/SinDatos';
+import {
+  ETIQUETA_DE_LA_ETAPA,
+  FILTRO_DE_LA_GESTION,
+  GESTIONADO_POR,
+  POR_QUE_NO_SE_COTIZA,
+  QUE_HACE_LA_ETAPA,
+  esGestionadoPor,
+  etapaDeLaColumna,
+  filtrarPorGestion,
+  gestionDeLaSolicitud,
+} from '@/lib/mantenimiento/gestionado-por';
+import { CrossFade, SearchInput, SegmentedControl } from '@leasefy/cadence';
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
 import { Cajon, CajonCabecera, CajonCuerpo } from '@/components/ui/cajon';
 import type {
   SolicitudMantenimiento,
   MantenimientoStatus,
   NuevaCotizacion,
+  GestionadoPor,
+  EtapaDelSeguimiento,
 } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { mesEnTitulo } from '@/lib/utils/mes';
@@ -98,6 +114,24 @@ type MantenimientoViewMode = 'cards' | 'kanban';
 
 /** El número tal cual (sin separador de miles): la cuenta de solicitudes. */
 
+/** Sin tildes y en minúscula: «Plomería» se encuentra escribiendo «plomeria». */
+function sinTildes(s: string): string {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
+/**
+ * Revisión en pantalla con los datos de Portofino (29-10-2026): el buscador de la barra (§12.3) busca en lo que la
+ * persona reconoce de una solicitud: qué se dañó, el inmueble y su dirección, el inquilino, el propietario y el
+ * proveedor.
+ */
+function coincideConLaBusqueda(s: SolicitudMantenimiento, buscado: string): boolean {
+  if (!buscado) return true;
+  const q = sinTildes(buscado);
+  return [s.title, s.propertyTitle, s.propertyAddress, s.tenantName, s.propietarioName, s.proveedor?.nombre].some(
+    (v) => typeof v === 'string' && sinTildes(v).includes(q),
+  );
+}
+
 function getQuickStats(mantenimientos: SolicitudMantenimiento[]) {
   const activeMantenimientos = mantenimientos.filter((m) =>
     ['reported', 'quoted', 'approved', 'in_progress'].includes(m.status)
@@ -133,6 +167,7 @@ function getQuickStats(mantenimientos: SolicitudMantenimiento[]) {
  */
 function MantenimientosContent() {
   const { t, locale } = useI18n();
+  const tr = useTr();
   /*
    * Quién puede MOVER una solicitud y quién sólo puede mirarla.
    *
@@ -195,7 +230,62 @@ function MantenimientosContent() {
   }, [refetchMantenimientos]);
 
   // Use API data or fallback to empty arrays
-  const mantenimientos = mantenimientosData ?? [];
+  // Memorizada: un `?? []` suelto es un arreglo nuevo en cada render y recalcula todo lo que depende de ella.
+  const mantenimientos = useMemo(() => mantenimientosData ?? [], [mantenimientosData]);
+
+  /*
+   * Portofino 29-10-2026: filtrar por quién gestiona la reparación («las que
+   * gestiona el propietario»). Se filtra aquí con el campo de cada solicitud
+   * (la página ya trae todas) y queda en la URL (`?gestiona=`), como los
+   * filtros de las tablas. Un back sin el campo: todas son de la inmobiliaria.
+   */
+  const [filtroDeGestion, setFiltroDeGestion] = useState<GestionadoPor | null>(null);
+  useEffect(() => {
+    const pedido = new URLSearchParams(window.location.search).get('gestiona');
+    if (esGestionadoPor(pedido)) setFiltroDeGestion(pedido);
+  }, []);
+  const cambiarFiltroDeGestion = useCallback((g: GestionadoPor | null) => {
+    setFiltroDeGestion(g);
+    const url = new URL(window.location.href);
+    if (g) url.searchParams.set('gestiona', g);
+    else url.searchParams.delete('gestiona');
+    window.history.replaceState(window.history.state, '', url);
+  }, []);
+  /*
+   * El buscador de la barra (revisión en pantalla del 29-10: el tablero y la lista no tenían ninguno). Busca mientras
+   * se escribe, con una pausa corta, y queda en la URL (`?buscar=`) como el filtro de gestión.
+   */
+  const [textoBuscado, setTextoBuscado] = useState('');
+  const [buscado, setBuscado] = useState('');
+  useEffect(() => {
+    const pedido = new URLSearchParams(window.location.search).get('buscar')?.trim();
+    if (pedido) {
+      setTextoBuscado(pedido);
+      setBuscado(pedido);
+    }
+  }, []);
+  useEffect(() => {
+    const pausa = setTimeout(() => {
+      const limpio = textoBuscado.trim();
+      setBuscado(limpio);
+      const url = new URL(window.location.href);
+      if (limpio) url.searchParams.set('buscar', limpio);
+      else url.searchParams.delete('buscar');
+      window.history.replaceState(window.history.state, '', url);
+    }, 250);
+    return () => clearTimeout(pausa);
+  }, [textoBuscado]);
+  const mantenimientosVisibles = useMemo(
+    () => filtrarPorGestion(mantenimientos, filtroDeGestion).filter((s) => coincideConLaBusqueda(s, buscado)),
+    [mantenimientos, filtroDeGestion, buscado],
+  );
+  const hayFiltrosEnLaBarra = filtroDeGestion !== null || buscado !== '';
+  const limpiarLaBarra = useCallback(() => {
+    cambiarFiltroDeGestion(null);
+    setTextoBuscado('');
+    setBuscado('');
+  }, [cambiarFiltroDeGestion]);
+  const vacioPorElFiltro = hayFiltrosEnLaBarra && mantenimientos.length > 0 && mantenimientosVisibles.length === 0;
   // Acciones masivas (Nico, 10-10-2026): sólo en la vista de lista y con permiso de editar.
   const { marcadas, marcar, quitar: quitarLaSeleccion } = useFilasMarcadas();
   const arreglosMarcados = useMemo(
@@ -320,6 +410,8 @@ function MantenimientosContent() {
         description: data.description,
         paidBy: data.paidBy,
         ...(data.proveedorId ? { proveedorId: data.proveedorId } : {}),
+        // Portofino 29-10: sólo si no la gestiona la inmobiliaria (sin la migración del back, 503 con su frase).
+        ...(data.gestionadoPor && data.gestionadoPor !== 'inmobiliaria' ? { gestionadoPor: data.gestionadoPor } : {}),
       });
 
       // La solicitud ya existe: una foto que no sube NO la deshace. Se dice
@@ -651,16 +743,72 @@ function MantenimientosContent() {
    * propietario con su motivo.
    */
   const [porCompletar, setPorCompletar] = useState<SolicitudMantenimiento | null>(null);
+
+  /**
+   * Portofino 29-10: un paso del seguimiento de una reparación que gestiona
+   * otro, al soltarla en «En arreglo» o «Completada» (sin cotización, cierre con
+   * costo ni descuento: el back mueve la tarjeta con el paso).
+   */
+  const registrarPasoDesdeElTablero = useCallback(
+    async (solicitud: SolicitudMantenimiento, etapa: EtapaDelSeguimiento) => {
+      try {
+        await mantenimientoApi.registrarSeguimiento(solicitud.id, etapa);
+      } catch (error) {
+        toast.error(tr('No se pudo registrar el paso'), {
+          description: mensajeParaLaPersona(error, {
+            porDefecto: 'Prueba de nuevo en un momento.',
+            accion: 'registrar en qué va la reparación',
+          }),
+        });
+        return;
+      }
+      await recargarMantenimientos();
+      toast.success(tr('Listo: quedó registrado «{etapa}»', { etapa: tr(ETIQUETA_DE_LA_ETAPA[etapa]) }), {
+        description: tr(QUE_HACE_LA_ETAPA[etapa]),
+      });
+    },
+    [tr, recargarMantenimientos],
+  );
+
   const alSoltarEnElTablero = useCallback(
     (solicitud: SolicitudMantenimiento, destino: MantenimientoStatus): boolean => {
+      /*
+       * Portofino 29-10-2026: la que gestiona otro (propietario, administración o
+       * inquilino) no pasa por cotización ni aprobación: a «Por aprobar» o «Aprobada»
+       * no se mueve y se dice por qué; a «En arreglo» o «Completada» se registra el
+       * paso del seguimiento. A «Reportada» o «Cancelada», como cualquiera.
+       */
+      const gestion = gestionDeLaSolicitud(solicitud);
+      if (gestion !== 'inmobiliaria') {
+        if (destino === 'quoted' || destino === 'approved') {
+          toast.info(tr('Esta reparación no pasa por cotización ni aprobación'), {
+            description: tr(POR_QUE_NO_SE_COTIZA[gestion]),
+          });
+          return true;
+        }
+        const etapa = etapaDeLaColumna(destino);
+        if (etapa) {
+          void registrarPasoDesdeElTablero(solicitud, etapa);
+          return true;
+        }
+        return false;
+      }
       if (
         noApruebaCostos &&
         (destino === 'approved' || (destino === 'completed' && solicitud.approvedAmount != null))
       ) {
-        toast.info('Esto lo hace el administrador o el coordinador', {
+        /*
+         * 🔴 Nico (Portofino, 29-10-2026): salía este aviso y AUN ASÍ la tarjeta se
+         * movía, porque `false` le dice al tablero «sigue tú» y el tablero llamaba
+         * al cambio de estado (a «Cerrada», el back no lo frena por esa ruta). Con
+         * `true` la página se encargó: la tarjeta vuelve a su columna y el aviso
+         * dice por qué. Misma regla que el back
+         * (`los-auxiliares-no-firman-ni-aprueban.ts`).
+         */
+        toast.info('Tu rol no puede mover esta solicitud ahí', {
           description: MOTIVO_EL_AUXILIAR_NO_APRUEBA_COSTOS,
         });
-        return false;
+        return true;
       }
       if (destino === 'completed') {
         if (solicitud.aprobacionDelPropietario?.estado === 'PENDIENTE') return false;
@@ -691,14 +839,9 @@ function MantenimientosContent() {
       }
       return false;
     },
-    [handleRequestQuote, handleApproveQuote, handleViewMantenimiento, noApruebaCostos],
+    [handleRequestQuote, handleApproveQuote, handleViewMantenimiento, noApruebaCostos, tr, registrarPasoDesdeElTablero],
   );
 
-  // Consignaciones for form (rented properties only)
-  const rentedConsignaciones = useMemo(
-    () => consignaciones.filter((c) => c.availability === 'rented'),
-    [consignaciones]
-  );
 
   // Show loading state
   const isLoading = isLoadingMantenimientos || isLoadingConsignaciones;
@@ -717,7 +860,8 @@ function MantenimientosContent() {
         // 28-10 (Juan Camilo y Nico): todo en Excel y la liquidación de proveedores del mes.
         acciones={<ExportarMantenimientos solicitudes={mantenimientos} />}
         accionPrincipal={
-          <div className="flex flex-col items-end gap-1">
+          // En el celular la principal va a lo ancho (el encabezado estira esta caja); desde `sm`, a la derecha.
+          <div className="flex flex-col items-stretch gap-1 sm:items-end">
             <Button
               size="sm"
               hideArrow
@@ -730,7 +874,7 @@ function MantenimientosContent() {
               {t('inmobiliaria.operaciones.maintenance.new')}
             </Button>
             {motivoParaNoCrear && (
-              <p className="max-w-xs text-right text-caption text-fg-muted" data-testid="nueva-solicitud-motivo">
+              <p className="max-w-xs text-caption text-fg-muted sm:text-right" data-testid="nueva-solicitud-motivo">
                 {motivoParaNoCrear}
               </p>
             )}
@@ -767,9 +911,17 @@ function MantenimientosContent() {
           total={stats.active}
           // Revisora r27: los tramos son las columnas del tablero (antes «Esperan al propietario» contaba otra vez la
           // misma solicitud de «Por aprobar»: queda sólo en el contexto); los que están en cero no se listan.
+          // 29-10 (con los datos de Portofino): «Por aprobar» es TODA la columna, también lo que espera al propietario
+          // (está en el contexto como parte de ella); sin eso la barra quedaba con un tramo gris sin nombre.
           tramos={[
             { clave: 'por-cotizar', etiqueta: 'Por cotizar', monto: etapas.porCotizar, tono: 'aviso', cifra: etapas.porCotizar },
-            { clave: 'por-aprobar', etiqueta: 'Por aprobar', monto: stats.quoted, tono: 'aviso', cifra: stats.quoted },
+            {
+              clave: 'por-aprobar',
+              etiqueta: 'Por aprobar',
+              monto: stats.quoted + stats.esperanAlPropietario,
+              tono: 'aviso',
+              cifra: stats.quoted + stats.esperanAlPropietario,
+            },
             { clave: 'en-arreglo', etiqueta: 'En arreglo', monto: etapas.enArreglo, tono: 'exito', cifra: etapas.enArreglo },
           ]}
           pie={
@@ -794,18 +946,66 @@ function MantenimientosContent() {
       {/* Las solicitudes, directo en la tarjeta: sin barra de pestañas porque
           ya no hay entre qué elegir. */}
       <div className="rounded-lg border border-border bg-card">
-        {/* View Toggle */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/20">
-          <div className="flex items-center gap-3">
-            <p className="text-sm text-muted-foreground">
-              {/* El conteo se calla si no se pudo traer: «0 solicitudes
-                  activas» sobre una consulta muerta es tranquilizar con
-                  un dato que nadie tiene. */}
-              {/* Revisora r27: el conteo ya lo dice la cifra de arriba («N solicitudes abiertas»): aquí sólo el fallo. */}
-              {mantenimientosError ? (
-                <span className="text-fg-muted">Solicitudes sin cargar</span>
-              ) : null}
-            </p>
+        {/* La barra de la tarjeta (§12.3): el buscador a la izquierda, el filtro de quién gestiona en la misma línea y
+            tablero ⇄ lista a la derecha. En el celular el buscador va a lo ancho. */}
+        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-border bg-muted/20">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+            {/* El conteo se calla si no se pudo traer: «0 solicitudes
+                activas» sobre una consulta muerta es tranquilizar con
+                un dato que nadie tiene. */}
+            {/* Revisora r27: el conteo ya lo dice la cifra de arriba («N solicitudes abiertas»): aquí sólo el fallo. */}
+            {mantenimientosError ? (
+              <p className="text-sm text-fg-muted">Solicitudes sin cargar</p>
+            ) : (
+              <>
+                {/* El ancho va en esta caja: la clase de SearchInput es del campo y su envoltura es `w-full`. */}
+                <div className="w-full sm:w-72">
+                  <SearchInput
+                    value={textoBuscado}
+                    onChange={(e) => setTextoBuscado(e.target.value)}
+                    onClear={() => setTextoBuscado('')}
+                    placeholder={tr('Arreglo, inmueble, inquilino o proveedor')}
+                    aria-label={tr('Buscar una solicitud')}
+                    inputSize="md"
+                    className="w-full"
+                    data-testid="buscar-solicitudes"
+                  />
+                </div>
+                {/* Portofino 29-10: el filtro por quién gestiona, en la barra de la tarjeta (§12.3). */}
+                <Select
+                  value={filtroDeGestion ?? 'todas'}
+                  onValueChange={(v) => cambiarFiltroDeGestion(esGestionadoPor(v) ? v : null)}
+                >
+                  <SelectTrigger
+                    className="h-9 w-full min-w-[13rem] sm:w-auto"
+                    aria-label={tr('Filtrar por quién gestiona la reparación')}
+                    data-testid="filtro-de-gestion"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todas">{tr('Quién gestiona: todas')}</SelectItem>
+                    {GESTIONADO_POR.map((g) => (
+                      <SelectItem key={g} value={g}>
+                        {tr(FILTRO_DE_LA_GESTION[g])}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {hayFiltrosEnLaBarra ? (
+                  <Button
+                    variant="link"
+                    size="sm"
+                    hideArrow
+                    className="h-auto p-0 text-sm"
+                    onClick={limpiarLaBarra}
+                    data-testid="limpiar-filtro-de-gestion"
+                  >
+                    {tr('Limpiar')}
+                  </Button>
+                ) : null}
+              </>
+            )}
           </div>
           <SegmentedControl<MantenimientoViewMode>
             value={mantenimientoView}
@@ -847,13 +1047,21 @@ function MantenimientosContent() {
           esqueleto={<EsqueletoTabla columnas={4} filas={4} />}
         >
           {/* Tablero ⇄ lista: una vista se va (rápido) y la otra entra. */}
-          <CrossFade swapKey={mantenimientoView} direction="none">
-            {mantenimientoView === 'kanban' ? (
+          <CrossFade swapKey={vacioPorElFiltro ? 'vacio-por-el-filtro' : mantenimientoView} direction="none">
+            {vacioPorElFiltro ? (
+              // Filtrado a cero no es «todavía no tienes»: se dice y se ofrece quitar el filtro.
+              <SinDatos
+                queSon="arreglos"
+                icono={Wrench}
+                hayFiltros
+                onLimpiarFiltros={limpiarLaBarra}
+              />
+            ) : mantenimientoView === 'kanban' ? (
               <div className="p-5">
                 {/* M6: el tablero vacío eran cinco columnas en cero y ninguna
                     salida. Ahora ofrece lo mismo que la lista hermana. */}
                 <MantenimientoKanban
-                  data={mantenimientos}
+                  data={mantenimientosVisibles}
                   onViewDetails={handleViewMantenimiento}
                   onStatusChange={puedeEditar ? handleMantenimientoStatusChange : undefined}
                   alSoltar={puedeEditar ? alSoltarEnElTablero : undefined}
@@ -867,10 +1075,18 @@ function MantenimientosContent() {
                     atiende: estaba escrita en `MantenimientoList` y no aparecía
                     nunca. */}
                 <MantenimientoList
-                  data={mantenimientos}
+                  data={mantenimientosVisibles}
                   onViewDetails={handleViewMantenimiento}
                   onAddQuote={puedeEditar ? (s) => handleRequestQuote(s.id) : undefined}
-                  onComplete={puedeEditar ? (s) => cambiarEstadoSinEsperar(s.id, 'completed') : undefined}
+                  onComplete={
+                    puedeEditar
+                      ? (s) =>
+                          // Portofino 29-10: la que gestiona otro se cierra con el paso «Terminado».
+                          gestionDeLaSolicitud(s) !== 'inmobiliaria'
+                            ? void registrarPasoDesdeElTablero(s, 'terminado')
+                            : cambiarEstadoSinEsperar(s.id, 'completed')
+                      : undefined
+                  }
                   onCancel={puedeEditar ? (s) => cambiarEstadoSinEsperar(s.id, 'cancelled') : undefined}
                   onEliminar={puedeEliminar ? (s) => void eliminarArreglo(s) : undefined}
                   onCrear={puedeCrear ? handleNewMantenimiento : undefined}
@@ -912,6 +1128,16 @@ function MantenimientosContent() {
         onCalificado={puedeEditar ? recargarMantenimientos : undefined}
         // Portofino 22-10: dejársela al propietario o retomarla.
         onQuienLaHaceCambio={
+          puedeEditar
+            ? async () => {
+                await recargarMantenimientos();
+                setVersionDeAprobaciones((v) => v + 1);
+              }
+            : undefined
+        }
+        // Portofino 29-10: cambiar quién la gestiona y registrar en qué va (al retomarla
+        // de manos del propietario también cambia la bandeja de arriba).
+        onGestionCambio={
           puedeEditar
             ? async () => {
                 await recargarMantenimientos();
@@ -991,7 +1217,9 @@ function MantenimientosContent() {
           </CajonCuerpo>
         ) : (
           <MantenimientoForm
-            consignaciones={rentedConsignaciones}
+            // Portofino 29-10-2026: la solicitud va sobre CUALQUIER inmueble ya creado (también una
+            // captación nueva que necesita una reparación antes de arrendarse), no sólo los arrendados.
+            consignaciones={consignaciones}
             onSubmit={handleMantenimientoFormSubmit}
             onCancel={handleMantenimientoFormCancel}
             isSubmitting={isSubmittingMantenimiento}

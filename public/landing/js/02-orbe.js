@@ -163,7 +163,7 @@ LF.orbes = (function () {
   }
   function iniciar() {
     LF.$$("[data-orbe]").forEach(function (h) { h._orbe = new Orbe(h); });
-    window.addEventListener("resize", function () { lista.forEach(function (o) { o.medir(); }); if (!LF.MOV) arrancar(); });
+    LF.alCambiarDeTamano(function () { lista.forEach(function (o) { o.medir(); }); if (!LF.MOV) arrancar(); });
     if (!LF.MOV) setTimeout(arrancar, 50);
   }
   return { iniciar: iniciar };

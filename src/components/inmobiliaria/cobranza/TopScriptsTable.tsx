@@ -18,7 +18,7 @@
  * data owner (consistent with other Phase 37 widgets).
  */
 
-import type { JSX } from 'react'
+import { useMemo, type JSX } from 'react'
 import { useI18n } from '@/lib/i18n'
 import { NoDataYetBadge } from '@/components/data-display/no-data-yet-badge'
 import { EmptyState } from '@/components/data-display/EmptyState'
@@ -27,7 +27,6 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
@@ -35,6 +34,8 @@ import type {
   TopScriptsData,
   TopScriptsRow,
 } from '@/lib/hooks/cobranza/use-cobranza-analytics'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
 
 interface TopScriptsTableProps {
   data: TopScriptsData | undefined
@@ -42,6 +43,21 @@ interface TopScriptsTableProps {
 
 export function TopScriptsTable({ data }: TopScriptsTableProps): JSX.Element {
   const { t } = useI18n()
+
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Antes de las salidas
+  // tempranas (es un hook); sin orden elegido queda el del back.
+  const filas = useMemo<TopScriptsRow[]>(() => (data?.populated ? data.rows : []), [data])
+  const { ordenadas, orden, ordenarPor } = useOrdenDeLaTabla(
+    filas,
+    {
+      script: (r) => r.scriptName,
+      etapa: (r) => r.stage,
+      llamadas: (r) => r.nCalls,
+      conversion: (r) => r.conversionRate,
+      lift: (r) => r.lift,
+    },
+    { primero: { llamadas: 'desc', conversion: 'desc', lift: 'desc' } },
+  )
 
   // Branch 1: undefined → fallback NoDataYetBadge (hook still settling).
   if (data === undefined) {
@@ -75,7 +91,7 @@ export function TopScriptsTable({ data }: TopScriptsTableProps): JSX.Element {
   }
 
   // Branch 3: populated true → real rows
-  const rows: TopScriptsRow[] = data.rows
+  const rows: TopScriptsRow[] = ordenadas
 
   return (
     <section aria-label={t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.title')}>
@@ -89,21 +105,21 @@ export function TopScriptsTable({ data }: TopScriptsTableProps): JSX.Element {
           <TableHeader>
             {/* El encabezado no es una fila sobre la que se pueda actuar: sin hover. */}
             <TableRow className="hover:bg-transparent">
-              <TableHead scope="col" className="px-3">
+              <EncabezadoOrdenable campo="script" orden={orden} onOrdenar={ordenarPor} className="px-3">
                 {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.column.script')}
-              </TableHead>
-              <TableHead scope="col" className="px-3">
+              </EncabezadoOrdenable>
+              <EncabezadoOrdenable campo="etapa" orden={orden} onOrdenar={ordenarPor} className="px-3">
                 {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.column.stage')}
-              </TableHead>
-              <TableHead scope="col" numeric className="px-3">
+              </EncabezadoOrdenable>
+              <EncabezadoOrdenable campo="llamadas" orden={orden} onOrdenar={ordenarPor} className="px-3 text-right" alineacion="derecha">
                 {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.column.nCalls')}
-              </TableHead>
-              <TableHead scope="col" numeric className="px-3">
+              </EncabezadoOrdenable>
+              <EncabezadoOrdenable campo="conversion" orden={orden} onOrdenar={ordenarPor} className="px-3 text-right" alineacion="derecha">
                 {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.column.conversionRate')}
-              </TableHead>
-              <TableHead scope="col" numeric className="px-3">
+              </EncabezadoOrdenable>
+              <EncabezadoOrdenable campo="lift" orden={orden} onOrdenar={ordenarPor} className="px-3 text-right" alineacion="derecha">
                 {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.column.lift')}
-              </TableHead>
+              </EncabezadoOrdenable>
             </TableRow>
           </TableHeader>
           <TableBody>

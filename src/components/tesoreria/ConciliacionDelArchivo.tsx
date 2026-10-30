@@ -51,6 +51,8 @@ import type {
 } from '@/lib/api/tesoreria.types';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
+import { useOrdenDeLaTabla, type ValorParaOrdenar } from '@/lib/hooks/use-orden-de-la-tabla';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { contar } from '@/lib/texto/plural';
 import { cn } from '@/lib/utils';
@@ -80,6 +82,17 @@ const VARIANTE: Record<EstadoConciliado, 'success' | 'warning' | 'secondary' | '
 };
 
 const COLUMNAS = ['Línea', 'Fecha', 'Referencia', 'Valor', 'Contrato', 'Estado conciliado', 'Razón', ''];
+
+/** Cómo se ordena cada columna (la última, de las acciones, no se ordena). */
+const ORDEN_DE_LAS_FILAS: Record<string, (f: FilaDelArchivo) => ValorParaOrdenar> = {
+  Línea: (f) => f.linea,
+  Fecha: (f) => f.fecha,
+  Referencia: (f) => f.referencia,
+  Valor: (f) => f.valorCop,
+  Contrato: (f) => f.contrato?.id ?? f.contractId,
+  'Estado conciliado': (f) => f.estadoConciliadoNombre ?? estadoDeLaFila(f),
+  Razón: (f) => f.razon ?? f.motivo,
+};
 
 /** Con un back anterior al 20-10 la fila no trae su estado: se deduce igual que allá. */
 export function estadoDeLaFila(f: FilaDelArchivo): EstadoConciliado {
@@ -172,7 +185,14 @@ export function ConciliacionDelArchivo({ archivoId, onCambio }: { archivoId: str
     () => filas.filter((f) => (pestana === 'TODOS' || estadoDeLaFila(f) === pestana) && coincide(f, busqueda)),
     [filas, pestana, busqueda],
   );
-  const pagina = useTablePagination(filtradas, { initialPageSize: 25, resetKey: `${pestana}|${busqueda}` });
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas».
+  const { ordenadas, orden, ordenarPor } = useOrdenDeLaTabla(filtradas, ORDEN_DE_LAS_FILAS, {
+    primero: { Fecha: 'desc', Valor: 'desc' },
+  });
+  const pagina = useTablePagination(ordenadas, {
+    initialPageSize: 25,
+    resetKey: `${pestana}|${busqueda}|${orden?.campo ?? ''}|${orden?.sentido ?? ''}`,
+  });
 
   const abrirConciliar = (f: FilaDelArchivo) => {
     setConciliando(f);
@@ -222,7 +242,7 @@ export function ConciliacionDelArchivo({ archivoId, onCambio }: { archivoId: str
           <Appear key={archivoId} distance="xs">
             <div className="space-y-4">
               <div>
-                <h2 className="text-base font-semibold text-fg">Conciliación de «{datos.archivo.nombre}»</h2>
+                <h2 className="text-base font-medium text-fg">Conciliación de «{datos.archivo.nombre}»</h2>
                 <p className="mt-1 text-body-sm text-fg-muted">
                   {[
                     datos.archivo.banco,
@@ -259,7 +279,7 @@ export function ConciliacionDelArchivo({ archivoId, onCambio }: { archivoId: str
                     <p className="text-caption text-fg-muted">{etiqueta}</p>
                     <p
                       className={cn(
-                        'mt-1.5 text-2xl font-semibold tabular-nums',
+                        'mt-1.5 text-2xl font-medium tabular-nums',
                         valor === 'POR_CONCILIAR' && cuantos > 0
                           ? 'text-warning'
                           : valor === 'CON_ERROR' && cuantos > 0
@@ -310,11 +330,22 @@ export function ConciliacionDelArchivo({ archivoId, onCambio }: { archivoId: str
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      {COLUMNAS.map((c, i) => (
-                        <TableHead key={i} className={cn('whitespace-nowrap', c === 'Valor' && 'text-right')}>
-                          {c}
-                        </TableHead>
-                      ))}
+                      {COLUMNAS.map((c, i) =>
+                        c === '' ? (
+                          <TableHead key={i} className="whitespace-nowrap" />
+                        ) : (
+                          <EncabezadoOrdenable
+                            key={i}
+                            campo={c}
+                            orden={orden}
+                            onOrdenar={ordenarPor}
+                            className={cn('whitespace-nowrap', c === 'Valor' && 'text-right')}
+                            alineacion={c === 'Valor' ? 'derecha' : 'izquierda'}
+                          >
+                            {c}
+                          </EncabezadoOrdenable>
+                        ),
+                      )}
                     </TableRow>
                   </TableHeader>
                   <TableBody data-testid="filas-del-archivo">

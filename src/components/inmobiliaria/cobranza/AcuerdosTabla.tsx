@@ -38,6 +38,9 @@ import {
   PAGE_SIZE_OPTIONS,
   useTablePagination,
 } from '@/lib/hooks/use-table-pagination'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden'
 import {
   ACUERDO_ESTADO,
   ACUERDO_TIPO_LABEL,
@@ -58,6 +61,9 @@ const FILTRO_OPCIONES: { value: AcuerdoFiltro; label: string; aviso?: boolean }[
 ]
 
 const VACIO = '—'
+
+/** Al ordenar por estado, el orden del trabajo (el de las pestañas): lo que espera a una persona primero. */
+const TURNO_DEL_ESTADO = (estado: AcuerdoEstado) => FILTRO_OPCIONES.findIndex((o) => o.value === estado)
 
 export interface AcuerdosTablaProps {
   /**
@@ -97,8 +103,21 @@ export function AcuerdosTabla({
     )
   }, [acuerdos, filtro, busqueda])
 
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Antes de paginar.
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(
+    visibles,
+    {
+      deudor: (a) => a.deudor,
+      tipo: (a) => ACUERDO_TIPO_LABEL[a.tipo],
+      monto: (a) => a.montoCop,
+      vence: (a) => a.venceEl,
+      estado: (a) => TURNO_DEL_ESTADO(a.estado),
+      registrado: (a) => a.registradoEn,
+    },
+    { primero: { monto: 'desc', registrado: 'desc' } },
+  )
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
-    useTablePagination(visibles, { resetKey: `${filtro}|${busqueda}` })
+    useTablePagination(ordenadas, { resetKey: `${filtro}|${busqueda}|${orden?.campo ?? ''}|${orden?.sentido ?? ''}` })
 
   // El conteo de cada pestaña sale de la lista entera (no de la página).
   const pestanas = useMemo(
@@ -133,17 +152,32 @@ export function AcuerdosTabla({
           onCambio={onFiltro}
           etiqueta="Filtrar acuerdos por estado"
         />
-        <div className="relative w-full md:w-64 md:shrink-0">
-          <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" aria-hidden="true" />
-          <Input
-            type="search"
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="Buscar deudor"
-            aria-label="Buscar acuerdos por deudor"
-            className="pl-9"
-            data-testid="acuerdos-buscar"
-          />
+        <div className="flex flex-col gap-3 sm:flex-row md:shrink-0">
+          <div className="relative w-full md:w-64">
+            <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" aria-hidden="true" />
+            <Input
+              type="search"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Buscar deudor"
+              aria-label="Buscar acuerdos por deudor"
+              className="pl-9"
+              data-testid="acuerdos-buscar"
+            />
+          </div>
+          {acuerdos.length > 1 ? (
+            <SelectorDeOrden
+              orden={orden}
+              onCambiar={setOrden}
+              className="w-full sm:w-56"
+              formas={[
+                { campo: 'vence', sentido: 'asc', etiqueta: 'Vence primero' },
+                { campo: 'monto', sentido: 'desc', etiqueta: 'Monto: mayor primero' },
+                { campo: 'registrado', sentido: 'desc', etiqueta: 'Más recientes' },
+                { campo: 'deudor', sentido: 'asc', etiqueta: 'Deudor (A–Z)' },
+              ]}
+            />
+          ) : null}
         </div>
       </div>
 
@@ -182,11 +216,13 @@ export function AcuerdosTabla({
           <Table className="max-md:block">
             <TableHeader className="max-md:hidden">
               <TableRow>
-                <TableHead>Deudor</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead className="text-right">Monto</TableHead>
-                <TableHead>Vence</TableHead>
-                <TableHead>Estado</TableHead>
+                <EncabezadoOrdenable campo="deudor" orden={orden} onOrdenar={ordenarPor}>Deudor</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="tipo" orden={orden} onOrdenar={ordenarPor}>Tipo</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="monto" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">
+                  Monto
+                </EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="vence" orden={orden} onOrdenar={ordenarPor}>Vence</EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="estado" orden={orden} onOrdenar={ordenarPor}>Estado</EncabezadoOrdenable>
                 <TableHead>
                   <span className="sr-only">Abrir detalle</span>
                 </TableHead>

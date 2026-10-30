@@ -24,6 +24,8 @@
  */
 
 import { useEffect, useMemo } from 'react'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
 import Link from 'next/link'
 import { Cifra, CrossFade, FranjaDeCifras, Stagger, StaggerItem } from '@leasefy/cadence'
 import { Warning, Download, GearSix, BellRinging, CalendarBlank } from '@phosphor-icons/react'
@@ -142,6 +144,19 @@ function ReporteViewerContent() {
   const morosidadAlertAbove = thresholds?.indice_morosidad_pct_alert_above ?? 12
   const callsOutsideCritical = thresholds?.calls_outside_window_critical_at_least ?? 1
   const topN = thresholds?.top_n_debtors_in_report ?? 3
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Los N que manda el reporte
+  // (ya vienen los de más prioridad); aquí sólo se reordenan entre ellos. La historia pagina por cursor: no se toca.
+  const principales = useMemo(() => (data?.top_debtors ?? []).slice(0, topN), [data, topN])
+  const { ordenadas: deudoresOrdenados, orden, ordenarPor } = useOrdenDeLaTabla(
+    principales,
+    {
+      deudor: (d) => d.debtor_name?.trim() || null,
+      mora: (d) => d.dpd,
+      saldo: (d) => d.balance_cop,
+      contacto: (d) => d.last_contact_at ?? null,
+    },
+    { primero: { mora: 'desc', saldo: 'desc', contacto: 'desc' } },
+  )
 
   const pkrValue = useMemo(() => {
     if (!data) return null
@@ -358,22 +373,22 @@ function ReporteViewerContent() {
               <Table className="max-md:block">
                 <TableHeader className="max-md:hidden">
                   <TableRow>
-                    <TableHead>
+                    <EncabezadoOrdenable campo="deudor" orden={orden} onOrdenar={ordenarPor}>
                       {locale.startsWith('es') ? 'Deudor' : 'Debtor'}
-                    </TableHead>
-                    <TableHead className="text-right">
+                    </EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="mora" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">
                       {t('inmobiliaria.ai.cobranza.reporte.topDebtors.diasDeMora')}
-                    </TableHead>
-                    <TableHead className="text-right">
+                    </EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="saldo" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">
                       {locale.startsWith('es') ? 'Saldo' : 'Balance'}
-                    </TableHead>
-                    <TableHead>
+                    </EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="contacto" orden={orden} onOrdenar={ordenarPor}>
                       {locale.startsWith('es') ? 'Último contacto' : 'Last contact'}
-                    </TableHead>
+                    </EncabezadoOrdenable>
                   </TableRow>
                 </TableHeader>
                 <TableBodyAnimado className="max-md:block">
-                  {data.top_debtors.slice(0, topN).map((d) => (
+                  {deudoresOrdenados.map((d) => (
                     <TableRowAnimada key={d.debtor_id} className="border-b border-border last:border-0 max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-1 max-md:px-4 max-md:py-3">
                       {/* El agente SÍ manda `debtor_name` (JOIN agregado el
                           2026-08-10); esta tabla se quedó pintando la

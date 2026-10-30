@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { DatePicker, TimePicker } from '@leasefy/cadence';
+import { TimePicker } from '@leasefy/cadence';
+// Nico, 29-10-2026: el calendario con el mes y el año a la mano (el de Cadence sólo tenía flechas).
+import { SelectorDeFecha as DatePicker } from '@/components/ui/SelectorDeFecha';
 import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';

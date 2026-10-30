@@ -654,13 +654,14 @@ describe('ContratoDetallePage — la cuenta del contrato', () => {
    * GLOW UP (21-10-2026, Nico eligió «Pestañas por tarea»): lo que se consulta
    * aparte de lo que se configura.
    */
-  it('activo: Resumen · Cobro y reglas · Garantías · Documentos · Historial, cada bloque en la suya', async () => {
+  it('activo: Resumen · Cobro y reglas · Garantías · Convivencia · Documentos · Historial, cada bloque en la suya', async () => {
     withContract(contract({ status: 'active' }))
     await renderPage()
     const pestanas = Array.from(container.querySelectorAll('[data-testid^="pestana-"]')).map((p) =>
       p.getAttribute('data-testid'),
     )
-    expect(pestanas).toEqual(['pestana-resumen', 'pestana-cobro', 'pestana-garantias', 'pestana-documentos', 'pestana-historial'])
+    // Nico 29-10: «Convivencia», los llamados de atención que Vinci cuenta en la renovación.
+    expect(pestanas).toEqual(['pestana-resumen', 'pestana-cobro', 'pestana-garantias', 'pestana-convivencia', 'pestana-documentos', 'pestana-historial'])
     const panel = (id: string) => container.querySelector(`[data-testid="panel-${id}"]`)!
     expect(panel('resumen').getAttribute('data-state')).toBe('active')
     expect(panel('resumen').querySelector('[data-testid="cobros"]')).not.toBeNull()

@@ -463,6 +463,15 @@ Todo lo de §11–12. Contenedor `space-y-6 p-6 lg:p-8`; `EncabezadoDePantalla`;
 del menú («Agentes IA») pero viven DENTRO del chat (§13.6). Ejemplos hechos: Facturación
 (`app/panel/inmobiliaria/facturacion/page.tsx`), Recaudo bancario, Cartera.
 
+- **La barra lateral es UNA hoja de arena** (Nico, 22-10), también su pie (tarjetas fijas, Ayuda, tema): el pie va
+  sólido con la misma arena, nunca con el papel de la página (Nico, 29-10: en oscuro dejaba negros los lados de la
+  tarjeta «Configura tu facturación»). Las tarjetas del pie van en `bg-surface`, como la de migración.
+- **Acciones de una fila de tabla:** a la vista sólo la que sigue para ESA fila (causar el borrador, pagar la causada),
+  en `sm`; lo que reversa o borra (anular) va en el «⋯» (`IconButton` + `DropdownList`, `ANCHO_DEL_MENU_DE_ACCIONES`)
+  y, si no se puede, la opción apagada con su motivo debajo. Nunca dos o tres botones apilados en la celda (29-10,
+  Facturas de proveedor: la fila medía 170 px y la tabla no cabía a 1440). Ejemplos: Recibos de caja, Facturas de
+  proveedor.
+
 ### 13.2 Portales (inquilino, propietario, independiente)
 
 Se ven como el panel, no como otro producto (Nico, 12-10): mismo contenedor a todo el ancho, mismo título `h1

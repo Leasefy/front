@@ -195,6 +195,35 @@ export function bloquesJsonLd(html: string): Record<string, unknown>[] {
 }
 
 /**
+ * `true` si el enlace es una BÚSQUEDA (varios inmuebles) y no el aviso de uno (revisión 29-10-2026: con una búsqueda
+ * de Fincaraíz el asistente se llenaba con «Apartamentos en Arriendo en Medellín» y el precio del primero de la lista,
+ * que no es de ningún inmueble). La señal es la que el portal declara: una `ItemList` de dos o más (sola o dentro de
+ * una `CollectionPage`/`SearchResultsPage`) y NINGÚN bloque del inmueble propio. Una ficha que además lista
+ * «inmuebles similares» trae su propio bloque, así que no cae aquí.
+ */
+export function esUnaBusqueda(html: string): boolean {
+  if (bloquesJsonLd(html).length > 0) return false;
+  let mayor = 0;
+  const recorrer = (nodo: unknown): void => {
+    if (Array.isArray(nodo)) {
+      nodo.forEach(recorrer);
+      return;
+    }
+    if (!nodo || typeof nodo !== 'object') return;
+    const obj = nodo as Record<string, unknown>;
+    const tipos = (Array.isArray(obj['@type']) ? obj['@type'] : [obj['@type']]).map((t) => String(t).toLowerCase());
+    if (tipos.includes('itemlist')) {
+      const enLaPagina = Array.isArray(obj.itemListElement) ? obj.itemListElement.length : 0;
+      const declarados = Number(obj.numberOfItems);
+      mayor = Math.max(mayor, enLaPagina, Number.isFinite(declarados) ? declarados : 0);
+    }
+    for (const clave of ['@graph', 'mainEntity']) if (obj[clave]) recorrer(obj[clave]);
+  };
+  raicesJsonLd(html).forEach(recorrer);
+  return mayor >= 2;
+}
+
+/**
  * Las migas de pan (`BreadcrumbList`), en orden y sin el sitio ni la ficha.
  *
  * `bloquesJsonLd` las descarta a propósito —su `name` no es el del inmueble—

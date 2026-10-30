@@ -288,7 +288,7 @@ describe('<AgregarCotizacionDialog>', () => {
     // SO-08: el proveedor ya quedó registrado y ESCOGIDO; reintentar no lo
     // registra dos veces.
     expect(proveedoresApi.crear).toHaveBeenCalledTimes(1);
-    expect(document.body.querySelector('[data-testid="cotizacion-proveedor-lista"]')).not.toBeNull();
+    expect(document.body.querySelector('[data-testid="cotizacion-proveedor-buscar-elegido"]')).not.toBeNull();
     // Y se puede reintentar: el botón volvió a estar disponible.
     expect(guardar().disabled).toBe(false);
     await act(async () => {
@@ -304,7 +304,7 @@ describe('<AgregarCotizacionDialog>', () => {
     ]);
     const { onGuardar } = await montar();
     expect(document.body.querySelector('#cotizacion-proveedor')).toBeNull();
-    expect(document.body.querySelector('[data-testid="cotizacion-proveedor-lista"]')).not.toBeNull();
+    expect(document.body.querySelector('[data-testid="cotizacion-proveedor-buscar"]')).not.toBeNull();
 
     // Sin escoger: no viaja y lo pide.
     escribir(campo('cotizacion-monto'), '180000');
@@ -314,6 +314,29 @@ describe('<AgregarCotizacionDialog>', () => {
     });
     expect(onGuardar).not.toHaveBeenCalled();
     expect(document.body.textContent).toContain('Escoge el proveedor de la lista o regístralo.');
+  });
+
+  it('Portofino 29-10: el proveedor se BUSCA entre los registrados por documento y viaja su id', async () => {
+    proveedoresApi.listar.mockResolvedValue([
+      { id: 'p-1', nombre: 'Plomería QA Día S.A.S.', documento: '900111222-3', telefono: '3001112233', especialidades: ['PLUMBING'], calificacion: 4.5, avisos: [] },
+      { id: 'p-2', nombre: 'Cerrajería Llave Fija', documento: '71555666', telefono: null, especialidades: ['LOCKS'], calificacion: null, avisos: [] },
+    ]);
+    const { onGuardar } = await montar();
+    await act(async () => {
+      campo('cotizacion-proveedor-buscar').focus();
+    });
+    escribir(campo('cotizacion-proveedor-buscar'), '71.555');
+    const opciones = [...document.body.querySelectorAll('[data-testid="cotizacion-proveedor-buscar-opcion"]')];
+    expect(opciones.map((o) => o.querySelector('p')?.textContent)).toEqual(['Cerrajería Llave Fija']);
+    await act(async () => {
+      (opciones[0] as HTMLButtonElement).click();
+    });
+    escribir(campo('cotizacion-monto'), '95000');
+    escribir(campo('cotizacion-alcance'), 'Cambio de guarda');
+    await act(async () => {
+      guardar().click();
+    });
+    expect(onGuardar.mock.calls[0][1]).toMatchObject({ proveedorId: 'p-2', providerName: 'Cerrajería Llave Fija' });
   });
 
   it('Portofino 22-10: el proveedor elegido al crear la solicitud llega ya escogido', async () => {

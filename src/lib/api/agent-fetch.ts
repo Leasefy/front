@@ -44,6 +44,8 @@ import {
   CODIGO_SERVICIO_NO_DISPONIBLE,
   textoParaUnAviso,
 } from '@/lib/conexion/servicio-no-disponible'
+import { enLaDemo } from '@/lib/demo/en-la-demo'
+import { CODIGO_DEL_MODO_DEMO, MENSAJE_DEL_MODO_DEMO } from '@/lib/demo/modo-demo-estado'
 
 /**
  * 🔴 03-10-2026 (pruebas en el navegador) · El micro caído es UNA parte de
@@ -139,6 +141,26 @@ async function codigoDe(res: Response): Promise<string | undefined> {
 }
 
 /**
+ * En la demo («Ver con datos demo» en una parte cerrada del panel) el micro no se toca, como el back en
+ * `api/client.ts`: una lectura responde 404 (la pantalla lo muestra como «no disponible», nunca como «el asistente no
+ * responde») y una escritura se frena con la frase de la demo. El chat de Ori sigue igual: es la ayuda, no los datos.
+ */
+function respuestaDeLaDemo(input: RequestInfo | URL, init?: RequestInit): Response | null {
+  if (!enLaDemo()) return null
+  const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
+  if (/\/ai-hub\/chat(\/|\?|$)/.test(url)) return null
+  const metodo = (init?.method ?? (typeof input === 'object' && 'method' in input ? input.method : 'GET')).toUpperCase()
+  const cuerpo =
+    metodo === 'GET'
+      ? { statusCode: 404, code: 'NO_ESTA_EN_LA_DEMO', message: 'Esta parte no trae datos de ejemplo.' }
+      : { statusCode: 403, code: CODIGO_DEL_MODO_DEMO, message: MENSAJE_DEL_MODO_DEMO }
+  return new Response(JSON.stringify(cuerpo), {
+    status: cuerpo.statusCode,
+    headers: { 'Content-Type': 'application/json' },
+  })
+}
+
+/**
  * `fetch` con Authorization del agente y un reintento ante 401.
  *
  * Misma firma que `fetch`: los headers extra que pases se conservan, sólo se
@@ -148,6 +170,9 @@ export async function agentFetch(
   input: RequestInfo | URL,
   init?: RequestInit,
 ): Promise<Response> {
+  const deLaDemo = respuestaDeLaDemo(input, init)
+  if (deLaDemo) return deLaDemo
+
   const res = await pedirAlMicro(input, init)
 
   if (res.status !== 401) return res

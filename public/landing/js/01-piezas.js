@@ -8,6 +8,22 @@ window.LF = (function () {
   var MOV = root.classList.contains("mov") && !!window.gsap && !!window.ScrollTrigger;
   if (!MOV) { root.classList.remove("mov"); root.classList.add("quieto"); }
 
+  /* Nico 29-10 (video en el celular: «titilea de feo cuando hace scroll»): en el celular la barra del navegador
+     aparece y se esconde al bajar, y cada vez el navegador avisa un «resize» de sólo el alto. Los lienzos se
+     borraban y se volvían a medir, y las animaciones del scroll se recalculaban: la página saltaba. Aquí, en un
+     aparato táctil, un cambio de SÓLO el alto no rearma nada; uno de ancho (girar el celular) sí. */
+  var tactil = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+  var anchoVisto = window.innerWidth, altoVisto = window.innerHeight;
+  var alRedimensionar = [];
+  window.addEventListener("resize", function () {
+    var w = window.innerWidth, h = window.innerHeight;
+    if (tactil && w === anchoVisto) { altoVisto = h; return; }
+    if (w === anchoVisto && h === altoVisto) return;
+    anchoVisto = w; altoVisto = h;
+    alRedimensionar.forEach(function (fn) { fn(); });
+  });
+  function alCambiarDeTamano(fn) { alRedimensionar.push(fn); }
+
   /* plata en pesos: $ 52.580.500,50 */
   function fmt(n, d) {
     if (d === undefined) d = 2;
@@ -135,26 +151,7 @@ window.LF = (function () {
     });
   }
 
-  /* ── FotoEnEstrias (voltaje sobre papel) ── */
-  function pintarEstrias(cv, img, paso) {
-    var W = cv.width, H = cv.height, c = cv.getContext("2d");
-    var l = document.createElement("canvas"); l.width = W; l.height = H;
-    var lc = l.getContext("2d", { willReadFrequently: true });
-    var e = Math.max(W / img.naturalWidth, H / img.naturalHeight), w = img.naturalWidth * e, h = img.naturalHeight * e;
-    lc.drawImage(img, (W - w) / 2, (H - h) / 2, w, h);
-    var dat; try { dat = lc.getImageData(0, 0, W, H).data; } catch (er) { return false; }
-    c.fillStyle = "#FBFAF8"; c.fillRect(0, 0, W, H); c.fillStyle = "#1A40FF";
-    var m = paso / 2;
-    for (var x = m; x < W; x += paso) for (var y = 0; y < H; y += 2) {
-      var s = 0, n = 0;
-      for (var dx = -m; dx < m; dx += 2) { var xi = Math.min(W - 1, Math.max(0, Math.round(x + dx))), i = (y * W + xi) * 4; s += 0.299 * dat[i] + 0.587 * dat[i + 1] + 0.114 * dat[i + 2]; n++; }
-      var luz = Math.pow(s / n / 255, 0.7), a = Math.max(0.7, (1 - luz) * paso * 0.62);
-      c.fillRect(x - a / 2, y, a, 2);
-    }
-    return true;
-  }
-
   /* el inglés de lo que escriben los scripts (ver idioma.js); sin el núcleo del idioma, el español tal cual */
   var t = window.LFI ? window.LFI.t : function (s) { return s; };
-  return { t: t, $: $, $$: $$, MOV: MOV, fmt: fmt, contar: contar, partir: partir, partirRelato: partirRelato, pos: pos, motivo: motivo, esferas: esferas, pintarEstrias: pintarEstrias };
+  return { t: t, $: $, $$: $$, MOV: MOV, tactil: tactil, alCambiarDeTamano: alCambiarDeTamano, fmt: fmt, contar: contar, partir: partir, partirRelato: partirRelato, pos: pos, motivo: motivo, esferas: esferas };
 })();

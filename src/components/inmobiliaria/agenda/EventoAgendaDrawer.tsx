@@ -34,6 +34,13 @@ import { useEquipo, useMiUserId } from '@/lib/agenda/use-equipo';
 import { origenDelEvento } from '@/lib/agenda/origen-del-evento';
 import { conLaPlataPegada } from '@/lib/plata/plata-pegada';
 import { AsesorDeLaVisita, MasAccionesDeLaVisita } from '@/components/inmobiliaria/agenda/AccionesDeLaVisita';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  AREAS_DE_LA_AGENDA,
+  NOMBRE_DEL_AREA,
+  esAreaDeLaAgenda,
+  type AreaDeLaAgenda,
+} from '@/lib/agenda/areas-de-la-agenda';
 
 const ESTADO_BADGE: Record<EventoEstado, string> = {
   pendiente: 'bg-primary/10 text-primary',
@@ -90,6 +97,8 @@ interface Props {
    * tareas: el cajón queda de sólo lectura y lo dice, igual que la tabla (A3).
    */
   puedeEditar?: boolean;
+  /** La agenda por área: `false` = falta la migración del back y el área de una tarea no se cambia. */
+  areaSeGuarda?: boolean;
 }
 
 export function EventoAgendaDrawer({
@@ -98,6 +107,7 @@ export function EventoAgendaDrawer({
   onCambio,
   onAccionVisita,
   puedeEditar = true,
+  areaSeGuarda = true,
 }: Props) {
   // El cajón se cierra ANIMADO (`open={…}`, no desmontando), así que durante
   // los 500 ms de la salida el prop ya es `null` y el cuerpo se pintaría en
@@ -107,6 +117,29 @@ export function EventoAgendaDrawer({
   const { t, formatDate } = useI18n();
   const k = (s: string) => `inmobiliaria.agenda.${s}`;
   const [actuando, setActuando] = useState(false);
+  /** El área recién cambiada (la fila se relee aparte): se ve en el cajón sin cerrarlo. */
+  const [areaCambiada, setAreaCambiada] = useState<{ id: string; area: AreaDeLaAgenda } | null>(null);
+  const areaDelEvento = evento && areaCambiada?.id === evento.id ? areaCambiada.area : evento?.area;
+  const cambiarArea = async (nueva: AreaDeLaAgenda) => {
+    if (!evento || nueva === areaDelEvento) return;
+    setActuando(true);
+    try {
+      await agendaApi.actualizarTarea(tareaIdOf(evento.id), { area: nueva });
+      setAreaCambiada({ id: evento.id, area: nueva });
+      toast.success(`Listo: la tarea quedó en ${NOMBRE_DEL_AREA[nueva]}`);
+      onCambio();
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) return;
+      toast.error('No se pudo cambiar el área', {
+        description: mensajeParaLaPersona(err, {
+          porDefecto: 'Prueba de nuevo en un momento.',
+          accion: 'cambiar el área de la tarea',
+        }),
+      });
+    } finally {
+      setActuando(false);
+    }
+  };
   /**
    * Cuál de las dos acciones con motivo está preguntando. `null` = ninguna.
    * Cancelar y rechazar comparten diálogo porque piden lo mismo; lo que cambia
@@ -244,6 +277,31 @@ export function EventoAgendaDrawer({
                 <Fila etiqueta={evento.tipo === 'tarea' ? 'Creada por' : t(k('colOrigen'))}>
                   {origenDelEvento(evento, miUserId, (o) => t(k(`origen_${o}`)))}
                 </Fila>
+                {/* La agenda por área (29-10-2026): en una tarea se cambia aquí; lo demás sale de su tipo. */}
+                {areaDelEvento && (
+                  <Fila etiqueta="Área">
+                    {evento.tipo === 'tarea' && puedeEditar && areaSeGuarda ? (
+                      <Select
+                        value={areaDelEvento}
+                        onValueChange={(v) => esAreaDeLaAgenda(v) && void cambiarArea(v)}
+                        disabled={actuando}
+                      >
+                        <SelectTrigger className="h-9 w-full max-w-[16rem]" data-testid="evento-area" aria-label="Área de la tarea">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="z-[400]">
+                          {AREAS_DE_LA_AGENDA.map((a) => (
+                            <SelectItem key={a} value={a}>
+                              {NOMBRE_DEL_AREA[a]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <span data-testid="evento-area">{NOMBRE_DEL_AREA[areaDelEvento]}</span>
+                    )}
+                  </Fila>
+                )}
                 <Fila etiqueta={t(k('colVinculo'))}>
                   {evento.vinculoLabel ? (
                     href ? (
@@ -380,7 +438,7 @@ export function EventoAgendaDrawer({
             ) : (
             <CajonPie
               ayuda={
-                <span className="font-medium uppercase tracking-[0.08em] text-fg-subtle">
+                <span className="font-mono text-label uppercase text-fg-subtle">
                   {esVisita ? 'Qué haces con esta visita' : 'Qué haces con esta tarea'}
                 </span>
               }

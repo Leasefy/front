@@ -22,9 +22,19 @@ import {
   MENSAJES_DE_LA_AGENDA,
   errorDeLaFecha,
 } from '@/lib/agenda/limites-de-la-agenda';
-import { DatePicker, TimePicker } from '@leasefy/cadence';
+import { TimePicker } from '@leasefy/cadence';
+// Nico, 29-10-2026: el calendario con el mes y el año a la mano (el de Cadence sólo tenía flechas).
+import { SelectorDeFecha as DatePicker } from '@/components/ui/SelectorDeFecha';
 import { Button, Textarea } from '@/components/ui';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  AREAS_DE_LA_AGENDA,
+  NOMBRE_DEL_AREA,
+  areaDeLaTarea,
+  esAreaDeLaAgenda,
+  type AreaDeLaAgenda,
+} from '@/lib/agenda/areas-de-la-agenda';
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { useConsignaciones } from '@/lib/hooks/useInmobiliaria';
 import { useEquipo, useMiUserId } from '@/lib/agenda/use-equipo';
@@ -115,7 +125,21 @@ export function loQueFalta(errores: Record<string, string>): string | null {
 /** Los pickers de cadence con la altura y el radio de los demás campos del cajón. */
 const CAMPO_CLICABLE = 'h-11 w-full rounded-[12px] px-3.5';
 
-export function NuevaTareaDrawer({ abierto, onOpenChange, onCreada, coordina = true, inicial, titulo, descripcion }: Props & {
+export function NuevaTareaDrawer({
+  abierto,
+  onOpenChange,
+  onCreada,
+  coordina = true,
+  inicial,
+  titulo,
+  descripcion,
+  areaSeGuarda = true,
+}: Props & {
+  /**
+   * La agenda por área (29-10-2026): `false` = falta la migración del back; el área sale sola de lo que dice la
+   * tarea y no se puede elegir otra.
+   */
+  areaSeGuarda?: boolean;
   /** AG-11: quien coordina asigna a cualquiera; la asesora, sólo a sí misma. */
   coordina?: boolean;
   /**
@@ -129,6 +153,8 @@ export function NuevaTareaDrawer({ abierto, onOpenChange, onCreada, coordina = t
 }) {
   const [form, setForm] = useState<TareaForm>(TAREA_VACIA);
   const [guardando, setGuardando] = useState(false);
+  /** El área que eligió la persona; `null` = la que sale de lo que escribió. */
+  const [areaElegida, setAreaElegida] = useState<AreaDeLaAgenda | null>(null);
   /**
    * Lo que rechazó el servidor, por campo (02-10-2026). Se pinta bajo SU campo
    * y se borra apenas la persona lo toca: el dato ya no es el que se rechazó.
@@ -154,6 +180,7 @@ export function NuevaTareaDrawer({ abierto, onOpenChange, onCreada, coordina = t
     if (abierto) {
       setForm({ ...TAREA_VACIA, ...inicial });
       setDelServidor({});
+      setAreaElegida(null);
     }
     // `inicial` se toma al abrir (no se reescribe lo que la persona ya editó).
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -176,6 +203,15 @@ export function NuevaTareaDrawer({ abierto, onOpenChange, onCreada, coordina = t
         })),
     [equipo, coordina, miUserId],
   );
+
+  const inmuebleElegido = consignaciones.find((c) => c.id === form.consignacionId);
+  const areaDeducida = areaDeLaTarea({
+    titulo: form.titulo,
+    nota: form.nota,
+    vinculoTipo: inmuebleElegido ? 'PROPIEDAD' : null,
+    vinculoLabel: inmuebleElegido ? etiquetaDeInmueble(inmuebleElegido) : null,
+  });
+  const area = (areaSeGuarda && areaElegida) || areaDeducida;
 
   const errores = validarTarea(form);
   const falta = loQueFalta(errores);
@@ -202,6 +238,8 @@ export function NuevaTareaDrawer({ abierto, onOpenChange, onCreada, coordina = t
           ? { vinculoTipo: 'PROPIEDAD', vinculoId: inmueble.id, vinculoLabel: etiquetaDeInmueble(inmueble) }
           : {}),
         responsableUserId: form.responsableUserId || undefined,
+        // Sólo la elegida: la que sale de lo que dice la tarea la pone el back con la misma regla.
+        ...(areaSeGuarda && areaElegida ? { area: areaElegida } : {}),
       });
       toast.success('Tarea creada');
       onCreada();
@@ -326,6 +364,35 @@ export function NuevaTareaDrawer({ abierto, onOpenChange, onCreada, coordina = t
               />
             </Campo>
 
+            <Campo
+              nombre="area"
+              label="Área"
+              hint={
+                !areaSeGuarda
+                  ? 'Sale sola de lo que escribes: para elegir otra falta una actualización de Leasefy.'
+                  : areaElegida
+                    ? 'La elegiste tú.'
+                    : 'Sale de lo que escribiste; cámbiala si es de otra área.'
+              }
+            >
+              <Select
+                value={area}
+                onValueChange={(v) => setAreaElegida(esAreaDeLaAgenda(v) ? v : null)}
+                disabled={!areaSeGuarda}
+              >
+                <SelectTrigger id="tarea-area" className="w-full" data-testid="tarea-area">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="z-[400]">
+                  {AREAS_DE_LA_AGENDA.map((a) => (
+                    <SelectItem key={a} value={a}>
+                      {NOMBRE_DEL_AREA[a]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Campo>
+
             <Campo nombre="nota" label="Nota" hint="Opcional" error={errorDe('nota')}>
               <Textarea
                 id="tarea-nota"
@@ -366,7 +433,7 @@ function Campo({
   contador,
   children,
 }: {
-  nombre: CampoDeLaTarea;
+  nombre: CampoDeLaTarea | 'area';
   label: string;
   hint?: string;
   error?: string;

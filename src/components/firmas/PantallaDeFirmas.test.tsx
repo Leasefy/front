@@ -44,11 +44,13 @@ const doc = (o: Partial<DocumentoParaFirmar>): DocumentoParaFirmar => ({
   firmadoAt: null,
   canceladoAt: null,
   creadoPor: { id: 'u1', nombre: 'Laura Ríos' },
+  codigo: null,
+  verificacion: null,
   firmaron: 1,
   total: 2,
   firmantes: [
-    { id: 'f1', nombre: 'Ana Gómez', email: 'ana@correo.co', telefono: '+573001234567', numeroDocumento: null, posicion: null, invitacion: 'ENVIADA', firmado: true, firmadoAt: '2026-10-28T16:00:00Z' },
-    { id: 'f2', nombre: 'Juan Pérez', email: 'juan@correo.co', telefono: null, numeroDocumento: null, posicion: null, invitacion: 'ENVIADA', firmado: false, firmadoAt: null },
+    { id: 'f1', nombre: 'Ana Gómez', email: 'ana@correo.co', telefono: '+573001234567', numeroDocumento: null, posicion: null, invitacion: 'ENVIADA', firmado: true, firmadoAt: '2026-10-28T16:00:00Z', pruebaDeVida: null },
+    { id: 'f2', nombre: 'Juan Pérez', email: 'juan@correo.co', telefono: null, numeroDocumento: null, posicion: null, invitacion: 'ENVIADA', firmado: false, firmadoAt: null, pruebaDeVida: null },
   ],
   ...o,
 });

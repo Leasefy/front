@@ -14,6 +14,8 @@
  */
 import * as React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+// Nico 29-10: el borrador automático vive en el navegador; cada prueba arranca sin uno.
+beforeEach(() => window.localStorage.clear())
 
 // 10-10-2026: las fechas son campos de Cadence (se eligen, no se escriben); en la
 // prueba, un <input> con el mismo id y data-testid (`campos-de-fecha.doble-de-prueba`).

@@ -28,6 +28,9 @@
 
 import { MasDetalles } from '@/components/pantalla/MasDetalles';
 import { useState } from 'react';
+import { ordenarFilas, type OrdenDeLaTabla, type ValorParaOrdenar } from '@/lib/hooks/use-orden-de-la-tabla';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
+import type { ConceptoDeNomina } from '@/lib/api/nomina.types';
 import { ListBullets } from '@phosphor-icons/react';
 import { Stagger, StaggerItem } from '@leasefy/cadence';
 
@@ -113,7 +116,26 @@ const NOMBRE_DE_CLASE: Record<ClaseDeConcepto, string> = {
   PROVISION: 'Provisiones de prestaciones',
 };
 
+type CampoDelConcepto = 'codigo' | 'nombre' | 'salarial' | 'prestacional' | 'cuenta' | 'contrapartida';
+const ORDEN_DE_CONCEPTOS: Record<CampoDelConcepto, (c: ConceptoDeNomina) => ValorParaOrdenar> = {
+  codigo: (c) => c.codigo,
+  nombre: (c) => c.nombre,
+  salarial: (c) => c.constitutivoSalario,
+  prestacional: (c) => c.basePrestacional,
+  cuenta: (c) => c.cuentaPuc,
+  contrapartida: (c) => c.cuentaPucContra,
+};
+
 export function ConceptosDeNominaPanel() {
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Las listas se arman dentro del
+  // render (sin hooks ahí): el orden vive aquí y se aplica con `ordenarFilas` en cada grupo.
+  const [orden, setOrden] = useState<OrdenDeLaTabla<CampoDelConcepto> | null>(null);
+  const ordenarPor = (campo: CampoDelConcepto) =>
+    setOrden((actual) =>
+      actual?.campo === campo
+        ? { campo, sentido: actual.sentido === 'asc' ? 'desc' : 'asc' }
+        : { campo, sentido: campo === 'salarial' || campo === 'prestacional' ? 'desc' : 'asc' },
+    );
   const estado = useCargaDeNomina<Conceptos>(() => nominaApi.conceptos(), []);
   const [sembrando, setSembrando] = useState(false);
   const [editando, setEditando] = useState<Record<string, string>>({});
@@ -272,16 +294,16 @@ export function ConceptosDeNominaPanel() {
                       <Table data-testid={`conceptos-${clase}`} className="max-md:block">
                         <TableHeader className="max-md:hidden">
                           <TableRow>
-                            <TableHead>Código</TableHead>
-                            <TableHead>Nombre</TableHead>
-                            <TableHead>Salarial</TableHead>
-                            <TableHead>Prestacional</TableHead>
-                            <TableHead>Cuenta del PUC</TableHead>
-                            <TableHead>Contrapartida</TableHead>
+                            <EncabezadoOrdenable campo="codigo" orden={orden} onOrdenar={ordenarPor}>Código</EncabezadoOrdenable>
+                            <EncabezadoOrdenable campo="nombre" orden={orden} onOrdenar={ordenarPor}>Nombre</EncabezadoOrdenable>
+                            <EncabezadoOrdenable campo="salarial" orden={orden} onOrdenar={ordenarPor}>Salarial</EncabezadoOrdenable>
+                            <EncabezadoOrdenable campo="prestacional" orden={orden} onOrdenar={ordenarPor}>Prestacional</EncabezadoOrdenable>
+                            <EncabezadoOrdenable campo="cuenta" orden={orden} onOrdenar={ordenarPor}>Cuenta del PUC</EncabezadoOrdenable>
+                            <EncabezadoOrdenable campo="contrapartida" orden={orden} onOrdenar={ordenarPor}>Contrapartida</EncabezadoOrdenable>
                           </TableRow>
                         </TableHeader>
                         <TableBodyAnimado className="max-md:block">
-                          {lista.map((c) => (
+                          {ordenarFilas(lista, orden, ORDEN_DE_CONCEPTOS).map((c) => (
                             <TableRowAnimada
                               key={c.id}
                               data-testid={`concepto-${c.codigo}`}

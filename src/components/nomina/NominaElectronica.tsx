@@ -29,6 +29,9 @@ import { FileText } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { sinElEquipoEnLaFrase } from '@/lib/contabilidad/plata';
 import { useState } from 'react';
+import { ordenarFilas, type OrdenDeLaTabla, type ValorParaOrdenar } from '@/lib/hooks/use-orden-de-la-tabla';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
+import type { DocumentoDeNomina } from '@/lib/api/nomina.types';
 
 import { Button } from '@/components/ui/button';
 import { CampoDeMes } from '@/components/ui/campo-de-mes';
@@ -72,7 +75,26 @@ function FraseDeLaPila({ pila }: { pila: string }) {
   );
 }
 
+type CampoDelDocumento = 'numero' | 'periodo' | 'tipo' | 'estado' | 'cune' | 'neto';
+const ORDEN_DE_DOCUMENTOS: Record<CampoDelDocumento, (d: DocumentoDeNomina) => ValorParaOrdenar> = {
+  numero: (d) => d.numero,
+  periodo: (d) => d.periodo,
+  tipo: (d) => d.tipo,
+  estado: (d) => d.estado,
+  cune: (d) => d.cune,
+  neto: (d) => d.totalNetoCop,
+};
+
 export function NominaElectronicaPanel() {
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». La lista se arma dentro del
+  // render (sin hooks ahí): el orden vive aquí y se aplica con `ordenarFilas`.
+  const [orden, setOrden] = useState<OrdenDeLaTabla<CampoDelDocumento> | null>(null);
+  const ordenarPor = (campo: CampoDelDocumento) =>
+    setOrden((actual) =>
+      actual?.campo === campo
+        ? { campo, sentido: actual.sentido === 'asc' ? 'desc' : 'asc' }
+        : { campo, sentido: campo === 'numero' || campo === 'periodo' || campo === 'neto' ? 'desc' : 'asc' },
+    );
   const [periodo, setPeriodo] = useState('');
   const estado = useCargaDeNomina<NominaElectronica>(
     () => nominaApi.electronica({ periodo: periodo || undefined }),
@@ -220,17 +242,17 @@ export function NominaElectronicaPanel() {
                   <Table data-testid="tabla-de-documentos" className="max-md:block">
                     <TableHeader className="max-md:hidden">
                       <TableRow>
-                        <TableHead>Número</TableHead>
-                        <TableHead>Período</TableHead>
-                        <TableHead>Tipo</TableHead>
-                        <TableHead>Estado</TableHead>
-                        <TableHead>CUNE</TableHead>
-                        <TableHead className="text-right">Neto</TableHead>
+                        <EncabezadoOrdenable campo="numero" orden={orden} onOrdenar={ordenarPor}>Número</EncabezadoOrdenable>
+                        <EncabezadoOrdenable campo="periodo" orden={orden} onOrdenar={ordenarPor}>Período</EncabezadoOrdenable>
+                        <EncabezadoOrdenable campo="tipo" orden={orden} onOrdenar={ordenarPor}>Tipo</EncabezadoOrdenable>
+                        <EncabezadoOrdenable campo="estado" orden={orden} onOrdenar={ordenarPor}>Estado</EncabezadoOrdenable>
+                        <EncabezadoOrdenable campo="cune" orden={orden} onOrdenar={ordenarPor}>CUNE</EncabezadoOrdenable>
+                        <EncabezadoOrdenable campo="neto" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Neto</EncabezadoOrdenable>
                         <TableHead />
                       </TableRow>
                     </TableHeader>
                     <TableBody className="max-md:block">
-                      {visibles.map((d) => {
+                      {ordenarFilas(visibles, orden, ORDEN_DE_DOCUMENTOS).map((d) => {
                         const dePrueba = d.cune?.startsWith('PRUEBA-') ?? false;
                         return (
                           <TableRow

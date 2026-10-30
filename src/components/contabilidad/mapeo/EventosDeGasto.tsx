@@ -39,7 +39,6 @@ import { Button } from '@/components/ui/button';
 import {
   Table,
   TableCell,
-  TableHead,
   TableHeader,
   TableRow,
   TableBodyAnimado,
@@ -54,6 +53,9 @@ import { NOMBRE_DEL_LADO, propuestaQueSirve } from './mapeo';
 import { TituloDeBloque } from '@/components/finanzas/piezas';
 import { TablePagination } from '@/components/ui/pagination';
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
+import { codigoDelPucParaOrdenar } from '@/lib/contabilidad/codigo-del-puc-para-ordenar';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
 
 export interface EventosDeGastoProps {
   /** Los siete del back. `undefined` = un back que todavía no los manda. */
@@ -114,7 +116,7 @@ export function EventosDeGasto({
   motivoSinEscritura,
   errores,
 }: EventosDeGastoProps) {
-  const lista = eventos ?? [];
+  const lista = useMemo(() => eventos ?? [], [eventos]);
   const faltantes = useMemo(
     () => lista.filter((e) => e.cuenta === null && !e.opcional).map((e) => e.evento),
     [lista],
@@ -122,7 +124,15 @@ export function EventosDeGasto({
   const apagado = useMemo(() => loQueNoSePuedeCausar(faltantes), [faltantes]);
 
   // Ronda 30 (regla de Nico: toda tabla con su pie de paginación, aunque sean los siete eventos).
-  const pag = useTablePagination(lista);
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Como en los asientos
+  // automáticos: sin tocar nada, el orden del catálogo; «Cuenta del PUC» como el plan (sin cuenta, al final).
+  const { ordenadas, orden, ordenarPor } = useOrdenDeLaTabla(lista, {
+    evento: (e) => e.nombre,
+    lado: (e) => NOMBRE_DEL_LADO[e.lado],
+    cuenta: (e) => codigoDelPucParaOrdenar(e.cuenta?.codigo),
+    propuesta: (e) => codigoDelPucParaOrdenar(e.propuesta?.codigo ?? e.codigoPropuesto),
+  });
+  const pag = useTablePagination(ordenadas, { resetKey: `${orden?.campo ?? ''}|${orden?.sentido ?? ''}` });
   const hayPropuestaDistinta = lista.some((e) => Boolean(e.propuesta) && !(e.cuenta && !propuestaQueSirve(e, e.cuenta.id)));
   return (
     <section className="space-y-4" data-testid="eventos-de-gasto">
@@ -184,10 +194,10 @@ export function EventosDeGasto({
               <Table className="max-md:block">
                 <TableHeader className="max-md:hidden">
                   <TableRow>
-                    <TableHead className="min-w-[240px]">Evento</TableHead>
-                    <TableHead>Lado</TableHead>
-                    <TableHead className="min-w-[280px]">Cuenta del PUC</TableHead>
-                    <TableHead className={cn(!hayPropuestaDistinta && 'hidden')}>Propuesta</TableHead>
+                    <EncabezadoOrdenable campo="evento" orden={orden} onOrdenar={ordenarPor} className="min-w-[240px]">Evento</EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="lado" orden={orden} onOrdenar={ordenarPor}>Lado</EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="cuenta" orden={orden} onOrdenar={ordenarPor} className="min-w-[280px]">Cuenta del PUC</EncabezadoOrdenable>
+                    <EncabezadoOrdenable campo="propuesta" orden={orden} onOrdenar={ordenarPor} className={cn(!hayPropuestaDistinta && 'hidden')}>Propuesta</EncabezadoOrdenable>
                   </TableRow>
                 </TableHeader>
                 <TableBodyAnimado className="max-md:block">

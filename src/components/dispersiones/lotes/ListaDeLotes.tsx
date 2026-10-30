@@ -53,6 +53,9 @@ import {
 } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { usePermissions } from '@/lib/hooks/usePermissions';
@@ -249,8 +252,23 @@ export function ListaDeLotes({
   }, [cargando, error, lotes, filtro]);
   const visibles = useMemo(() => lotes.filter((l) => pasaElFiltro(l, filtro)), [lotes, filtro]);
   // Un lote por mes y por corrida: la lista crece sola y no tiene techo.
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». La lista entera se ordena
+  // antes de cortar la página.
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(
+    visibles,
+    {
+      mes: (l) => l.month,
+      estado: (l) => NOMBRE_DEL_ESTADO[l.estado],
+      pagos: (l) => l.cantidad,
+      total: (l) => l.totalCop,
+      armadoPor: (l) => nombreDe(l.creadoPorUserId, l.creadoPorNombre),
+      aprobadoPor: (l) => (l.aprobadoPorUserId ? nombreDe(l.aprobadoPorUserId, l.aprobadoPorNombre) : null),
+      armado: (l) => l.createdAt,
+    },
+    { primero: { mes: 'desc', pagos: 'desc', total: 'desc', armado: 'desc' } },
+  );
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
-    useTablePagination(visibles, { resetKey: filtro });
+    useTablePagination(ordenadas, { resetKey: `${filtro}|${orden?.campo ?? ''}|${orden?.sentido ?? ''}` });
 
   const esCelular = useIsMobile();
   // Una columna que dice lo mismo en todas las filas de la página no ayuda a decidir.
@@ -320,6 +338,19 @@ export function ListaDeLotes({
               testid: `filtro-de-lotes-${f.id}`,
             }))}
           />
+          {lotes.length > 1 ? (
+            <SelectorDeOrden
+              orden={orden}
+              onCambiar={setOrden}
+              className="w-full sm:w-56"
+              formas={[
+                { campo: 'armado', sentido: 'desc', etiqueta: 'Más recientes' },
+                { campo: 'total', sentido: 'desc', etiqueta: 'Total más alto' },
+                { campo: 'pagos', sentido: 'desc', etiqueta: 'Más pagos' },
+                { campo: 'estado', sentido: 'asc', etiqueta: 'Estado' },
+              ]}
+            />
+          ) : null}
         </div>
 
         {visibles.length === 0 ? (
@@ -372,14 +403,20 @@ export function ListaDeLotes({
               <TableHeader>
                 <TableRow>
                   {/* Revisora r24 (Giros #5): «Mes» sólo si la lista mezcla meses. */}
-                  {variosMesesEnLaLista ? <TableHead>Mes</TableHead> : null}
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="text-right">Pagos</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
+                  {variosMesesEnLaLista ? (
+                    <EncabezadoOrdenable campo="mes" orden={orden} onOrdenar={ordenarPor}>Mes</EncabezadoOrdenable>
+                  ) : null}
+                  <EncabezadoOrdenable campo="estado" orden={orden} onOrdenar={ordenarPor}>Estado</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="pagos" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Pagos</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="total" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Total</EncabezadoOrdenable>
                   {/* Ronda 21: «Armado por» y «Aprobado por» sólo cuando no dicen lo mismo en todas las filas. */}
-                  {conArmadoPor ? <TableHead>Armado por</TableHead> : null}
-                  {conAprobadoPor ? <TableHead>Aprobado por</TableHead> : null}
-                  <TableHead>Armado</TableHead>
+                  {conArmadoPor ? (
+                    <EncabezadoOrdenable campo="armadoPor" orden={orden} onOrdenar={ordenarPor}>Armado por</EncabezadoOrdenable>
+                  ) : null}
+                  {conAprobadoPor ? (
+                    <EncabezadoOrdenable campo="aprobadoPor" orden={orden} onOrdenar={ordenarPor}>Aprobado por</EncabezadoOrdenable>
+                  ) : null}
+                  <EncabezadoOrdenable campo="armado" orden={orden} onOrdenar={ordenarPor}>Armado</EncabezadoOrdenable>
                   <TableHead className="sr-only">Abrir</TableHead>
                 </TableRow>
               </TableHeader>

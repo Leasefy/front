@@ -473,26 +473,6 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
           { labelKey: 'inmobiliaria.nav.comisionesYMetas', href: r('/pipeline/comisiones'), icon: Wallet, module: 'agentes', scope: 'comercial' },
         ],
       },
-      // Agenda estaba en Operación y se mudó acá (Nico, 2026-09-12: «Agenda
-      // interna: la sección de agenda la debemos llevar para la sección de
-      // captación y arriendo»). Va detrás de Pipeline porque lo que llena la
-      // agenda son las VISITAS del prospecto —«Pedir cita» pide el nombre del
-      // prospecto y la propiedad—: primero el prospecto, después la cita, y
-      // recién ahí el inmueble que se le muestra y la postulación que firma.
-      // Conserva su `module: 'operaciones'` y su `scope: 'administracion'`:
-      // cambiar de grupo no le abre la pantalla a nadie que no la tuviera ni
-      // se la cierra a quien la tenía (ver la regla al principio del archivo).
-      // Efecto colateral asumido: la barra inferior del móvil muestra las 5
-      // primeras filas navegables (`MobileNavBar`), así que Agenda entra ahí y
-      // Postulaciones pasa al «más». Ninguna puerta se pierde —el sheet las
-      // lista todas— y mover la fila sin mover el móvil sería tener dos menús
-      // que no coinciden.
-      // 🔴 Desde el 17-09-2026 la agenda también es del ASESOR COMERCIAL
-      // (`pipeline`): lo que la llena son las visitas de sus prospectos. El back
-      // le muestra sólo visitas y tareas si no ve contratos. `scope: 'comercial'`
-      // sumado a lo que ya tenía: el encuadre por rol la sigue dejando al
-      // contador (administración) y al asesor (comercial).
-      { key: 'agenda', labelKey: 'inmobiliaria.nav.agenda', href: r('/agenda'), icon: CalendarBlank, module: 'operaciones', modulos: ['operaciones', 'pipeline'], scope: 'administracion' },
       // Avalúos se mudó a «Agentes IA» (2026-09-16): Inmuebles se queda sin
       // secciones y `SeccionesDelModulo` no dibuja el riel de una sola card.
       { key: 'inmuebles', labelKey: 'inmobiliaria.nav.inmuebles', href: r('/inmuebles'), icon: Buildings, module: 'portafolio', scope: 'comercial', dataTourTarget: 'sidebar-inmuebles' },
@@ -593,6 +573,12 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
           // 03-10-2026) y las rutas viejas redirigen a `/retencion`.
         ],
       },
+      // 🔴 Agenda vuelve a Operación (Nico, 28-10-2026: «pasa la sección agenda dentro de operación y el calendario
+      // quede como predeterminado y no lista»). Antes (12-09) se había mudado a Captación y arriendo porque la llenan
+      // las visitas del prospecto. Conserva `module: 'operaciones'`, `modulos` (también la ve el asesor por
+      // `pipeline`) y `scope`: cambiar de grupo no le abre la pantalla a nadie que no la tuviera ni se la cierra a
+      // quien la tenía. Abre en el calendario (`agenda/page.tsx`).
+      { key: 'agenda', labelKey: 'inmobiliaria.nav.agenda', href: r('/agenda'), icon: CalendarBlank, module: 'operaciones', modulos: ['operaciones', 'pipeline'], scope: 'administracion' },
       // Sin `ia: true` ni la pantalla «Tickets»: el agente de mantenimiento
       // (bandeja de tickets, resumen, ficha) es mock-first y el micro no tiene
       // su endpoint (`/api/agency/:id/mantenimiento/inbox` no existe). Con

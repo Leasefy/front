@@ -78,6 +78,10 @@ import {
 } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden';
+import { useTr } from '@/lib/i18n/use-tr';
 import { SectionLabel } from '@/components/ui/section-label';
 import {
   useConciliacionQueue,
@@ -354,10 +358,24 @@ function RowActions({ item, onConfirm, onReject, onReverse, busy, t }: RowAction
 const COLUMNS = [
   'colFecha', 'colReferencia', 'colTercero', 'colContrato',
   'colValorBanco', 'colValorEsperado', 'colCaso', 'colAccion',
-];
+] as const;
+
+type CampoDelAgente = 'fecha' | 'referencia' | 'tercero' | 'contrato' | 'valorBanco' | 'valorEsperado' | 'caso';
+/** Por qué se ordena cada columna (la de las acciones no se ordena). */
+const CAMPO_DE_LA_COLUMNA: Record<(typeof COLUMNS)[number], CampoDelAgente | null> = {
+  colFecha: 'fecha',
+  colReferencia: 'referencia',
+  colTercero: 'tercero',
+  colContrato: 'contrato',
+  colValorBanco: 'valorBanco',
+  colValorEsperado: 'valorEsperado',
+  colCaso: 'caso',
+  colAccion: null,
+};
 
 export function ConciliacionDelAgente() {
   const { t } = useI18n();
+  const tr = useTr();
   const k = (s: string) => `inmobiliaria.conciliacion.${s}`;
 
   const { items, summary, total, isLoading, error, refetch, confirmMatch, rejectMatch, reverseMatch, ingestStatement } =
@@ -370,8 +388,23 @@ export function ConciliacionDelAgente() {
    * `total`, pero el resumen de arriba (`deriveQueueSummary`) se calcula en el
    * cliente sobre `items`: si le pidiéramos una página al back, los tiles
    * pasarían a contar sólo la página visible. Mientras no exista endpoint de
-   * resumen, el recorte va acá. Esta pantalla no tiene filtros ⇒ sin `resetKey`.
+   * resumen, el recorte va acá. Sin filtros: la página vuelve a la primera sólo al cambiar el orden.
    */
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». La lista ENTERA, antes de
+  // cortar la página.
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(
+    items,
+    {
+      fecha: (i) => i.movement.valueDate ?? i.createdAt,
+      referencia: (i) => i.movement.reference ?? i.movement.description ?? null,
+      tercero: (i) => i.movement.description ?? null,
+      contrato: (i) => i.domain,
+      valorBanco: (i) => i.movement.amountCop,
+      valorEsperado: (i) => i.matchedAmountCop || null,
+      caso: (i) => itemCaso(i),
+    },
+    { primero: { fecha: 'desc', valorBanco: 'desc', valorEsperado: 'desc' } },
+  );
   const {
     pageItems,
     total: totalPaginado,
@@ -380,7 +413,7 @@ export function ConciliacionDelAgente() {
     setPage,
     setPageSize,
     shouldPaginate,
-  } = useTablePagination(items);
+  } = useTablePagination(ordenadas, { resetKey: `${orden?.campo ?? ''}|${orden?.sentido ?? ''}` });
 
   // Per-row busy state
   const [busyRow, setBusyRow] = useState<string | null>(null);
@@ -578,32 +611,54 @@ export function ConciliacionDelAgente() {
         {/* Cola del agente — taxonomía, sugerencias y reverse. */}
         {tieneDatos && (
           <section className="overflow-hidden rounded-lg border border-border bg-surface">
-            <div className="flex items-center justify-between border-b border-border p-4">
+            <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h3 className="text-sm font-medium text-fg">{t(k('movimientosTitle'))}</h3>
                 <p className="mt-0.5 text-caption text-fg-muted">{t(k('movimientosDesc'))}</p>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => void refetch()}
-                title={t(k('refresh'))}
-                aria-label={t(k('refresh'))}
-                hideArrow
-                className="text-fg-muted"
-              >
-                <ArrowsClockwise className="h-4 w-4" />
-              </Button>
+              <div className="flex shrink-0 items-center gap-2">
+                {items.length > 1 ? (
+                  <SelectorDeOrden
+                    orden={orden}
+                    onCambiar={setOrden}
+                    className="w-full sm:w-56"
+                    formas={[
+                      { campo: 'fecha', sentido: 'desc', etiqueta: tr('Más recientes') },
+                      { campo: 'fecha', sentido: 'asc', etiqueta: tr('Más antiguos') },
+                      { campo: 'valorBanco', sentido: 'desc', etiqueta: tr('Monto más alto') },
+                      { campo: 'caso', sentido: 'asc', etiqueta: tr('Por caso') },
+                    ]}
+                  />
+                ) : null}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => void refetch()}
+                  title={t(k('refresh'))}
+                  aria-label={t(k('refresh'))}
+                  hideArrow
+                  className="text-fg-muted"
+                >
+                  <ArrowsClockwise className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
 
               <Table>
                 <TableHeader>
                   <TableRow>
-                    {COLUMNS.map((col) => (
-                      <TableHead key={col} className="whitespace-nowrap">
-                        {t(k(col))}
-                      </TableHead>
-                    ))}
+                    {COLUMNS.map((col) => {
+                      const campo = CAMPO_DE_LA_COLUMNA[col];
+                      return campo ? (
+                        <EncabezadoOrdenable key={col} campo={campo} orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">
+                          {t(k(col))}
+                        </EncabezadoOrdenable>
+                      ) : (
+                        <TableHead key={col} className="whitespace-nowrap">
+                          {t(k(col))}
+                        </TableHead>
+                      );
+                    })}
                   </TableRow>
                 </TableHeader>
                 <TableBody>

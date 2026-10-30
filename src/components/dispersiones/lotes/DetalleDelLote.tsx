@@ -69,6 +69,9 @@ import {
 } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -360,7 +363,41 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
         : todosLosPagos.filter((p) => (vistaDePagos === 'entran' ? p.motivoDeExclusion === null : p.motivoDeExclusion !== null)),
     [todosLosPagos, vistaDePagos],
   );
-  const pagos = useTablePagination(pagosVisibles, { resetKey: `${id}|${vistaDePagos}` });
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Todos los pagos se ordenan
+  // antes de cortar la página.
+  const idsDeCompensados = useMemo(
+    () => new Set((vista?.compensados ?? []).map((c) => c.dispersionId)),
+    [vista],
+  );
+  const ordenDePagos = useOrdenDeLaTabla(
+    pagosVisibles,
+    {
+      titular: (p) => titularDelPago(p, vista?.cuentasDeOtraPersona).titular,
+      documento: (p) => p.documento || null,
+      banco: (p) => p.banco || null,
+      cuenta: (p) => (p.numeroDeCuenta ? `${p.tipoDeCuenta ?? ''} ${ultimos4(p.numeroDeCuenta)}` : null),
+      valor: (p) => p.valorCop,
+      entra: (p) =>
+        p.motivoDeExclusion === null ? 'Sí' : idsDeCompensados.has(p.dispersionId) ? 'Se cierra en $0' : 'No',
+    },
+    { primero: { valor: 'desc' } },
+  );
+  // Los que no entran y los que se cierran en $0, también por columna (son listas de propietarios).
+  const excluidosDelLote = useMemo(() => vista?.excluidos ?? [], [vista]);
+  const ordenDeExcluidos = useOrdenDeLaTabla(
+    excluidosDelLote,
+    { propietario: (e) => e.nombre, valor: (e) => e.valorCop, motivo: (e) => e.motivo },
+    { primero: { valor: 'desc' } },
+  );
+  const compensadosDelLote = useMemo(() => vista?.compensados ?? [], [vista]);
+  const ordenDeCompensados = useOrdenDeLaTabla(
+    compensadosDelLote,
+    { propietario: (c) => c.nombre, pasa: (c) => c.saldoEnContraCop },
+    { primero: { pasa: 'desc' } },
+  );
+  const pagos = useTablePagination(ordenDePagos.ordenadas, {
+    resetKey: `${id}|${vistaDePagos}|${ordenDePagos.orden?.campo ?? ''}|${ordenDePagos.orden?.sentido ?? ''}`,
+  });
 
   /*
    * 🔴 El archivo vive en el CENTRO DE PROCESOS (Nico, 22-09: «ese diseño de
@@ -412,7 +449,7 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
 
   const { lote, excluidos, intentosRestantes, bloqueado } = vista;
   const compensados = vista.compensados ?? [];
-  const idsCompensados = new Set(compensados.map((c) => c.dispersionId));
+  const idsCompensados = idsDeCompensados;
   const acciones = accionesPara(lote.estado).filter(puede);
   const soyElCreador = yo !== null && yo === lote.creadoPorUserId;
   /*
@@ -720,13 +757,13 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Propietario</TableHead>
-                  <TableHead className="text-right">Valor</TableHead>
-                  <TableHead>Por qué no entra</TableHead>
+                  <EncabezadoOrdenable campo="propietario" orden={ordenDeExcluidos.orden} onOrdenar={ordenDeExcluidos.ordenarPor}>Propietario</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="valor" orden={ordenDeExcluidos.orden} onOrdenar={ordenDeExcluidos.ordenarPor} className="text-right" alineacion="derecha">Valor</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="motivo" orden={ordenDeExcluidos.orden} onOrdenar={ordenDeExcluidos.ordenarPor}>Por qué no entra</EncabezadoOrdenable>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {excluidos.map((e) => (
+                {ordenDeExcluidos.ordenadas.map((e) => (
                   <TableRow key={`${e.propietarioId}-${e.nombre}`}>
                     <TableCell className="font-medium text-fg">{e.nombre}</TableCell>
                     <TableCell className="text-right font-mono tabular-nums">
@@ -757,13 +794,13 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Propietario</TableHead>
+                  <EncabezadoOrdenable campo="propietario" orden={ordenDeCompensados.orden} onOrdenar={ordenDeCompensados.ordenarPor}>Propietario</EncabezadoOrdenable>
                   <TableHead className="text-right">Se gira</TableHead>
-                  <TableHead className="text-right">Pasa al mes siguiente</TableHead>
+                  <EncabezadoOrdenable campo="pasa" orden={ordenDeCompensados.orden} onOrdenar={ordenDeCompensados.ordenarPor} className="text-right" alineacion="derecha">Pasa al mes siguiente</EncabezadoOrdenable>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {compensados.map((c) => (
+                {ordenDeCompensados.ordenadas.map((c) => (
                   <TableRow key={c.dispersionId}>
                     <TableCell className="font-medium text-fg">{c.nombre}</TableCell>
                     <TableCell className="text-right font-mono tabular-nums">{formatCurrency(0)}</TableCell>
@@ -787,30 +824,45 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
           </p>
         </div>
         <div className="overflow-hidden rounded-lg border border-border bg-surface">
-          {todosLosPagos.some((p) => p.motivoDeExclusion !== null) ? (
-            <div className="border-b border-border px-4 py-3 empty:hidden">
-              <PestanasDeEstado
-                etiqueta="Qué pagos ver"
-                valor={vistaDePagos}
-                onCambio={setVistaDePagos}
-                pestanas={[
-                  { valor: 'todos', etiqueta: 'Todos', cuantos: todosLosPagos.length, fija: true },
-                  { valor: 'entran', etiqueta: 'Entran al archivo', cuantos: todosLosPagos.filter((p) => p.motivoDeExclusion === null).length },
-                  { valor: 'no-entran', etiqueta: 'No entran', cuantos: todosLosPagos.filter((p) => p.motivoDeExclusion !== null).length, tono: 'aviso' },
-                ]}
-              />
+          {todosLosPagos.some((p) => p.motivoDeExclusion !== null) || todosLosPagos.length > 1 ? (
+            <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center">
+              {todosLosPagos.some((p) => p.motivoDeExclusion !== null) ? (
+                <PestanasDeEstado
+                  etiqueta="Qué pagos ver"
+                  valor={vistaDePagos}
+                  onCambio={setVistaDePagos}
+                  pestanas={[
+                    { valor: 'todos', etiqueta: 'Todos', cuantos: todosLosPagos.length, fija: true },
+                    { valor: 'entran', etiqueta: 'Entran al archivo', cuantos: todosLosPagos.filter((p) => p.motivoDeExclusion === null).length },
+                    { valor: 'no-entran', etiqueta: 'No entran', cuantos: todosLosPagos.filter((p) => p.motivoDeExclusion !== null).length, tono: 'aviso' },
+                  ]}
+                />
+              ) : null}
+              {todosLosPagos.length > 1 ? (
+                <SelectorDeOrden
+                  orden={ordenDePagos.orden}
+                  onCambiar={ordenDePagos.setOrden}
+                  className="w-full sm:ml-auto sm:w-56"
+                  formas={[
+                    { campo: 'valor', sentido: 'desc', etiqueta: 'Valor más alto' },
+                    { campo: 'titular', sentido: 'asc', etiqueta: 'Titular (A–Z)' },
+                    { campo: 'banco', sentido: 'asc', etiqueta: 'Banco (A–Z)' },
+                    { campo: 'entra', sentido: 'asc', etiqueta: 'Los que no entran primero' },
+                  ]}
+                />
+              ) : null}
             </div>
           ) : null}
           <div className="overflow-x-auto">
             <Table className="max-md:block">
               <TableHeader className="max-md:hidden">
                 <TableRow>
-                  <TableHead>Titular</TableHead>
-                  <TableHead>Documento</TableHead>
-                  <TableHead>Banco</TableHead>
-                  <TableHead>Cuenta</TableHead>
-                  <TableHead className="text-right">Valor</TableHead>
-                  <TableHead>Entra</TableHead>
+                  <EncabezadoOrdenable campo="titular" orden={ordenDePagos.orden} onOrdenar={ordenDePagos.ordenarPor}>Titular</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="documento" orden={ordenDePagos.orden} onOrdenar={ordenDePagos.ordenarPor}>Documento</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="banco" orden={ordenDePagos.orden} onOrdenar={ordenDePagos.ordenarPor}>Banco</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="cuenta" orden={ordenDePagos.orden} onOrdenar={ordenDePagos.ordenarPor}>Cuenta</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="valor" orden={ordenDePagos.orden} onOrdenar={ordenDePagos.ordenarPor} className="text-right" alineacion="derecha">Valor</EncabezadoOrdenable>
+                  <EncabezadoOrdenable campo="entra" orden={ordenDePagos.orden} onOrdenar={ordenDePagos.ordenarPor}>Entra</EncabezadoOrdenable>
                   {lotePagado ? <TableHead>Giro</TableHead> : null}
                 </TableRow>
               </TableHeader>

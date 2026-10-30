@@ -15,7 +15,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { traerConGuardia, FalloAlTraer } from '@/lib/inmuebles/traer-url';
-import { leerInmuebleDeHtml, loQueFalta } from '@/lib/inmuebles/leer-enlace';
+import { esUnaBusqueda, leerInmuebleDeHtml, loQueFalta } from '@/lib/inmuebles/leer-enlace';
 import { haySesionValida } from '@/lib/api/sesion-de-la-ruta';
 import { limitarLaRuta, POLITICAS_DE_LAS_RUTAS } from '@/lib/api/limite-de-la-ruta';
 
@@ -77,6 +77,15 @@ export async function POST(req: NextRequest) {
     });
 
     const html = decodificar(bytes, contentType);
+    // Una búsqueda no es un aviso: leerla llenaba el inmueble con el título de la búsqueda y el precio del primero.
+    if (esUnaBusqueda(html)) {
+      return NextResponse.json({
+        ok: false,
+        motivo: 'es_una_busqueda',
+        mensaje:
+          'Ese enlace es una búsqueda con varios inmuebles, no el aviso de uno. Abre el inmueble que quieres y copia el enlace de su página.',
+      });
+    }
     const inmueble = leerInmuebleDeHtml(html, urlFinal);
 
     return NextResponse.json({

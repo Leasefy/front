@@ -118,8 +118,10 @@ describe('<ConsignacionHeader> — Ver el aviso público (revisión 21-10)', () 
 
   it('el menú lo ofrece sólo con un inmueble asociado (fuente: sin inmueble no hay aviso)', () => {
     const fuente = readFileSync(resolve(process.cwd(), 'src/components/inmobiliaria/ConsignacionHeader.tsx'), 'utf8');
-    expect(fuente).toContain('{canViewPortal ? (');
-    expect(fuente).toContain('data-testid="menu-ver-aviso"');
+    expect(fuente).toContain('onVerAviso: canViewPortal ?');
+    // La opción sale de la definición compartida de las acciones del inmueble (29-10).
+    const definicion = readFileSync(resolve(process.cwd(), 'src/components/inmobiliaria/inmuebles/OpcionesDelInmueble.tsx'), 'utf8');
+    expect(definicion).toContain("testid: 'menu-ver-aviso'");
   });
 });
 

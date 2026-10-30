@@ -79,7 +79,7 @@
     aviso.classList.toggle("ver", y > finHero && !enFondo && !(r && r.top < innerHeight && r.bottom > 0));
   }
   window.addEventListener("scroll", alScroll, { passive: true });
-  window.addEventListener("resize", function () { anclas = null; alScroll(); });
+  LF.alCambiarDeTamano(function () { anclas = null; alScroll(); });
   window.addEventListener("load", function () { anclas = null; alScroll(); });
   alScroll();
 
@@ -109,6 +109,8 @@
 
   /* ── scroll suave con Lenis, atado a ScrollTrigger ── */
   gsap.registerPlugin(ScrollTrigger);
+  /* la barra del navegador del celular no recalcula el scroll (ver LF.alCambiarDeTamano) */
+  ScrollTrigger.config({ ignoreMobileResize: true });
   var lenis = null;
   if (window.Lenis) {
     lenis = new Lenis({ lerp: .05, wheelMultiplier: .9, smoothWheel: true });
@@ -141,7 +143,7 @@
   ScrollTrigger.batch("[data-r]", { start: "top 90%", once: true, onEnter: function (b) { gsap.to(b, { opacity: 1, y: 0, duration: .9, ease: "expo.out", stagger: .08, overwrite: "auto" }); } });
   gsap.to(".hero [data-r]", { opacity: 1, y: 0, duration: 1, ease: "expo.out", stagger: .1, delay: .55 });
   gsap.from(".mk-banda", { opacity: 0, y: -10, duration: .8, ease: "expo.out", delay: .05 });
-  gsap.to(".hero-pix", { opacity: .9, duration: 2.2, ease: "power2.out", delay: .4 });
+  gsap.to(".hero-campo", { opacity: 1, duration: 2.2, ease: "power2.out", delay: .4 });
 
   /* parallax de los 3D */
   $$("[data-px]").forEach(function (el) {

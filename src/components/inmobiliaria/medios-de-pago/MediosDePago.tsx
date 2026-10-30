@@ -24,6 +24,7 @@ import {
   Money,
   PencilSimple,
   Plus,
+  QrCode,
   Wallet,
 } from '@phosphor-icons/react';
 import { Badge } from '@/components/ui/badge';
@@ -287,6 +288,12 @@ export function MediosDePago({ agencia }: MediosDePagoProps) {
                       <p className="truncate font-medium text-fg">{medio.nombre}</p>
                       <Badge variant="secondary">{NOMBRE_DEL_TIPO[medio.tipo]}</Badge>
                       {!medio.activo && <Badge variant="outline">Apagado</Badge>}
+                      {medio.qrUrl && (
+                        <Badge variant="outline" data-testid={`con-qr-${medio.id}`}>
+                          <QrCode className="mr-1 h-3 w-3" aria-hidden="true" />
+                          Con QR
+                        </Badge>
+                      )}
                       {!medio.visibleAlInquilino && (
                         <Badge variant="outline">
                           <EyeSlash className="mr-1 h-3 w-3" aria-hidden="true" />
@@ -379,6 +386,8 @@ export function MediosDePago({ agencia }: MediosDePagoProps) {
         inicial={editor.inicial}
         onCerrar={cerrarEditor}
         onGuardar={guardar}
+        onQrCambiado={reemplazar}
+        puedeEditar={puedeEditar}
       />
     </div>
   );

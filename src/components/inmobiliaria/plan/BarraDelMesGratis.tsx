@@ -95,7 +95,7 @@ export function mensajeDeLaBarra(acceso: AccesoDeLaCuenta | null | undefined): M
       tono: 'gratis',
       texto: 'Estás en el plan gratis: marketplace y Arrendamientos. Abre todo Leasefy desde $99.000 al mes.',
       titulo: 'Estás en el plan gratis',
-      detalle: 'Marketplace y Arrendamientos son tuyos. Abre todo Leasefy desde $99.000 al mes.',
+      detalle: 'Marketplace, Arrendamientos e Inquilinos son tuyos. Abre todo Leasefy desde $99.000 al mes.',
       boton: 'Abrir todo',
       sePuedeCerrar: true,
       ilustracion: 'plan_insignia',

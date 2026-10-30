@@ -44,6 +44,9 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { Input } from '@/components/ui/input';
 import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination } from '@/lib/hooks/use-table-pagination';
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import { getReviewStatusLabel, reviewStatusBadgeVariant } from '@/lib/documents/review-status';
@@ -148,10 +151,20 @@ export function DocumentReviewQueueView({
         .some((t) => normalizar(t).includes(q)),
     );
   }, [items, busqueda]);
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». Se ordenan los CANDIDATOS.
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(
+    candidatos,
+    {
+      candidato: (item) => item.tenant.fullName,
+      inmueble: (item) => item.property?.title ?? null,
+      porRevisar: (item) => item.documents.filter((d) => d.reviewStatus === 'PENDING' || d.reviewStatus === 'IN_REVIEW').length,
+    },
+    { primero: { porRevisar: 'desc' } },
+  );
   // La página es de CANDIDATOS (un grupo no se parte entre dos páginas).
-  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } = useTablePagination(candidatos, {
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } = useTablePagination(ordenadas, {
     initialPageSize: 10,
-    resetKey: busqueda,
+    resetKey: `${busqueda}|${orden?.campo ?? ''}|${orden?.sentido ?? ''}`,
   });
   const hayCola = items.length > 0;
 
@@ -228,7 +241,7 @@ export function DocumentReviewQueueView({
       ) : (
         <div className="rounded-lg border border-border bg-card overflow-hidden">
           {hayCola ? (
-            <div className="border-b border-border px-4 py-3">
+            <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="relative w-full sm:max-w-sm">
                 <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted" aria-hidden="true" />
                 <Input
@@ -240,20 +253,32 @@ export function DocumentReviewQueueView({
                   data-testid="buscar-soportes"
                 />
               </div>
+              {items.length > 1 ? (
+                <SelectorDeOrden
+                  orden={orden}
+                  onCambiar={setOrden}
+                  className="w-full sm:w-56"
+                  formas={[
+                    { campo: 'porRevisar', sentido: 'desc', etiqueta: 'Más papeles por revisar' },
+                    { campo: 'candidato', sentido: 'asc', etiqueta: 'Candidato (A–Z)' },
+                    { campo: 'inmueble', sentido: 'asc', etiqueta: 'Inmueble (A–Z)' },
+                  ]}
+                />
+              ) : null}
             </div>
           ) : null}
           {/* En el celular cada soporte es una tarjeta (patrón de Deuda del mes). */}
           <Table className="max-md:block">
             <TableHeader className="max-md:hidden">
               <TableRow>
-                {COLUMNAS.map((c, i) => (
-                  <TableHead
-                    key={c || `acciones-${i}`}
-                    className={c === '' ? 'whitespace-nowrap text-right' : 'whitespace-nowrap'}
-                  >
-                    {c}
-                  </TableHead>
-                ))}
+                {/* «Documento» ordena por candidato y «Estado» por lo que falta revisar: la fila de arriba es el grupo. */}
+                <EncabezadoOrdenable campo="candidato" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">
+                  {COLUMNAS[0]}
+                </EncabezadoOrdenable>
+                <EncabezadoOrdenable campo="porRevisar" orden={orden} onOrdenar={ordenarPor} className="whitespace-nowrap">
+                  {COLUMNAS[1]}
+                </EncabezadoOrdenable>
+                <TableHead className="whitespace-nowrap text-right" />
               </TableRow>
             </TableHeader>
             {/* Tomar, aprobar o rechazar: la fila que sale de la cola se va y

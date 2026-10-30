@@ -204,6 +204,8 @@ export interface FiltrosDeFacturas {
   vencidas?: boolean;
   limite?: number;
   desplazamiento?: number;
+  /** Proveedor, su documento, el número de la factura o el concepto (Nico, 29-10). */
+  buscar?: string;
 }
 
 /**
@@ -857,6 +859,7 @@ export const gastosApi = {
               : Math.min(filtros.limite, MAX_LIMITE_DE_FACTURAS),
           ),
           desplazamiento: numero(filtros.desplazamiento),
+          buscar: filtros.buscar?.trim() || undefined,
         }),
       );
     },

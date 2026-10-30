@@ -34,6 +34,8 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination } from '@/lib/hooks/use-table-pagination';
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
 import type { InmuebleDelCertificado } from '@/lib/api/informes-del-propietario.service';
 import { toast } from '@/components/ui/toast';
 import {
@@ -337,9 +339,15 @@ function InmueblesDelCertificado({ inmuebles }: { inmuebles: readonly InmuebleDe
     const q = texto.trim().toLocaleLowerCase('es');
     return q ? inmuebles.filter((i) => i.inmueble.toLocaleLowerCase('es').includes(q)) : inmuebles;
   }, [inmuebles, texto]);
-  const { pageItems, total, page, pageSize, setPage, setPageSize } = useTablePagination(filas, {
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas».
+  const { ordenadas, orden, ordenarPor } = useOrdenDeLaTabla(
+    filas,
+    { inmueble: (i) => i.inmueble, bruto: (i) => i.ingresoBrutoCop, comision: (i) => i.comisionCop, retenido: (i) => i.retenidoCop },
+    { primero: { bruto: 'desc', comision: 'desc', retenido: 'desc' } },
+  );
+  const { pageItems, total, page, pageSize, setPage, setPageSize } = useTablePagination(ordenadas, {
     initialPageSize: POR_PAGINA,
-    resetKey: texto,
+    resetKey: `${texto}|${orden?.campo ?? ''}|${orden?.sentido ?? ''}`,
   });
 
   return (
@@ -360,10 +368,10 @@ function InmueblesDelCertificado({ inmuebles }: { inmuebles: readonly InmuebleDe
       <Table className="max-md:block">
         <TableHeader className="max-md:hidden">
           <TableRow>
-            <TableHead>Inmueble</TableHead>
-            <TableHead numeric>Ingreso bruto</TableHead>
-            <TableHead numeric>Comisión</TableHead>
-            <TableHead numeric>Retenido</TableHead>
+            <EncabezadoOrdenable campo="inmueble" orden={orden} onOrdenar={ordenarPor}>Inmueble</EncabezadoOrdenable>
+            <EncabezadoOrdenable campo="bruto" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Ingreso bruto</EncabezadoOrdenable>
+            <EncabezadoOrdenable campo="comision" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Comisión</EncabezadoOrdenable>
+            <EncabezadoOrdenable campo="retenido" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Retenido</EncabezadoOrdenable>
           </TableRow>
         </TableHeader>
         <TableBody className="max-md:block">

@@ -17,7 +17,9 @@ import {
   SelectItem,
   SelectTrigger,
 } from '@/components/ui/select';
-import { Chip, DatePicker, IconButton, Presence, Avatar } from '@leasefy/cadence';
+import { Chip, IconButton, Presence, Avatar } from '@leasefy/cadence';
+// Nico, 29-10-2026: el calendario con el mes y el año a la mano (el de Cadence sólo tenía flechas).
+import { SelectorDeFecha as DatePicker } from '@/components/ui/SelectorDeFecha';
 import { aFechaIso, fechaLocal } from '@/lib/fechas-locales';
 import type { Agente, Consignacion } from '@/lib/types/inmobiliaria';
 import { useTr } from '@/lib/i18n/use-tr';

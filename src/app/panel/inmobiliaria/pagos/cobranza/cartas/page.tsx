@@ -40,6 +40,9 @@ import {
   useTablePagination,
   PAGE_SIZE_OPTIONS,
 } from '@/lib/hooks/use-table-pagination'
+import { useOrdenDeLaTabla } from '@/lib/hooks/use-orden-de-la-tabla'
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable'
+import { SelectorDeOrden } from '@/components/ui/selector-de-orden'
 import {
   useLegalArtifacts,
   type LegalArtifactKind,
@@ -217,7 +220,7 @@ function CartasContent() {
     void refetch()
   }, [refetch])
 
-  const todas = data?.artifacts ?? []
+  const todas = useMemo(() => data?.artifacts ?? [], [data])
   const artifacts = useMemo(() => {
     const q = busqueda.trim().toLocaleLowerCase('es')
     if (!q) return todas
@@ -232,6 +235,19 @@ function CartasContent() {
    * Paginado de presentación. `resetKey` con los filtros: sin eso, filtrar
    * estando en la página 3 deja la tabla vacía y se lee como «no hay nada».
    */
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas».
+  const { ordenadas, orden, ordenarPor, setOrden } = useOrdenDeLaTabla(
+    artifacts,
+    {
+      deudor: (a) => a.debtorName ?? null,
+      tipo: (a) => a.kind,
+      estado: (a) => a.status,
+      generada: (a) => a.generatedAt ?? null,
+      enviada: (a) => a.sentAt ?? null,
+      medio: (a) => a.physicalSendMethod ?? null,
+    },
+    { primero: { generada: 'desc', enviada: 'desc' } },
+  )
   const {
     pageItems,
     total,
@@ -240,7 +256,9 @@ function CartasContent() {
     setPage,
     setPageSize,
     shouldPaginate,
-  } = useTablePagination(artifacts, { resetKey: `${kindFilter ?? ''}|${statusFilter ?? ''}|${busqueda}` })
+  } = useTablePagination(ordenadas, {
+    resetKey: `${kindFilter ?? ''}|${statusFilter ?? ''}|${busqueda}|${orden?.campo ?? ''}|${orden?.sentido ?? ''}`,
+  })
   const hasFilters = kindFilter !== undefined || statusFilter !== undefined || busqueda.trim() !== ''
 
   // El conteo por estado se sabe cuando la lista viene sin filtro de estado
@@ -430,6 +448,19 @@ function CartasContent() {
             data-testid="cartas-buscar"
           />
         </div>
+        {artifacts.length > 1 ? (
+          <SelectorDeOrden
+            orden={orden}
+            onCambiar={setOrden}
+            className="w-full sm:w-52"
+            formas={[
+              { campo: 'generada', sentido: 'desc', etiqueta: isEs ? 'Más recientes' : 'Newest' },
+              { campo: 'deudor', sentido: 'asc', etiqueta: isEs ? 'Deudor (A–Z)' : 'Debtor (A–Z)' },
+              { campo: 'estado', sentido: 'asc', etiqueta: isEs ? 'Estado' : 'Status' },
+              { campo: 'tipo', sentido: 'asc', etiqueta: isEs ? 'Tipo de carta' : 'Letter type' },
+            ]}
+          />
+        ) : null}
         {/* Kind filter */}
         <fieldset>
           <legend className="sr-only">{isEs ? 'Tipo de carta' : 'Letter type'}</legend>
@@ -481,22 +512,22 @@ function CartasContent() {
                   o sea que había que adivinar de quién era cada carta. Una
                   prejurídica sin destinatario visible no se puede revisar, y
                   revisarla es justo lo que esta pantalla pide hacer. */}
-              <TableHead>{isEs ? 'Deudor' : 'Debtor'}</TableHead>
-              <TableHead>
+              <EncabezadoOrdenable campo="deudor" orden={orden} onOrdenar={ordenarPor}>{isEs ? 'Deudor' : 'Debtor'}</EncabezadoOrdenable>
+              <EncabezadoOrdenable campo="tipo" orden={orden} onOrdenar={ordenarPor}>
                 {t('inmobiliaria.ai.cobranza.cartas.columns.kind')}
-              </TableHead>
-              <TableHead>
+              </EncabezadoOrdenable>
+              <EncabezadoOrdenable campo="estado" orden={orden} onOrdenar={ordenarPor}>
                 {t('inmobiliaria.ai.cobranza.cartas.columns.status')}
-              </TableHead>
-              <TableHead>
+              </EncabezadoOrdenable>
+              <EncabezadoOrdenable campo="generada" orden={orden} onOrdenar={ordenarPor}>
                 {t('inmobiliaria.ai.cobranza.cartas.columns.generatedAt')}
-              </TableHead>
-              <TableHead>
+              </EncabezadoOrdenable>
+              <EncabezadoOrdenable campo="enviada" orden={orden} onOrdenar={ordenarPor}>
                 {t('inmobiliaria.ai.cobranza.cartas.columns.sentAt')}
-              </TableHead>
-              <TableHead>
+              </EncabezadoOrdenable>
+              <EncabezadoOrdenable campo="medio" orden={orden} onOrdenar={ordenarPor}>
                 {t('inmobiliaria.ai.cobranza.cartas.columns.sendMethod')}
-              </TableHead>
+              </EncabezadoOrdenable>
             </TableRow>
           </TableHeader>
           {/* Filtrar o paginar: las filas entran escalonadas (techo 320 ms) y las que sobran salen. */}

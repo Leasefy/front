@@ -70,6 +70,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { SinDatos } from '@/components/estado/SinDatos';
+import { MarcaDeLaGestion } from '@/components/inmobiliaria/mantenimiento/QuienGestiona';
+import { gestionDeLaSolicitud } from '@/lib/mantenimiento/gestionado-por';
 import { diasDeCalendarioDesde } from '@/lib/fechas/dias-de-calendario';
 
 // ============================================================================
@@ -363,32 +365,28 @@ function MantenimientoCard({
 
   return (
     // La entrada y la salida las pone el `StaggerItem` de la grilla.
-    <div className="p-5 rounded-lg bg-card border border-border hover:border-foreground/20 transition-colors duration-base">
+    // Revisión en pantalla con los datos de Portofino (29-10): a 390 el título se cortaba en 12 letras, el ícono iba
+    // en una cajita de color, el inmueble en una caja gris dentro de la tarjeta y la fecha se partía en cinco
+    // renglones. Ahora: ícono suelto, título en dos renglones, los datos en líneas finas y el pie que se acomoda.
+    <div className="flex h-full flex-col rounded-lg border border-border bg-card p-4 transition-colors duration-base hover:border-foreground/20 sm:p-5">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 mb-4">
-        <div className="flex items-center gap-3">
-          <div
-            className={cn(
-              'w-10 h-10 rounded-md flex items-center justify-center',
-              solicitud.priority === 'emergency' ? 'bg-danger-soft' : 'bg-primary-soft'
-            )}
-          >
-            <TypeIcon
-              className={cn(
-                'w-5 h-5',
-                solicitud.priority === 'emergency' ? 'text-danger' : 'text-primary'
-              )}
-            />
-          </div>
-          <div>
-            <h3 className="font-medium text-foreground line-clamp-1">
-              {solicitud.title}
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              {typeInfo?.labelEs || solicitud.type}
-            </p>
-          </div>
-        </div>
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <button
+          type="button"
+          onClick={() => onViewDetails?.()}
+          className="flex min-w-0 flex-1 items-start gap-2.5 rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          data-testid={`abrir-solicitud-${solicitud.id}`}
+        >
+          {/* El ícono suelto, sin caja de color (vara: nada de cajas de ícono). */}
+          <TypeIcon
+            className={cn('mt-0.5 h-5 w-5 shrink-0', solicitud.priority === 'emergency' ? 'text-danger' : 'text-fg-muted')}
+            aria-hidden="true"
+          />
+          <span className="min-w-0">
+            <span className="block font-medium text-foreground line-clamp-2">{solicitud.title}</span>
+            <span className="block text-sm text-muted-foreground">{typeInfo?.labelEs || solicitud.type}</span>
+          </span>
+        </button>
 
         {/* Actions Menu */}
         <DropdownList open={showMenu} onOpenChange={setShowMenu}>
@@ -406,14 +404,15 @@ function MantenimientoCard({
               <span className="text-sm">{t('inmobiliaria.mantenimiento.viewDetail')}</span>
             </DropdownListItem>
 
-            {solicitud.status === 'reported' && onAddQuote && (
+            {/* Portofino 29-10: la que gestiona otro no se cotiza. */}
+            {solicitud.status === 'reported' && onAddQuote && gestionDeLaSolicitud(solicitud) === 'inmobiliaria' && (
               <DropdownListItem className="gap-3 text-primary" onClick={() => onAddQuote()}>
                 <CurrencyCircleDollar className="w-4 h-4" />
                 <span className="text-sm">{t('inmobiliaria.mantenimiento.addQuote')}</span>
               </DropdownListItem>
             )}
 
-            {solicitud.status === 'quoted' && solicitud.quotes.length > 0 && onApproveQuote && (
+            {solicitud.status === 'quoted' && solicitud.quotes.length > 0 && onApproveQuote && gestionDeLaSolicitud(solicitud) === 'inmobiliaria' && (
               <DropdownListItem className="gap-3 text-success" onClick={() => onApproveQuote(solicitud.quotes[0].id)}>
                 <Check className="w-4 h-4" />
                 <span className="text-sm">{t('inmobiliaria.mantenimiento.approveQuote')}</span>
@@ -444,36 +443,37 @@ function MantenimientoCard({
         </DropdownList>
       </div>
 
-      {/* Property Info */}
-      <div className="mb-4 p-3 rounded-md bg-muted/50">
-        <div className="flex items-center gap-2 mb-1">
-          <HouseLine className="w-4 h-4 text-muted-foreground" />
-          <span className="text-sm font-medium text-foreground line-clamp-1">
-            {solicitud.propertyTitle}
-          </span>
-        </div>
-        {/* Revisora r27: sin dirección no se pinta un renglón con el pin solo. */}
-        {solicitud.propertyAddress ? (
-          <div className="flex items-center gap-2 text-caption text-muted-foreground">
-            <MapPin className="w-3 h-3" />
-            <span className="line-clamp-1">{solicitud.propertyAddress}</span>
-          </div>
+      {/* El inmueble y con quién: líneas finas, sin caja gris dentro de la tarjeta. Un renglón sin dato no se pinta
+          (antes quedaba el ícono de la persona solo cuando el inmueble no tenía inquilino). */}
+      <div className="mb-3 space-y-1 text-caption text-muted-foreground">
+        <p className="flex min-w-0 items-center gap-2">
+          <HouseLine className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          <span className="truncate text-sm text-foreground">{solicitud.propertyTitle}</span>
+        </p>
+        {/* Revisora r27: sin dirección no se pinta un renglón con el pin solo; tampoco si repite el título. */}
+        {solicitud.propertyAddress?.trim() && solicitud.propertyAddress.trim() !== solicitud.propertyTitle?.trim() ? (
+          <p className="flex min-w-0 items-center gap-2">
+            <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <span className="truncate">{solicitud.propertyAddress}</span>
+          </p>
         ) : null}
-        <div className="flex items-center gap-2 mt-1 text-caption text-muted-foreground">
-          <User className="w-3 h-3" />
-          <span>{solicitud.tenantName}</span>
-        </div>
+        {solicitud.tenantName?.trim() ? (
+          <p className="flex min-w-0 items-center gap-2">
+            <User className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <span className="truncate">{solicitud.tenantName}</span>
+          </p>
+        ) : null}
         {/* Portofino 22-10: con quién se trabaja. */}
         {solicitud.proveedor && (
-          <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground" data-testid="lista-proveedor">
-            <Truck className="w-3 h-3" aria-hidden="true" />
-            <span className="line-clamp-1">{solicitud.proveedor.nombre}</span>
-          </div>
+          <p className="flex min-w-0 items-center gap-2" data-testid="lista-proveedor">
+            <Truck className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <span className="truncate">{solicitud.proveedor.nombre}</span>
+          </p>
         )}
       </div>
 
       {/* Badges Row */}
-      <div className="flex flex-wrap items-center gap-2 mb-4">
+      <div className="mb-3 flex flex-wrap items-center gap-2">
         {/* Priority Badge */}
         <span className={cn('inline-flex items-center px-2.5 py-1 rounded-full text-caption font-medium', priorityStyle.bg, priorityStyle.text)}>
           {solicitud.priority === 'emergency' && <Warning className="w-3 h-3 mr-1" weight="fill" />}
@@ -486,51 +486,41 @@ function MantenimientoCard({
           {t(statusStyle.labelKey)}
         </span>
 
-        {/* Portofino 22-10: la arregla el propietario por su cuenta. */}
-        {solicitud.laHaceElPropietario && !solicitud.laHaceElPropietario.terminadaAt && (
-          <span
-            className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-warning-soft text-warning"
-            data-testid="lista-la-hace-el-propietario"
-          >
-            <User className="w-3 h-3 mr-1" />
-            La hace el propietario
-          </span>
-        )}
+        {/* Portofino 29-10: quién la gestiona, si no es la inmobiliaria («Gestiona: el propietario»).
+            Reemplaza la marca de «La hace el propietario» (22-10), que es el mismo caso. */}
+        <MarcaDeLaGestion solicitud={solicitud} />
       </div>
 
-      {/* Footer Info */}
-      <div className="flex items-center justify-between text-sm text-muted-foreground border-t border-border pt-4">
-        <div className="flex items-center gap-4">
-          {/* Days since created */}
-          <div className="flex items-center gap-1">
-            <CalendarBlank className="w-4 h-4" />
-            <span>
-              {/* Revisora r27: «hace 7 días», no «(7d)». */}
-              {formatDateFn(solicitud.createdAt, fmtDate)} · {daysSince === 0 ? 'hoy' : daysSince === 1 ? 'hace 1 día' : `hace ${daysSince} días`}
-            </span>
-          </div>
+      {/* Footer Info — se acomoda en renglones enteros en vez de partir la fecha palabra por palabra. Desde cuándo, en
+          palabras («hace 12 días», como el tablero); la fecha exacta, al pasar el puntero. */}
+      <div className="mt-auto flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-border pt-3 text-sm text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          <span className="flex items-center gap-1 whitespace-nowrap" title={formatDateFn(solicitud.createdAt, fmtDate)}>
+            <CalendarBlank className="h-4 w-4" aria-hidden="true" />
+            {daysSince <= 0 ? 'Hoy' : daysSince === 1 ? 'Hace 1 día' : `Hace ${daysSince} días`}
+          </span>
 
           {/* Quotes count */}
           {solicitud.quotes.length > 0 && (
-            <div className="flex items-center gap-1">
-              <CurrencyCircleDollar className="w-4 h-4" />
-              <span>{solicitud.quotes.length === 1 ? '1 cotización' : `${solicitud.quotes.length} cotizaciones`}</span>
-            </div>
+            <span className="flex items-center gap-1 whitespace-nowrap">
+              <CurrencyCircleDollar className="h-4 w-4" aria-hidden="true" />
+              {solicitud.quotes.length === 1 ? '1 cotización' : `${solicitud.quotes.length} cotizaciones`}
+            </span>
           )}
 
           {/* Photo indicator */}
           {solicitud.photoUrls && solicitud.photoUrls.length > 0 && (
-            <div className="flex items-center gap-1">
-              <ImageIcon className="w-4 h-4" />
-              <span>{solicitud.photoUrls.length}</span>
-            </div>
+            <span className="flex items-center gap-1 whitespace-nowrap">
+              <ImageIcon className="h-4 w-4" aria-hidden="true" />
+              {solicitud.photoUrls.length}
+            </span>
           )}
         </div>
 
         {/* Approved amount */}
         {solicitud.approvedAmount && (
           // Revisora r27: un costo no es un éxito: la plata en tinta y en mono (antes en verde).
-          <span className="font-mono tabular-nums text-fg">
+          <span className="whitespace-nowrap font-mono tabular-nums text-fg">
             {formatCurrency(solicitud.approvedAmount)}
           </span>
         )}

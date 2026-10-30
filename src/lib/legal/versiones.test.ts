@@ -23,6 +23,15 @@ import {
   REGLAS_DE_SALIDA,
   SUBTITULO_DE_LOS_AGENTES,
 } from './politica-v6'
+import {
+  NO_OFRECEMOS,
+  NO_OFRECEMOS_VIEJO,
+  PARRAFO_DE_LA_FINALIDAD_DEL_PLAN_GRATIS,
+  PARRAFO_DEL_PLAN_GRATIS,
+  POLITICA_V7,
+  SUBTITULO_DE_LA_FINALIDAD_DEL_PLAN_GRATIS,
+  SUBTITULO_DEL_PLAN_GRATIS,
+} from './politica-v7'
 
 /**
  * La versión que se guarda como prueba tiene que ser la que está publicada.
@@ -110,7 +119,7 @@ describe('la cláusula de las preguntas al asistente (v4.0)', () => {
   })
 
   it('los términos (desde la v2.1) traen la frase del Anexo de Encargo en la §19', () => {
-    expect(VERSION_TERMINOS).toBe('terminos-v2.2')
+    expect(VERSION_TERMINOS).toBe('terminos-v2.3')
     const terminos = leer('src/components/legal/TerminosContenido.tsx').replace(/\s+/g, ' ')
     expect(terminos).toContain(
       'La inmobiliaria autoriza a Leasefy a revisar, en los términos de la §16 de la Política, las preguntas que su equipo hace al asistente, con el único fin de mejorar el servicio.',
@@ -170,12 +179,10 @@ describe('la política de datos hermética (v6.0)', () => {
   const seccion = (secciones: typeof POLITICA_V6, n: number) => secciones.find((s) => s.n === n)!.bloques
   const texto = (secciones: typeof POLITICA_V6, n: number) => JSON.stringify(seccion(secciones, n))
 
-  it('la publicada es la 6.0 desde el 20-10, y /privacidad la muestra', () => {
-    expect(VERSION_POLITICA_DE_TRATAMIENTO).toBe('politica-tratamiento-v6.0')
-    expect(VIGENCIA_POLITICA_DE_TRATAMIENTO).toBe('2026-10-20')
-    expect(VERSION_TERMINOS).toBe('terminos-v2.2')
+  it('la 6.0 sigue escrita aparte (desde el 29-10 la publicada es la 7.0)', () => {
+    expect(POLITICA_V6.length).toBe(19)
     const pagina = leer('src/app/privacidad/page.tsx')
-    expect(pagina).toContain('POLITICA_V6')
+    expect(pagina).not.toContain('POLITICA_V6')
     expect(pagina).not.toContain('POLITICA_V5')
   })
 
@@ -223,5 +230,59 @@ describe('la política de datos hermética (v6.0)', () => {
 
   it('no promete lo que todavía no está firmado con los proveedores de IA', () => {
     expect(JSON.stringify(POLITICA_V6)).not.toMatch(/no (los )?usan para (sus )?fines propios|no entrenan/i)
+  })
+})
+
+/**
+ * 🔴 El plan gratis (Nico, 28-10-2026: «Leasefy se queda con esa información y la va a usufructuar»; 29-10-2026:
+ * «también en la Política»): política v7.0 (§4, §5 y §16) y términos v2.3 (§6). La v6.0 queda intacta.
+ */
+describe('el plan gratis (v7.0 y términos v2.3)', () => {
+  const seccion = (secciones: typeof POLITICA_V7, n: number) => secciones.find((s) => s.n === n)!.bloques
+  const texto = (secciones: typeof POLITICA_V7, n: number) => JSON.stringify(seccion(secciones, n))
+
+  it('la publicada es la 7.0 desde el 29-10 con los términos v2.3, y /privacidad la muestra', () => {
+    expect(VERSION_POLITICA_DE_TRATAMIENTO).toBe('politica-tratamiento-v7.0')
+    expect(VIGENCIA_POLITICA_DE_TRATAMIENTO).toBe('2026-10-29')
+    expect(VERSION_TERMINOS).toBe('terminos-v2.3')
+    expect(leer('src/app/privacidad/page.tsx')).toContain('POLITICA_V7')
+  })
+
+  it('§4 cierra con la finalidad del plan gratis (la lista de §4 es exhaustiva)', () => {
+    expect(seccion(POLITICA_V7, 4).slice(-2)).toEqual([
+      { tipo: 'sub', texto: SUBTITULO_DE_LA_FINALIDAD_DEL_PLAN_GRATIS },
+      { tipo: 'p', texto: PARRAFO_DE_LA_FINALIDAD_DEL_PLAN_GRATIS },
+    ])
+  })
+
+  it('§16: la excepción en «lo que no hacemos» y, al final, «El plan gratis» (sin entregar datos a los aliados)', () => {
+    expect(texto(POLITICA_V7, 16)).toContain(JSON.stringify(NO_OFRECEMOS).slice(1, -1))
+    expect(texto(POLITICA_V7, 16)).not.toContain(JSON.stringify(NO_OFRECEMOS_VIEJO).slice(1, -1))
+    expect(seccion(POLITICA_V7, 16).slice(-2)).toEqual([
+      { tipo: 'sub', texto: SUBTITULO_DEL_PLAN_GRATIS },
+      { tipo: 'p', texto: PARRAFO_DEL_PLAN_GRATIS },
+    ])
+    expect(PARRAFO_DEL_PLAN_GRATIS).toContain('no le entrega sus datos personales a los aliados')
+    // La v6.0 publicada no lo tenía: queda así, es lo que aceptó quien aceptó.
+    expect(texto(POLITICA_V6, 16)).toContain(JSON.stringify(NO_OFRECEMOS_VIEJO).slice(1, -1))
+  })
+
+  it('§5 dice «versión 7.0», y fuera de eso la 7.0 es la 6.0 sin tocar', () => {
+    expect(texto(POLITICA_V7, 5)).toContain('la versión 7.0')
+    const sinLoNuevo = JSON.stringify(POLITICA_V7)
+      .replace(',' + JSON.stringify({ tipo: 'sub', texto: SUBTITULO_DE_LA_FINALIDAD_DEL_PLAN_GRATIS }), '')
+      .replace(',' + JSON.stringify({ tipo: 'p', texto: PARRAFO_DE_LA_FINALIDAD_DEL_PLAN_GRATIS }), '')
+      .replace(',' + JSON.stringify({ tipo: 'sub', texto: SUBTITULO_DEL_PLAN_GRATIS }), '')
+      .replace(',' + JSON.stringify({ tipo: 'p', texto: PARRAFO_DEL_PLAN_GRATIS }), '')
+      .replace(JSON.stringify(NO_OFRECEMOS), JSON.stringify(NO_OFRECEMOS_VIEJO))
+      .replace('la versión 7.0', 'la versión 6.0')
+    expect(sinLoNuevo).toBe(JSON.stringify(POLITICA_V6))
+  })
+
+  it('los términos v2.3 traen «El plan gratis» en la §6 con lo mismo de la política', () => {
+    const terminos = leer('src/components/legal/TerminosContenido.tsx').replace(/\s+/g, ' ')
+    expect(terminos).toContain('El plan gratis.')
+    expect(terminos).toContain('autoriza a Leasefy a conservar y usar la información que carga')
+    expect(terminos).toContain('no le entrega sus datos personales a los aliados')
   })
 })

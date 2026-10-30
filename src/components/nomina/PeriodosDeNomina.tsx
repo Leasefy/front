@@ -29,6 +29,8 @@ import { Ilustracion } from '@leasefy/cadence';
 import { SinDatos } from '@/components/estado/SinDatos';
 import Link from 'next/link';
 import { useState } from 'react';
+import { ordenarFilas, type OrdenDeLaTabla, type ValorParaOrdenar } from '@/lib/hooks/use-orden-de-la-tabla';
+import { EncabezadoOrdenable } from '@/components/ui/encabezado-ordenable';
 import { CalendarBlank, Prohibit } from '@phosphor-icons/react';
 
 import {
@@ -77,7 +79,28 @@ type VistaDePeriodos = 'todos' | 'BORRADOR' | 'APROBADO' | 'PAGADO' | 'ANULADO';
 
 const PANEL = '/panel/inmobiliaria/nomina';
 
+type CampoDePeriodo = 'periodo' | 'estado' | 'personas' | 'devengado' | 'deducciones' | 'neto' | 'aportes' | 'contabilidad';
+const ORDEN_DE_PERIODOS: Record<CampoDePeriodo, (p: PeriodoDeNomina) => ValorParaOrdenar> = {
+  periodo: (p) => `${p.mes}-${p.quincena ?? 0}`,
+  estado: (p) => p.estado,
+  personas: (p) => p.personas,
+  devengado: (p) => p.totalDevengadoCop,
+  deducciones: (p) => p.totalDeduccionesCop,
+  neto: (p) => p.totalNetoCop,
+  aportes: (p) => p.totalAportesCop,
+  contabilidad: (p) => (p.asientoId ? 1 : 0),
+};
+
 export function PeriodosDeNominaPanel() {
+  // Nico 28-10: «que todas las tablas tengan lo de ordenamiento general y por columnas». La lista se arma dentro del
+  // render (sin hooks ahí): el orden vive aquí y se aplica con `ordenarFilas`.
+  const [orden, setOrden] = useState<OrdenDeLaTabla<CampoDePeriodo> | null>(null);
+  const ordenarPor = (campo: CampoDePeriodo) =>
+    setOrden((actual) =>
+      actual?.campo === campo
+        ? { campo, sentido: actual.sentido === 'asc' ? 'desc' : 'asc' }
+        : { campo, sentido: campo === 'estado' || campo === 'contabilidad' ? 'asc' : 'desc' },
+    );
   const estado = useCargaDeNomina<Periodos>(() => nominaApi.periodos(), []);
   const [mes, setMes] = useState(() => mesActual());
   const [quincena, setQuincena] = useState<'' | '1' | '2'>('');
@@ -334,14 +357,14 @@ export function PeriodosDeNominaPanel() {
                 <Table data-testid="tabla-de-periodos" className="max-md:block">
                   <TableHeader className="max-md:hidden">
                     <TableRow>
-                      <TableHead>Período</TableHead>
-                      <TableHead>Estado</TableHead>
-                      <TableHead className="text-right">Personas</TableHead>
-                      <TableHead className="text-right">Devengado</TableHead>
-                      <TableHead className="text-right">Deducciones</TableHead>
-                      <TableHead className="text-right">Neto</TableHead>
-                      <TableHead className="text-right">Aportes</TableHead>
-                      <TableHead>Contabilidad</TableHead>
+                      <EncabezadoOrdenable campo="periodo" orden={orden} onOrdenar={ordenarPor}>Período</EncabezadoOrdenable>
+                      <EncabezadoOrdenable campo="estado" orden={orden} onOrdenar={ordenarPor}>Estado</EncabezadoOrdenable>
+                      <EncabezadoOrdenable campo="personas" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Personas</EncabezadoOrdenable>
+                      <EncabezadoOrdenable campo="devengado" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Devengado</EncabezadoOrdenable>
+                      <EncabezadoOrdenable campo="deducciones" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Deducciones</EncabezadoOrdenable>
+                      <EncabezadoOrdenable campo="neto" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Neto</EncabezadoOrdenable>
+                      <EncabezadoOrdenable campo="aportes" orden={orden} onOrdenar={ordenarPor} className="text-right" alineacion="derecha">Aportes</EncabezadoOrdenable>
+                      <EncabezadoOrdenable campo="contabilidad" orden={orden} onOrdenar={ordenarPor}>Contabilidad</EncabezadoOrdenable>
                       <TableHead />
                     </TableRow>
                   </TableHeader>
@@ -357,7 +380,7 @@ export function PeriodosDeNominaPanel() {
                         </TableCell>
                       </TableRowAnimada>
                     ) : null}
-                    {visibles.map((p) => (
+                    {ordenarFilas(visibles, orden, ORDEN_DE_PERIODOS).map((p) => (
                       <TableRowAnimada
                         key={p.id}
                         data-testid={`periodo-${p.id}`}

@@ -28,6 +28,12 @@ import { usePostulacionDirecta } from '@/lib/hooks/use-postulacion-directa';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { ofertaDelEstudio, type OfertaDelEstudio as Oferta } from '@/components/tenant/PostularButton';
 import { OfertaDelEstudio } from '@/components/tenant/OfertaDelEstudio';
+
+/**
+ * Nico 29-10-2026: «hay que quitar esto por ahora porque eso no hace nada que funcione ahorita» — el aviso «Tu estudio
+ * de arrendamiento te ayuda · Hacer mi estudio». Apagado hasta que el estudio en línea funcione; prenderlo es esto.
+ */
+const OFRECER_EL_ESTUDIO = false;
 import { useAprobacion } from '@/lib/hooks/use-aprobacion';
 import {
   leerElegibilidad,
@@ -476,8 +482,8 @@ function WizardStepContent({ onSubmissionComplete, oferta, propertyId }: WizardS
     <div className="space-y-6">
       {/* El estudio, ofrecido como ayuda al empezar (nunca un freno) y, al
           final, cómo va a ver la inmobiliaria la postulación. */}
-      {oferta && currentStep === 1 && <OfertaDelEstudio oferta={oferta} propertyId={propertyId} />}
-      {oferta && currentStep === 5 && (
+      {OFRECER_EL_ESTUDIO && oferta && currentStep === 1 && <OfertaDelEstudio oferta={oferta} propertyId={propertyId} />}
+      {OFRECER_EL_ESTUDIO && oferta && currentStep === 5 && (
         <OfertaDelEstudio oferta={oferta} propertyId={propertyId} compacta />
       )}
 

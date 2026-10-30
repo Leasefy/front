@@ -303,9 +303,14 @@ function InventarioPorVersiones({
         </div>
       ) : (
         <>
-          <p className="text-sm font-medium text-foreground" data-testid="encabezado-de-version">
-            {encabezado}
-          </p>
+          {/* Revisión con datos de Portofino (29-10): con el inventario «por actualizar» y sin
+              ninguna versión, «Todavía no hay inventario…» repetía lo que dicen el aviso de
+              arriba y la tabla vacía de abajo. El encabezado sólo nombra una versión que existe. */}
+          {borrador || datos.ultimoCompleto ? (
+            <p className="text-sm font-medium text-foreground" data-testid="encabezado-de-version">
+              {encabezado}
+            </p>
+          ) : null}
 
           <ActaEntregaView
             /* 🔴 «Trabajar sin señal» va DENTRO de la tarjeta del inventario (decisión de Nico,

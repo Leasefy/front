@@ -67,6 +67,6 @@ export async function hacerEnElChatDelPortal(tarjeta: TarjetaDelChatDelPortal): 
 
 /** Lo que se puede pedir, para empezar sin pensar qué escribir. */
 export const SUGERENCIAS_DEL_PORTAL: Record<PortalDelChat, readonly string[]> = {
-  inquilino: ['¿Cuánto debo?', 'Necesito el certificado de arrendamiento', 'Se dañó algo en el apartamento', '¿Qué me respondieron?'],
+  inquilino: ['¿Cuánto debo?', 'Mándame el link de pago', 'Necesito el certificado de arrendamiento', 'Se dañó algo en el apartamento', '¿Qué me respondieron?'],
   propietario: ['¿Cuándo y cuánto me giran?', 'Necesito un certificado', '¿Qué me respondieron?'],
 };

@@ -29,6 +29,7 @@ import {
   type PortalDelChat,
   type TarjetaDelChatDelPortal as Tarjeta,
 } from '@/lib/portales/chat-del-portal';
+import { abrirElPagoEnLinea } from '@/lib/portales/pago-desde-el-chat';
 import { TarjetaDelChatDelPortal, type EstadoDeLaTarjetaDelPortal } from './TarjetaDelChatDelPortal';
 
 export type TurnoDelPortal =
@@ -42,6 +43,10 @@ export type TurnoDelPortal =
       resultado: string | null;
       error?: boolean;
     };
+
+/** Abre la pasarela (aparte para poder probarlo sin salir de la página). */
+export const navegacionDelPago = { irA: (url: string) => window.location.assign(url) };
+const irA = (url: string) => navegacionDelPago.irA(url);
 
 let siguiente = 0;
 const nuevoId = () => `t-${Date.now().toString(36)}-${(siguiente++).toString(36)}`;
@@ -78,6 +83,15 @@ export function useChatDelPortal(portal: PortalDelChat) {
   const decirQueSi = useCallback(
     async (id: string, tarjeta: Tarjeta) => {
       cambiar(id, { estado: 'haciendo' });
+      if (tarjeta.accion === 'pagar_en_linea') {
+        // El pago se hace en la pasarela (PSE, tarjeta o Nequi): es la única salida del chat.
+        const pago = await abrirElPagoEnLinea(tarjeta.datos, window.location.origin);
+        if (pago.ok) {
+          cambiar(id, { resultado: 'Te llevo a la pasarela para pagar…' });
+          irA(pago.url);
+        } else cambiar(id, { estado: 'fallida', resultado: pago.texto });
+        return;
+      }
       const r = await hacerEnElChatDelPortal(tarjeta);
       cambiar(id, { estado: r.hecho ? 'hecha' : 'fallida', resultado: r.texto });
     },

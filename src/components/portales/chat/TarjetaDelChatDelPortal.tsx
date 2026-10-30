@@ -58,7 +58,9 @@ export function TarjetaDelChatDelPortal({
       {resultado && (
         <p
           role="status"
-          className={`font-body text-[13px] leading-relaxed ${estado === 'hecha' ? 'text-success' : 'text-danger'}`}
+          className={`font-body text-[13px] leading-relaxed ${
+            estado === 'hecha' ? 'text-success' : estado === 'fallida' ? 'text-danger' : 'text-fg-muted'
+          }`}
         >
           {resultado}
         </p>

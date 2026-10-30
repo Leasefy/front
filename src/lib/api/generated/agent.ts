@@ -17262,7 +17262,7 @@ export interface components {
         };
         PortalChatTarjeta: {
             /** @enum {string} */
-            accion: "radicar_pqrs" | "pedir_certificado";
+            accion: "radicar_pqrs" | "pedir_certificado" | "pagar_en_linea";
             titulo: string;
             detalle: string;
             /** @enum {string} */

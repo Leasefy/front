@@ -6,7 +6,7 @@ import { act } from 'react';
 const agentFetch = vi.fn();
 vi.mock('@/lib/api/agent-fetch', () => ({ agentFetch: (...a: unknown[]) => agentFetch(...a) }));
 
-import { ChatDelPortal } from './ChatDelPortal';
+import { ChatDelPortal, navegacionDelPago } from './ChatDelPortal';
 
 const json = (status: number, cuerpo: unknown) =>
   new Response(JSON.stringify(cuerpo), { status, headers: { 'content-type': 'application/json' } });
@@ -118,5 +118,48 @@ describe('ChatDelPortal — Ori dentro del portal, sin modelo', () => {
     await clic('Enviar');
     await hasta(() => texto().includes('No pude responderte'));
     expect(texto()).not.toMatch(/SESION_NO_VERIFICADA|unauthorized/);
+  });
+  it('«Mándame el link de pago» → «Sí, hazlo» abre la MISMA sesión de Wompi de lo vencido (monto del back), nunca /hacer', async () => {
+    const PAGO = {
+      accion: 'pagar_en_linea',
+      titulo: 'Pagar en línea',
+      detalle: 'Pagas $ 2.400.000: 2 cuotas de Cra 43 # 10-20. Con PSE, tarjeta o Nequi.',
+      boton: 'Sí, hazlo',
+      datos: { leaseId: 'l-1', cuotas: '2' },
+    };
+    agentFetch.mockResolvedValueOnce(json(200, { pedido: 'link_de_pago', texto: 'Te dejo listo el pago.', tarjeta: PAGO }));
+    const fetchCrudo = vi.fn().mockResolvedValue(
+      json(200, { publicKey: 'pub_test_x', currency: 'COP', amountInCents: 240000000, reference: 'vencido-9', integrity: 'abc' }),
+    );
+    vi.stubGlobal('fetch', fetchCrudo);
+    const irA = vi.spyOn(navegacionDelPago, 'irA').mockImplementation(() => {});
+    await abrir();
+    await clic('Mándame el link de pago');
+    await clic('Sí, hazlo');
+    await hasta(() => irA.mock.calls.length > 0);
+    const [ruta, init] = fetchCrudo.mock.calls[0];
+    expect(ruta).toBe('/api/inquilino/pagos/vencido/wompi-session');
+    expect(JSON.parse(init.body)).toEqual({ leaseId: 'l-1', cuotas: 2 });
+    expect(String(irA.mock.calls[0][0])).toContain('reference=vencido-9');
+    expect(agentFetch).toHaveBeenCalledTimes(1);
+    expect(texto()).toContain('Te llevo a la pasarela');
+    vi.unstubAllGlobals();
+  });
+
+  it('si la sesión de pago no abre, la tarjeta dice por qué con el texto del back', async () => {
+    agentFetch.mockResolvedValueOnce(
+      json(200, {
+        pedido: 'link_de_pago',
+        texto: 'Te dejo listo el pago.',
+        tarjeta: { accion: 'pagar_en_linea', titulo: 'Pagar en línea', detalle: 'Pagas $ 900.000.', boton: 'Sí, hazlo', datos: { leaseId: 'l-1', cuotas: '1' } },
+      }),
+    );
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(json(409, { statusCode: 409, code: 'PAGO_EN_CURSO', message: 'Ya tienes un pago en verificación.' })));
+    await abrir();
+    await clic('Mándame el link de pago');
+    await clic('Sí, hazlo');
+    await hasta(() => texto().includes('Ya tienes un pago en verificación.'));
+    expect(texto()).toContain('No salió');
+    vi.unstubAllGlobals();
   });
 });

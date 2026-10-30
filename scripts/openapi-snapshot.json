@@ -32733,7 +32733,8 @@
             "type": "string",
             "enum": [
               "radicar_pqrs",
-              "pedir_certificado"
+              "pedir_certificado",
+              "pagar_en_linea"
             ]
           },
           "titulo": {

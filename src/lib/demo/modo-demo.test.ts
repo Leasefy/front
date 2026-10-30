@@ -14,7 +14,7 @@ import { agentFetch } from '@/lib/api/agent-fetch';
 import { apiClient } from '@/lib/api/client';
 import type { TableroDeServicios } from '@/lib/api/servicios-publicos.service';
 import { entrarAlModoDemo, estaEnModoDemo, salirDelModoDemo } from './modo-demo-estado';
-import { hayDatosDeEjemplo, lecturaDeLaDemo } from './datos-demo';
+import { hayDatosDeEjemplo, hayDatosDeEjemploDelPropietario, lecturaDeLaDemo } from './datos-demo';
 
 const pedir = vi.fn(async () => new Response(JSON.stringify({ delBack: true }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
 
@@ -132,5 +132,37 @@ describe('los datos de ejemplo de Mantenimientos', () => {
     expect(lecturaDeLaDemo('/inmobiliaria/mantenimiento/demo-mant-4')).toMatchObject({ status: 'MAINT_APPROVED', approvedAmount: 650_000 });
     expect((lecturaDeLaDemo('/inmobiliaria/consignaciones') as unknown[]).length).toBe(8);
     expect(hayDatosDeEjemplo('mantenimientos')).toBe(true);
+  });
+});
+
+describe('los datos de ejemplo de Propietarios (Nico 30-10)', () => {
+  it('la lista abre con dos giros atrasados, la ficha trae sus inmuebles y sólo sus consignaciones', () => {
+    const lista = lecturaDeLaDemo('/inmobiliaria/propietarios') as Array<{ id: string; pendingBalance: number }>;
+    expect(lista.length).toBe(6);
+    expect(lista.filter((p) => p.pendingBalance > 0)).toHaveLength(2);
+    const ficha = lecturaDeLaDemo('/inmobiliaria/propietarios/demo-pr-1') as { inmuebles: unknown[]; bankAccountNumber: string | null };
+    expect(ficha.inmuebles).toHaveLength(2);
+    expect(ficha.bankAccountNumber).toBeTruthy();
+    const suyas = lecturaDeLaDemo('/inmobiliaria/consignaciones?propietarioId=demo-pr-1') as Array<{ propietarioId: string; listingType: string }>;
+    expect(suyas).toHaveLength(2);
+    expect(suyas.every((c) => c.propietarioId === 'demo-pr-1' && c.listingType === 'RENT')).toBe(true);
+    // La lista general de consignaciones sigue siendo la de la demo de Mantenimientos.
+    expect((lecturaDeLaDemo('/inmobiliaria/consignaciones') as Array<{ propietarioId: string }>).some((c) => c.propietarioId.startsWith('demo-pr-'))).toBe(false);
+    expect(hayDatosDeEjemplo('propietarios')).toBe(true);
+  });
+});
+
+describe('el propietario independiente en lo gratis (Nico 30-10)', () => {
+  it('sus partes cerradas sirven los datos de ejemplo; lo abierto (sus inmuebles) va al back', async () => {
+    entrarAlModoDemo();
+    window.history.pushState({}, '', '/panel/giros');
+    const g = await apiClient.get<{ giros: Array<{ estado: string }> }>('/portal/propietario/giros');
+    expect(g.giros.some((x) => x.estado === 'REGIRADO')).toBe(true);
+    expect(pedir).not.toHaveBeenCalled();
+    window.history.pushState({}, '', '/panel/propiedades');
+    await apiClient.get('/portal/propietario/giros').catch(() => null);
+    expect(pedir).toHaveBeenCalled();
+    expect(hayDatosDeEjemploDelPropietario('giros')).toBe(true);
+    expect(hayDatosDeEjemploDelPropietario('contratos-que-no-existen')).toBe(false);
   });
 });

@@ -215,7 +215,8 @@ const DEL_PROPIETARIO: Record<string, DemoDelModulo> = {
     titulo: 'Tu plata a tu cuenta, cada mes',
     promesa: 'Te giramos lo del arriendo con el extracto del mes: qué entró y qué se descontó.',
     puntos: ['Giro a tu cuenta', 'Extracto de cada mes', 'Todo tu historial de giros'],
-    capturas: [cap('erp-dispersiones', 'Giros a propietarios del mes'), cap('erp-recaudo', 'Recaudo del mes')],
+    capturas: [cap('demo-propietario-giros', 'Tus giros con datos de ejemplo'), cap('erp-dispersiones', 'Giros a propietarios del mes')],
+    video: video('propietario-giros', 'Recorrido por tus giros con datos de ejemplo: lo girado en el año, mes por mes, el que se devolvió y la cuenta a la que te giran'),
   },
   aprobaciones: {
     titulo: 'Las reparaciones, con tu visto bueno',

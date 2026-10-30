@@ -18,8 +18,11 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useContratosAdministrados } from '@/components/landlord/ContratosConLaInmobiliaria';
 import { ModuloConDemo } from '@/components/venta/ModuloConDemo';
+import { FranjaDeLaDemo } from '@/components/venta/FranjaDeLaDemo';
+import { hayDatosDeEjemploDelPropietario } from '@/lib/demo/datos-demo';
+import { entrarAlModoDemo, useModoDemo } from '@/lib/demo/modo-demo';
 import { demoDelPropietario } from '@/lib/venta/demos-del-panel';
-import { abiertaParaElPropietarioGratis, claveDeDemoDelPropietario } from '@/lib/venta/propietario-gratis';
+import { QUE_ES_CADA_SECCION_DEL_PROPIETARIO, abiertaParaElPropietarioGratis, claveDeDemoDelPropietario } from '@/lib/venta/propietario-gratis';
 import { esLaPestana } from '@/lib/nav/portal-del-inquilino';
 import { enlaceDeWhatsApp } from '@/lib/venta/whatsapp-de-leasefy';
 import {
@@ -135,6 +138,9 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
   const accesoDelPropietario = useAccesoDelPropietario(!deInmobiliaria && user?.role === 'landlord');
   const propietarioGratis = showUpgrade && !administrados.cargando && accesoDelPropietario?.estado !== 'prueba';
   const pathname = usePathname();
+  // «Ver con datos demo» (Nico 30-10-2026): la clave de la demo de esta ruta y si la pestaña está en modo demo.
+  const claveDeDemo = claveDeDemoDelPropietario(pathname ?? '');
+  const enDemo = useModoDemo();
   const router = useRouter();
   const { unreadCount } = useUnreadMessages();
   useEffect(() => {
@@ -250,14 +256,23 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
           (esCuentaDeInquilino && !esPropietarioConfirmado)
             ? null
             : propietarioGratis && !abiertaParaElPropietarioGratis(pathname ?? '')
-              ? (
-                <ModuloConDemo
-                  demo={demoDelPropietario(claveDeDemoDelPropietario(pathname ?? ''))}
-                  quien="propietario"
-                  nombre={user?.firstName ?? null}
-                  empresa={[user?.firstName, user?.lastName].filter(Boolean).join(' ') || null}
-                />
-              )
+              ? enDemo && hayDatosDeEjemploDelPropietario(claveDeDemo)
+                ? (
+                  // Nico 30-10-2026: «Ver con datos demo» también para el propietario: la sección de verdad, con datos de ejemplo.
+                  <>
+                    <FranjaDeLaDemo queEs={claveDeDemo ? QUE_ES_CADA_SECCION_DEL_PROPIETARIO[claveDeDemo] ?? null : null} pagar="/panel/upgrade" />
+                    {children}
+                  </>
+                )
+                : (
+                  <ModuloConDemo
+                    demo={demoDelPropietario(claveDeDemo)}
+                    quien="propietario"
+                    nombre={user?.firstName ?? null}
+                    empresa={[user?.firstName, user?.lastName].filter(Boolean).join(' ') || null}
+                    verConDatosDemo={hayDatosDeEjemploDelPropietario(claveDeDemo) ? entrarAlModoDemo : undefined}
+                  />
+                )
               : children}
         </main>
         </PropietarioDeInmobiliariaProvider>

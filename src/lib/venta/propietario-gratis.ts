@@ -52,3 +52,16 @@ export function claveDeDemoDelPropietario(ruta: string): string | null {
   if (segundo === 'escoger-inquilino') return 'estudio';
   return null;
 }
+
+/** Cómo se nombra cada sección en la franja de la demo («Así se ven tus giros con Leasefy»), por su clave de demo. */
+export const QUE_ES_CADA_SECCION_DEL_PROPIETARIO: Readonly<Record<string, string>> = {
+  contratos: 'tus contratos',
+  cobro: 'el cobro de tu arriendo',
+  estudio: 'los candidatos de tu inmueble',
+  giros: 'tus giros',
+  aprobaciones: 'las reparaciones por aprobar',
+  'revisar-canon': 'la revisión de tu canon',
+  informes: 'tus informes',
+  certificados: 'tus certificados',
+  solicitudes: 'tus solicitudes',
+};

@@ -9,6 +9,7 @@ import { CONTABILIDAD_DEMO } from './contabilidad';
 import { CONTRATOS_DEMO } from './contratos';
 import { DOCUMENTOS_DEMO } from './documentos';
 import { FACTURACION_DEMO } from './facturacion';
+import { GIROS_DEL_PROPIETARIO_DEMO } from './del-propietario-giros';
 import { MANTENIMIENTOS_DEMO } from './mantenimientos';
 import { NOMINA_DEMO } from './nomina';
 import { PAGOS_DEMO } from './pagos';
@@ -36,6 +37,8 @@ const LECTURAS: readonly LecturaDeLaDemo[] = [
   ...NOMINA_DEMO,
   ...CONTABILIDAD_DEMO,
   ...PAGOS_DEMO,
+  // El propietario independiente (sus rutas `/portal/propietario/*` no chocan con las de la inmobiliaria).
+  ...GIROS_DEL_PROPIETARIO_DEMO,
 ];
 
 /** Las secciones del panel (su clave en `arquitectura-del-panel.ts`) que ya tienen datos de ejemplo. */
@@ -43,6 +46,16 @@ const SECCIONES_CON_DATOS_DE_EJEMPLO: ReadonlySet<string> = new Set(['servicios-
 
 export function hayDatosDeEjemplo(claveDelModulo: string | null | undefined): boolean {
   return Boolean(claveDelModulo && SECCIONES_CON_DATOS_DE_EJEMPLO.has(claveDelModulo));
+}
+
+/**
+ * Las del propietario independiente en lo gratis (Nico 30-10-2026: «la posibilidad de… ver cómo quedaría pintada cada
+ * sección»), por su clave de demo (`claveDeDemoDelPropietario`).
+ */
+const SECCIONES_DEL_PROPIETARIO_CON_DATOS: ReadonlySet<string> = new Set(['giros']);
+
+export function hayDatosDeEjemploDelPropietario(clave: string | null | undefined): boolean {
+  return Boolean(clave && SECCIONES_DEL_PROPIETARIO_CON_DATOS.has(clave));
 }
 
 /** Lo que responde la demo a una lectura, o `undefined` si la demo no la tiene. Siempre una copia nueva. */

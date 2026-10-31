@@ -947,4 +947,9 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   'Descargarlo otra vez': 'Download it again',
   'Descargar {nombre}': 'Download {nombre}',
   'bajar el archivo': 'download the file',
+  // El recibo de caja: lo que falta para emitirlo (31-10).
+  'Escribe cuánto recibes': 'Enter the amount received',
+  'Revisa el valor': 'Check the amount',
+  'Elige el medio de pago': 'Choose the payment method',
+  'Revisa la fecha': 'Check the date',
 }

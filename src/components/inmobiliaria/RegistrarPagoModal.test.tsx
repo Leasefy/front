@@ -882,6 +882,18 @@ describe('<RegistrarPagoModal> un cliente sin cuotas pendientes (R2)', () => {
   });
 });
 
+describe('<RegistrarPagoModal> lo que falta para emitir (Nico 31-10: «no estás dejando hacer recibos de caja»)', () => {
+  it('sin nada vencido el valor arranca vacío: el botón apagado dice qué falta y lleva al campo', async () => {
+    carteraPorCobro.mockResolvedValue(debeTresMeses({ anticipoDisponible: true }));
+    await abrir({});
+    const falta = document.body.querySelector('[data-testid="recibo-lo-que-falta"]');
+    if (falta) expect(falta.textContent).toMatch(/cuánto recibes|medio de pago|fecha|valor/);
+    escribir('#monto-recibo', '$ 1.200.000');
+    const despues = document.body.querySelector('[data-testid="recibo-lo-que-falta"]');
+    expect(despues?.textContent ?? '').not.toContain('cuánto recibes');
+  });
+});
+
 describe('<RegistrarPagoModal> pagar de más', () => {
   /*
    * 🔴 Pagar de más dejó de ser un error (CEO, 2026-09-15). Lo que NO puede

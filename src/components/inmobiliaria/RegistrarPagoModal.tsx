@@ -101,6 +101,7 @@ import {
 } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
+import { useTr } from '@/lib/i18n/use-tr';
 import { useI18n } from '@/lib/i18n';
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { Button } from '@/components/ui/button';
@@ -290,6 +291,7 @@ export function RegistrarPagoModal({
   onConciliar,
 }: RegistrarPagoModalProps) {
   const { t, formatCurrency, locale } = useI18n();
+  const tr = useTr();
   const idioma = locale === 'en' ? 'en' : 'es';
   /*
    * 🔴 PG-01 (03-10-2026): con qué se puede registrar el pago. Primero
@@ -583,6 +585,24 @@ export function RegistrarPagoModal({
     fechaDeLaCartera === fechaElegida &&
     fechaDeLaVistaPrevia === fechaElegida &&
     !recalculando;
+
+  /**
+   * Nico 31-10: «no estás dejando hacer recibos de caja». Sin nada vencido el valor arranca VACÍO (un adelanto no se
+   * adivina) y el campo queda abajo de la lista de cuotas: el botón salía apagado sin decir por qué. Lo primero que
+   * falta, dicho junto al botón y con el camino al campo.
+   */
+  const loQueFalta: { texto: string; campo: string } | null =
+    cartera === null || enviando
+      ? null
+      : !montoValido
+        ? { texto: tr('Escribe cuánto recibes'), campo: 'monto-recibo' }
+        : seExcede || superaElTope
+          ? { texto: tr('Revisa el valor'), campo: 'monto-recibo' }
+          : medio === ''
+            ? { texto: tr('Elige el medio de pago'), campo: 'medio-recibo' }
+            : problemaDeLaFecha !== null
+              ? { texto: tr('Revisa la fecha'), campo: 'fecha-recibo' }
+              : null;
 
   const puedeEnviar =
     cartera !== null &&
@@ -1148,7 +1168,7 @@ export function RegistrarPagoModal({
                   invalid={Boolean(errorDeMonto ?? erroresDelServidor.monto)}
                   aria-invalid={Boolean(errorDeMonto ?? erroresDelServidor.monto) || undefined}
                   aria-describedby="monto-recibo-error"
-                  className="h-12 text-lg font-semibold"
+                  className="h-12 text-lg font-medium"
                 />
                 <p className="text-caption text-fg-muted">
                   {/* Con anticipo habilitado NO es un máximo —se puede pagar de
@@ -1525,6 +1545,20 @@ export function RegistrarPagoModal({
               </Button>
             ) : (
               <>
+                {loQueFalta && !puedeEnviar && (
+                  <button
+                    type="button"
+                    className="mr-auto text-left text-body-sm text-fg-muted underline-offset-2 hover:text-fg hover:underline"
+                    onClick={() => {
+                      const campo = document.getElementById(loQueFalta.campo);
+                      campo?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                      campo?.focus({ preventScroll: true });
+                    }}
+                    data-testid="recibo-lo-que-falta"
+                  >
+                    {loQueFalta.texto}
+                  </button>
+                )}
                 <Button type="button" variant="outline" onClick={cerrar} disabled={enviando}>
                   {t('recibos.form.cancelar')}
                 </Button>

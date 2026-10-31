@@ -27,13 +27,6 @@ const config: Config = {
   		},
   	},
   	extend: {
-  		// Las dos sombras de Cadence 2 (DESIGN.md §5): `shadow-susurro` para lo que apenas se separa del papel y
-  		// `shadow-flotante` para lo que flota. Las variables vivían en globals.css pero nadie las había declarado
-  		// aquí, así que las clases no pintaban nada (31-10-2026).
-  		boxShadow: {
-  			susurro: 'var(--shadow-susurro)',
-  			flotante: 'var(--shadow-flotante)',
-  		},
   		fontFamily: {
   			sans: ['var(--font-sans)'],
   			heading: ['var(--font-heading)'],

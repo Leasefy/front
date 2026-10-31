@@ -325,7 +325,7 @@ export function Tarjeta({
         ESQUINA,
         enNoche
           ? 'bg-ink text-ink-fg ring-1 ring-white/[0.08]'
-          : 'bg-surface text-fg shadow-susurro ring-1 ring-border',
+          : 'bg-surface text-fg shadow-[0_1px_2px_rgba(18,17,16,.06),0_2px_8px_-2px_rgba(18,17,16,.06)] ring-1 ring-border',
         className,
       )}
     >

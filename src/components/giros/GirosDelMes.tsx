@@ -165,6 +165,8 @@ export function GirosDelMes() {
   const candidatos = datos?.candidatos?.candidatos ?? [];
   const listos = candidatos.filter((c) => c.motivoDeExclusion === null);
   const listosCop = listos.reduce((s, c) => s + Math.max(0, c.netoCop), 0);
+  // Una sola acción en voltaje por pantalla (DESIGN.md §1): con algo listo, es «Girar»; lo demás va en tinta.
+  const hayBotonDeGirar = listos.length > 0 && puedeArmar;
   const noVan = useMemo(() => {
     const cuenta = new Map<TipoDeExclusion, number>();
     for (const c of candidatos) {
@@ -356,6 +358,7 @@ export function GirosDelMes() {
             key={l.id}
             lote={l}
             esAdmin={isAdmin}
+            secundario={hayBotonDeGirar}
             onAutorizar={() => setAutorizando(l)}
             onArchivo={() => void abrirLote(l.id, 'archivo')}
           />
@@ -378,7 +381,12 @@ export function GirosDelMes() {
               </p>
             ) : null}
             {puedeArmar ? (
-              <Button size="lg" className="w-full sm:w-auto" onClick={() => setGirando(true)} data-testid="girar">
+              <Button
+                size="lg"
+                className="h-auto min-h-[50px] w-full whitespace-normal py-3 sm:w-auto"
+                onClick={() => setGirando(true)}
+                data-testid="girar"
+              >
                 <PaperPlaneTilt className="h-5 w-5" weight="bold" aria-hidden="true" />
                 {tr('Girar {plata} a {n}', {
                   plata: formatCurrency(listosCop),
@@ -430,7 +438,13 @@ export function GirosDelMes() {
                   {tr('Ver el lote')}
                 </Link>
                 {l.estado === 'ARCHIVO_GENERADO' && puedeEditar ? (
-                  <Button size="sm" hideArrow onClick={() => void abrirLote(l.id, 'pagado')} data-testid={`ya-pago-${l.id}`}>
+                  <Button
+                    size="sm"
+                    variant={hayBotonDeGirar || enCurso.length > 0 ? 'ink' : 'default'}
+                    hideArrow
+                    onClick={() => void abrirLote(l.id, 'pagado')}
+                    data-testid={`ya-pago-${l.id}`}
+                  >
                     <CheckCircle className="h-4 w-4" aria-hidden="true" />
                     {tr('Ya el banco pagó')}
                   </Button>
@@ -552,11 +566,14 @@ export function GirosDelMes() {
 function LoteEnCurso({
   lote,
   esAdmin,
+  secundario,
   onAutorizar,
   onArchivo,
 }: {
   lote: LoteResumen;
   esAdmin: boolean;
+  /** Con «Girar» en pantalla, este botón va en tinta (una sola acción en voltaje). */
+  secundario: boolean;
   onAutorizar: () => void;
   onArchivo: () => void;
 }) {
@@ -579,12 +596,12 @@ function LoteEnCurso({
         </p>
       </div>
       {autorizado ? (
-        <Button size="sm" hideArrow onClick={onArchivo} data-testid={`archivo-${lote.id}`}>
+        <Button size="sm" variant={secundario ? 'ink' : 'default'} hideArrow onClick={onArchivo} data-testid={`archivo-${lote.id}`}>
           <Bank className="h-4 w-4" aria-hidden="true" />
           {tr('Sacar el archivo del banco')}
         </Button>
       ) : esAdmin ? (
-        <Button size="sm" hideArrow onClick={onAutorizar} data-testid={`autorizar-${lote.id}`}>
+        <Button size="sm" variant={secundario ? 'ink' : 'default'} hideArrow onClick={onAutorizar} data-testid={`autorizar-${lote.id}`}>
           <ShieldCheck className="h-4 w-4" aria-hidden="true" />
           {tr('Autorizar el giro')}
         </Button>

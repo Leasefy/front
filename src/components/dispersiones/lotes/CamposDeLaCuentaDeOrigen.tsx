@@ -100,7 +100,7 @@ export function CamposDeLaCuentaDeOrigen({
           </div>
         </div>
         <div className="space-y-1">
-          <Label htmlFor={idDelNumero} className="text-caption text-fg-muted">
+          <Label htmlFor={idDelNumero} className="block leading-normal text-caption text-fg-muted">
             {t('inmobiliaria.dispersiones.cuentaDeOrigen.numero', { banco: nombreDelBanco })}
           </Label>
           <Input

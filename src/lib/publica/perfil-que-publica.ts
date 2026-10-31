@@ -45,3 +45,18 @@ export function perfilQuePublicaDelDestino(destino: string | null | undefined): 
   const v = new URLSearchParams(destino.slice(i + 1)).get('perfil');
   return esPerfil(v) ? v : null;
 }
+
+/**
+ * ¿Hay que crear su inmobiliaria antes de publicar? (Nico, 31-10-2026). Tiene cuenta de propietario (registro
+ * terminado, sin inmobiliaria) y esta vez eligió «Soy inmobiliaria» o «Soy agente». Antes `/publica` lo mandaba
+ * derecho al publicador como propietario gratis y el back frenaba cada inmueble en el tope de 1 («Has alcanzado el
+ * límite de 1 propiedad(es)…»). Sólo cuenta lo que eligió ESTA vez (el enlace): el perfil guardado de la cuenta es el
+ * de cuando se registró como propietario.
+ */
+export function vieneACrearSuInmobiliaria(p: {
+  rol: string | null | undefined;
+  conInmobiliaria: boolean;
+  perfilElegido: PerfilQuePublica | null;
+}): boolean {
+  return !p.conInmobiliaria && p.rol === 'landlord' && (p.perfilElegido === 'agency' || p.perfilElegido === 'agente');
+}

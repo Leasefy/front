@@ -12,6 +12,7 @@ void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const tablero = vi.hoisted(() => ({ conDatos: true }));
+const lista = vi.hoisted(() => ({ fallo: null as unknown }));
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
   useSearchParams: () => new URLSearchParams(),
@@ -34,11 +35,12 @@ vi.mock('@/components/landlord/ContratosConLaInmobiliaria', () => ({
 }));
 vi.mock('@/lib/hooks/useLandlord', () => ({
   useLandlordProperties: () => ({
-    properties: [
-      { id: 'p-1', title: 'Apartamento en Laureles', monthlyRent: 2_000_000, candidateCount: 3, pendingCount: 1, status: 'published' },
-    ],
+    properties: lista.fallo
+      ? []
+      : [{ id: 'p-1', title: 'Apartamento en Laureles', monthlyRent: 2_000_000, candidateCount: 3, pendingCount: 1, status: 'published' }],
     isLoading: false,
-    error: null,
+    error: lista.fallo ? 'No pudimos cargar tus inmuebles.' : null,
+    errorCrudo: lista.fallo,
     refetch: vi.fn(),
   }),
   useLandlordDashboard: () => ({
@@ -99,5 +101,17 @@ describe('Inicio del propietario independiente', () => {
     // El inmueble publicado pide $ 2.000.000: no se muestra como ingreso.
     expect(cifra?.textContent).not.toMatch(/2\.000\.000/);
     tablero.conDatos = true;
+  });
+
+  it('🔴 si la lista no cargó (la pausa del panel), no le dice que no tiene inmuebles (Nico 31-10)', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    lista.fallo = new ApiError(503, 'El panel del propietario independiente está en pausa.', 'PANEL_PROPIETARIO_INDEPENDIENTE_CONGELADO');
+    await act(async () => root.render(<PanelPage />));
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 10));
+    });
+    expect(host.querySelector('[data-testid="encabezado-del-propietario-independiente"]')).not.toBeNull();
+    expect(host.querySelector('[data-testid="panel-en-pausa"]')).not.toBeNull();
+    lista.fallo = null;
   });
 });

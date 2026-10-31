@@ -8,6 +8,7 @@ import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { PanelEnPausa, esElPanelEnPausa } from '@/components/portales/PanelEnPausa';
 import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
@@ -259,7 +260,7 @@ function PanelDelPropietarioIndependiente() {
   const { getUpcoming: getUpcomingVisitsFromApi } = useVisits();
 
   // ALL hooks must be called before any conditional returns (React rules of hooks)
-  const { properties: apiProperties, isLoading: propertiesLoading, error: propertiesError, refetch: recargarPropiedades } = useLandlordProperties();
+  const { properties: apiProperties, isLoading: propertiesLoading, error: propertiesError, errorCrudo: errorDeLosInmuebles, refetch: recargarPropiedades } = useLandlordProperties();
   const { dashboard, isLoading: dashboardLoading, refetch: recargarTablero } = useLandlordDashboard();
   // Propietario de una inmobiliaria: sus contratos no salen por `landlordId`.
   const administrados = useContratosAdministrados();
@@ -319,7 +320,10 @@ function PanelDelPropietarioIndependiente() {
   // Show empty/setup state ONLY after API has finished loading and returned 0 properties.
   // While loading, always show the dashboard layout with skeletons (never the empty state).
   const apiFinished = !propertiesLoading;
-  const hasNoProperties = apiFinished && properties.length === 0;
+  // 31-10-2026 (Nico: «no se ve reflejada en su plataforma»): si la lista no cargó (la pausa del panel o una caída) no
+  // es «no tienes inmuebles»: antes salía el tablero de arranque como si no hubiera publicado nada.
+  const listaVacia = apiFinished && properties.length === 0;
+  const hasNoProperties = listaVacia && !propertiesError;
 
   /*
    * 🔴 QA 22-09: a un propietario invitado por su inmobiliaria, con cuatro
@@ -327,7 +331,7 @@ function PanelDelPropietarioIndependiente() {
    * publicadas · Tu potencial mensual $0 · Publicar propiedad». No publica: se
    * los administra la inmobiliaria. Se le dice eso, con sus contratos.
    */
-  if (hasNoProperties && administrados.doc) {
+  if (listaVacia && administrados.doc) {
     return (
       <div className="bg-bg">
         <motion.div {...entradaAdministrados} className="p-6 lg:p-8 space-y-8">
@@ -339,7 +343,7 @@ function PanelDelPropietarioIndependiente() {
     );
   }
 
-  if (hasNoProperties && administrados.cargando) {
+  if (listaVacia && administrados.cargando) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
         <Skeleton className="h-40 w-full max-w-3xl rounded-lg" />
@@ -657,6 +661,8 @@ function PanelDelPropietarioIndependiente() {
                     );
                   })}
                 </div>
+              ) : esElPanelEnPausa(errorDeLosInmuebles) ? (
+                <PanelEnPausa />
               ) : propertiesError ? (
                 <FalloDeCarga error={propertiesError} queEs="tus inmuebles" onReintentar={recargarPropiedades} />
               ) : (

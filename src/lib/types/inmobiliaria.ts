@@ -423,6 +423,8 @@ export interface Consignacion {
    * has no linked `propertyId` (a migrated cartera row). Never fabricate.
    */
   propertyCode: number | null;
+  /** 31-10-2026: habitaciones, baños, área, parqueaderos, estrato y características (back `especificaciones-del-inmueble.ts`). */
+  especificaciones?: import('@/lib/inmuebles/especificaciones').EspecificacionesDelInmueble | null;
   /**
    * 🔴 El estado del inmueble detrás del mandato. Dice si está EN CATÁLOGO:
    * `DRAFT` es lo único que significa «no publicado» y no entra al
@@ -633,6 +635,8 @@ export interface InmuebleSinConsignacion {
   canonPorConfirmar?: boolean;
   adminFee: number;
   status: PropertyStatusSinConsignacion;
+  /** 31-10-2026: habitaciones, baños, área, parqueaderos, estrato y características. */
+  especificaciones?: import('@/lib/inmuebles/especificaciones').EspecificacionesDelInmueble | null;
   createdAt: string;
   department?: string | null;
   listingType?: 'rent' | 'sale';

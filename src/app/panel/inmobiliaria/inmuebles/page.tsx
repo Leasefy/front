@@ -67,6 +67,8 @@ import { MarketplaceDeLosMarcados } from '@/components/inmobiliaria/marketplace/
 import { usePublicacionEnElMarketplace } from '@/lib/hooks/use-publicacion-en-el-marketplace';
 import { cajonDelInmueble, contarPorCajon } from '@/lib/inmobiliaria/cajon-del-inmueble';
 import { coincideConLaBusqueda } from '@/lib/inmuebles/buscar-en-el-portafolio';
+import { cumpleLasEspecificaciones, cuantosFiltrosDeEspecificaciones } from '@/lib/inmuebles/especificaciones';
+import { VistaPreviaDelInmueble } from '@/components/inmobiliaria/VistaPreviaDelInmueble';
 import { useCopiarLaFicha } from '@/lib/inmuebles/use-copiar-la-ficha';
 import { ConsignacionFilters, ConsignacionFiltersState } from '@/components/inmobiliaria/ConsignacionFilters';
 import { PedirCitaModal } from '@/components/inmobiliaria/agenda/PedirCitaModal';
@@ -123,6 +125,7 @@ function PortafolioContent() {
   // IN-19 (QA 04-10): en el celular abre en TARJETAS (la tabla no cabe a
   // 390 px); lo que la persona elija con el selector manda.
   const esCelular = useIsMobile();
+  const [vistaPrevia, setVistaPrevia] = useState<PortafolioRow | null>(null);
   const [vistaElegida, setViewMode] = useState<ViewMode | null>(null);
   const viewMode: ViewMode = vistaElegida ?? (esCelular ? 'grid' : 'table');
   const [citaFor, setCitaFor] = useState<Consignacion | null>(null);
@@ -244,6 +247,9 @@ function PortafolioContent() {
       );
     }
 
+    // 31-10-2026: negocio, habitaciones, baños, estrato, canon y características.
+    result = result.filter((c) => cumpleLasEspecificaciones(c, filters.especificaciones));
+
     return result;
   }, [filters, portafolioRows, propietariosMap, comercialPorConsignacion]);
 
@@ -272,7 +278,8 @@ function PortafolioContent() {
     filters.propietarioId !== 'all' ||
     filters.city !== 'all' ||
     filters.propertyType !== 'all' ||
-    Boolean(filters.comercial);
+    Boolean(filters.comercial) ||
+    cuantosFiltrosDeEspecificaciones(filters.especificaciones) > 0;
 
   const elVacioEsPorLosFiltros = hayFiltrosPuestos && portafolioRows.length > 0;
 
@@ -757,6 +764,7 @@ function PortafolioContent() {
                 {paginatedConsignaciones.length > 0 ? (
                   <>
                   <ConsignacionTable
+                    onVistaPrevia={setVistaPrevia}
                     consignaciones={paginatedConsignaciones}
                     propietariosMap={propietariosMap}
                     agentesMap={agentesMap}
@@ -868,6 +876,9 @@ function PortafolioContent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Ver el inmueble sin salir de la tabla (Nico, 31-10-2026). */}
+      <VistaPreviaDelInmueble fila={vistaPrevia} onCerrar={() => setVistaPrevia(null)} />
 
       <PedirCitaModal
         isOpen={!!citaFor}

@@ -1,6 +1,9 @@
 'use client';
 
 import { OpcionesDelInmueble, accionesDelInmueble } from '@/components/inmobiliaria/inmuebles/OpcionesDelInmueble';
+import { useTr } from '@/lib/i18n/use-tr';
+import { nombreDeLaCaracteristica } from '@/lib/inmuebles/caracteristicas';
+import { resumenDeEspecificaciones, type EspecificacionesDelInmueble } from '@/lib/inmuebles/especificaciones';
 import { SituacionComercialCorta } from '@/components/comercial/SituacionComercial';
 import type { VacanciaYMandato } from '@/lib/comercial/comercial';
 import { useState, useMemo } from 'react';
@@ -87,6 +90,8 @@ interface ConsignacionTableProps {
    * el del propietario) a inventarse un comportamiento.
    */
   onVerAviso?: (consignacion: Consignacion) => void;
+  /** Ver el inmueble en un modal sin salir de la tabla (Nico, 31-10-2026). */
+  onVistaPrevia?: (row: PortafolioRow) => void;
   /**
    * «Copiar ficha» (Nico, 22-10-2026): el texto para WhatsApp con el enlace
    * del marketplace, que arma la tarjeta con la foto. Por `propertyId`: sirve
@@ -200,6 +205,7 @@ export function ConsignacionTable({
   onEdit,
   onAgendarCita,
   onVerAviso,
+  onVistaPrevia,
   onCopiarFicha,
   onCandidatos,
   onEliminar,
@@ -213,6 +219,7 @@ export function ConsignacionTable({
   onElegir,
 }: ConsignacionTableProps) {
   const { t } = useI18n();
+  const tr = useTr();
   /*
    * L2: el menú de la fila ofrecía Editar, Pedir cita y Retirar a cualquiera
    * que viera el portafolio; un CONTADOR o un VIEWER apretaban y el back
@@ -418,6 +425,8 @@ export function ConsignacionTable({
             {/* Sin ordenamiento: el `TH` del DS ya viste la etiqueta (mono 11px
                 en mayúscula). Envolverla en un `span` con tipografía propia era
                 justamente lo que hacía convivir dos estilos en la misma fila. */}
+            {/* Nico 31-10-2026: «una columna con especificaciones… y mostrarlas todas». */}
+            <TableHead className="text-left px-3 hidden xl:table-cell">{tr('Especificaciones')}</TableHead>
             <TableHead className="text-left px-3 hidden lg:table-cell">
               {t('inmobiliaria.consignaciones.table.owner')}
             </TableHead>
@@ -674,6 +683,11 @@ export function ConsignacionTable({
                   </div>
                 </TableCell>
 
+                {/* Especificaciones: el resumen y TODAS las características. */}
+                <TableCell className="px-3 py-3 hidden xl:table-cell" data-testid="especificaciones-de-la-fila">
+                  <EspecificacionesDeLaFila especificaciones={row.especificaciones} />
+                </TableCell>
+
                 {/* Propietario — con su Avatar de Cadence (antes, el muñequito igual para todos). */}
                 <TableCell className="px-3 py-3 hidden lg:table-cell">
                   {propietarioName ? (
@@ -707,6 +721,17 @@ export function ConsignacionTable({
 
                 {/* Actions */}
                 <TableCell className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center justify-end gap-0.5">
+                  {onVistaPrevia && row.propertyId ? (
+                    <IconButton
+                      variant="ghost"
+                      size="sm"
+                      icon={<Eye className="w-4 h-4" />}
+                      aria-label={tr('Ver el inmueble sin salir de la tabla')}
+                      onClick={() => onVistaPrevia(row)}
+                      data-testid="vista-previa-de-la-fila"
+                    />
+                  ) : null}
                   {/* Sin mandato la única acción es completarlo: sin permiso
                       para crearlo, un menú vacío no es una acción. */}
                   {(row.kind === 'consignacion' || puedeCrearMandato || opcionDelMarketplace || opcionDeCopiarFicha) && (
@@ -794,6 +819,7 @@ export function ConsignacionTable({
                     </DropdownListContent>
                   </DropdownList>
                   )}
+                  </div>
                 </TableCell>
               </TableRowAnimada>
             );
@@ -820,3 +846,17 @@ export function ConsignacionTable({
 }
 
 export default ConsignacionTable;
+
+/** Las especificaciones de una fila: el resumen y, debajo, TODAS sus características (Nico, 31-10-2026). */
+function EspecificacionesDeLaFila({ especificaciones }: { especificaciones?: EspecificacionesDelInmueble | null }) {
+  const tr = useTr();
+  const resumen = resumenDeEspecificaciones(especificaciones);
+  const nombres = (especificaciones?.caracteristicas ?? []).map(nombreDeLaCaracteristica).filter((x): x is string => Boolean(x));
+  if (!resumen && nombres.length === 0) return <span className="text-fg-subtle">{tr('Sin registrar')}</span>;
+  return (
+    <div className="max-w-[260px] space-y-0.5">
+      {resumen ? <p className="whitespace-nowrap text-body-sm text-fg">{resumen}</p> : null}
+      {nombres.length > 0 ? <p className="text-caption leading-snug text-fg-muted">{nombres.join(' · ')}</p> : null}
+    </div>
+  );
+}

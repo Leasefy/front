@@ -11,8 +11,8 @@ export interface TarifasDeLeasefy {
     pilotoAutomatico: { porInmueble: number; pruebaDias: number };
     laura: { exitoBps: number };
     avaluo: { precioConIva: number };
-    recaudo: { spreadBps: number; wompi?: { porcentajeBps: number; fijo: number } };
-    dispersion: { porPago: number; wompi?: { porcentajeBps: number; fijo: number } };
+    /** $1.250 + IVA por pago, descontado del pago (Nico, 31-10-2026: sin Wompi y sin giros). */
+    recaudo: { porPago: number };
     propietariosSinInmobiliaria: { gestionBps: number };
     implementacion: { conLeasefy: number };
     facturacionElectronica?: { paquetes: Array<{ documentos: number; precio: number }>; duranMeses: number };
@@ -32,8 +32,8 @@ export interface TarifasDeLeasefy {
   ejemplos: Array<{ inmuebles: number; total: number }>;
   /** El estudio del inquilino es gratis por ahora (Nico, 27-10-2026). */
   estudioDelInquilinoGratis?: boolean;
-  /** ¿Ya se cobra lo variable (spread del recaudo, $3.000 por giro, 8 % de Mori)? */
-  cobroVariable?: boolean;
+  /** ¿Se descuenta el recaudo ($1.250 + IVA por pago)? Prendido de fábrica (31-10-2026). Mori se cobra siempre. */
+  cobroDelRecaudo?: boolean;
 }
 
 export const tarifasApi = {

@@ -21,7 +21,7 @@ export function PlanPorInmueble({ datos }: { datos: TarifasDeLeasefy }) {
     { icono: Robot, titulo: 'Piloto automático', texto: `${pesos(t.pilotoAutomatico.porInmueble)} más por inmueble al mes. Los agentes trabajan solos y el director planea el día. Prueba de ${t.pilotoAutomatico.pruebaDias} días.` },
     { icono: PhoneCall, titulo: 'Laura, cobranza por voz y WhatsApp', texto: `Sólo éxito: el ${pct(t.laura.exitoBps)} de lo que recupera por su link. Si no recupera, no pagas.` },
     { icono: ChatCircleDots, titulo: 'Más preguntas al chat', texto: `Recargas de ${t.recargas.map((r) => `${r.preguntas} por ${pesos(r.precio)}`).join(', ')}. Duran ${t.recargaDuraMeses} meses.` },
-    { icono: Lightning, titulo: 'Recaudo y giros', texto: `Lo que cobra Wompi más ${pct(t.recaudo.spreadBps)} por pago de arriendo, y ${pesos(t.dispersion.porPago)} por cada giro al propietario.` },
+    { icono: Lightning, titulo: 'Recaudo en línea', texto: `${pesos(t.recaudo.porPago)} + IVA por cada arriendo que se paga por Leasefy, descontado del mismo pago.` },
     { icono: Wrench, titulo: 'Implementación', texto: `Gratis si la haces tú con las herramientas de Leasefy; ${pesos(t.implementacion.conLeasefy)} una vez si migramos tus datos y capacitamos a tu equipo.` },
   ];
   return (

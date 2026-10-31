@@ -9,7 +9,7 @@ import type { TarifasDeLeasefy } from '@/lib/api/tarifas.service'
 const TARIFAS: TarifasDeLeasefy = {
   vigente: true,
   estudioDelInquilinoGratis: true,
-  cobroVariable: false,
+  cobroDelRecaudo: true,
   ejemplos: [],
   tarifas: {
     plan: { porInmueble: 2_100, minimoMensual: 99_000, usuariosIncluidos: 2, usuarioAdicional: 20_000, preguntasIncluidas: 50 },
@@ -24,8 +24,7 @@ const TARIFAS: TarifasDeLeasefy = {
     laura: { exitoBps: 800 },
     estudioDelInquilino: { precio: 21_000 },
     avaluo: { precioConIva: 50_000 },
-    recaudo: { spreadBps: 50, wompi: { porcentajeBps: 265, fijo: 700 } },
-    dispersion: { porPago: 3_000, wompi: { porcentajeBps: 40, fijo: 1_849 } },
+    recaudo: { porPago: 1_250 },
     propietariosSinInmobiliaria: { gestionBps: 500 },
     implementacion: { conLeasefy: 1_000_000 },
     facturacionElectronica: {
@@ -107,10 +106,11 @@ describe('lo que se cobra aparte: TODO el modelo de negocio, desde las tarifas d
     expect(precio('piloto')).toBe('+ $ 900 por inmueble al mes')
     expect(detalle('piloto')).toContain('30 días gratis')
     expect(precio('mori')).toBe('8 % de lo recuperado')
-    expect(precio('recaudo')).toBe('0,5 % por pago')
-    expect(detalle('recaudo')).toContain('2,65 % + $ 700 + IVA')
-    expect(precio('giro')).toBe('$ 3.000 por giro')
-    expect(detalle('giro')).toContain('$ 1.849 + 0,4 % + IVA')
+    // Nico 31-10: $1.250 + IVA por pago, descontado del pago; sin Wompi y sin giros.
+    expect(precio('recaudo')).toBe('$ 1.250 + IVA por pago')
+    expect(detalle('recaudo')).toContain('Se descuenta del mismo pago')
+    expect(detalle('recaudo')).not.toContain('Wompi')
+    expect(grupos.flatMap((x) => x.precios).find((p) => p.id === 'giro')).toBeUndefined()
     expect(precio('firmas')).toBe('$ 3.900 por documento')
     expect(detalle('firmas')).toContain('Tu cuenta trae 3 gratis')
     expect(precio('facturacion')).toBe('Desde $ 35.000')
@@ -127,7 +127,7 @@ describe('lo que se cobra aparte: TODO el modelo de negocio, desde las tarifas d
 
   it('un back anterior (sin firmas, facturación ni lo de Wompi) no inventa nada', () => {
     const { firmas: _f, facturacionElectronica: _fe, ...resto } = TARIFAS.tarifas
-    const g = preciosDeLeasefy({ ...TARIFAS, tarifas: { ...resto, recaudo: { spreadBps: 50 }, dispersion: { porPago: 3_000 } } })
+    const g = preciosDeLeasefy({ ...TARIFAS, tarifas: { ...resto, recaudo: { porPago: 1_250 } } })
     expect(g.map((x) => x.id)).toEqual(['equipo', 'plata', 'captar', 'una-vez'])
     expect(g.flatMap((x) => x.precios).find((p) => p.id === 'recaudo')!.detalle).not.toContain('Wompi')
   })

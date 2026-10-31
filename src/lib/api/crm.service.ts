@@ -82,6 +82,8 @@ export interface EntraUnLeadInput {
   /** Cuánto puede pagar al mes, dicho por él. Sin esto se deduce del inmueble. */
   presupuestoCop?: number
   agenteUserId?: string
+  /** 31-10-2026: lo que busca si no llegó por un inmueble (sin esto, las características del inmueble). */
+  criterios?: { zonas?: string[]; habitaciones?: number; banos?: number; parqueadero?: boolean; cuartoUtil?: boolean }
 }
 
 export interface LeadCreado {

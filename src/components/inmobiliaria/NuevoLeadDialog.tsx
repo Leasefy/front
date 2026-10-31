@@ -63,6 +63,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -275,6 +276,13 @@ interface NuevoLeadDialogProps {
 export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }: NuevoLeadDialogProps) {
   const tr = useTr();
   const [consignacionId, setConsignacionId] = useState('');
+  // 31-10-2026 (Juan: «con búsqueda genérica: zona, características y presupuesto»): lo que busca si no
+  // llegó por un inmueble. Con inmueble, el back toma las características de ese inmueble.
+  const [zona, setZona] = useState('');
+  const [habitaciones, setHabitaciones] = useState('');
+  const [banos, setBanos] = useState('');
+  const [parqueadero, setParqueadero] = useState(false);
+  const [cuartoUtil, setCuartoUtil] = useState(false);
   const [nombre, setNombre] = useState('');
   const [correo, setCorreo] = useState('');
   const [telefono, setTelefono] = useState('');
@@ -364,6 +372,17 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
           ...(documento.trim() ? { documento: documento.trim() } : {}),
           ...(presupuestoCop !== null ? { presupuestoCop } : {}),
           ...(asesor ? { agenteUserId: asesor } : {}),
+          ...(!consignacionId
+            ? {
+                criterios: {
+                  ...(zona.trim() ? { zonas: zona.split(',').map((z) => z.trim()).filter(Boolean) } : {}),
+                  ...(Number(habitaciones) > 0 ? { habitaciones: Number(habitaciones) } : {}),
+                  ...(Number(banos) > 0 ? { banos: Number(banos) } : {}),
+                  ...(parqueadero ? { parqueadero: true } : {}),
+                  ...(cuartoUtil ? { cuartoUtil: true } : {}),
+                },
+              }
+            : {}),
         });
         toast.success('Interesado cargado', {
           description: r.contactoUnido
@@ -454,6 +473,44 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
               {errorDe('consignacionId')}
             </div>
           )}
+          {inmuebleOpcional && !consignacionId ? (
+            <fieldset className="space-y-3 rounded-lg border border-border p-4" data-testid="nuevo-lead-lo-que-busca">
+              <legend className="px-1 text-sm font-medium text-fg">{tr('Lo que busca')}</legend>
+              <Input
+                aria-label={tr('Zona')}
+                placeholder={tr('Zona o barrio (ej. Sabaneta, La Doctora)')}
+                value={zona}
+                onChange={(e) => setZona(e.target.value)}
+                data-testid="nuevo-lead-zona"
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  aria-label={tr('Habitaciones')}
+                  inputMode="numeric"
+                  placeholder={tr('Habitaciones')}
+                  value={habitaciones}
+                  onChange={(e) => setHabitaciones(e.target.value.replace(/\D/g, '').slice(0, 2))}
+                />
+                <Input
+                  aria-label={tr('Baños')}
+                  inputMode="numeric"
+                  placeholder={tr('Baños')}
+                  value={banos}
+                  onChange={(e) => setBanos(e.target.value.replace(/\D/g, '').slice(0, 2))}
+                />
+              </div>
+              <div className="flex flex-wrap gap-x-5 gap-y-2 text-body-sm text-fg">
+                <label className="flex items-center gap-2">
+                  <Checkbox checked={parqueadero} onCheckedChange={(v) => setParqueadero(v === true)} />
+                  {tr('Parqueadero')}
+                </label>
+                <label className="flex items-center gap-2">
+                  <Checkbox checked={cuartoUtil} onCheckedChange={(v) => setCuartoUtil(v === true)} />
+                  {tr('Cuarto útil')}
+                </label>
+              </div>
+            </fieldset>
+          ) : null}
 
           {/* 🔴 B-07: el origen, de la lista de la inmobiliaria. */}
           <div className="space-y-1.5">

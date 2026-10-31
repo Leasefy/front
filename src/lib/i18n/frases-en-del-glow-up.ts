@@ -1058,4 +1058,10 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   'Una sola firma para todos los que elegiste. Cada documento queda con su constancia.': 'One signature for everything you picked. Each document keeps its own record.',
   'Leí los documentos que voy a firmar y acepto firmarlos electrónicamente.': "I read the documents I'm signing and agree to sign them electronically.",
   'Primero dibuja tu firma y marca que los leíste.': 'First draw your signature and check that you read them.',
+  // components/inmobiliaria/NuevoLeadDialog.tsx · lo que busca (31-10-2026)
+  'Lo que busca': "What they're looking for",
+  'Zona': 'Area',
+  'Zona o barrio (ej. Sabaneta, La Doctora)': 'Area or neighborhood (e.g. Sabaneta, La Doctora)',
+  'Parqueadero': 'Parking',
+  'Cuarto útil': 'Storage room',
 }

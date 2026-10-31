@@ -281,7 +281,8 @@ describe('las demás secciones de IA en la demo', () => {
     ['conciliacion', '/panel/inmobiliaria/conciliacion', ['ai-hub/agentes/conciliacion/overview', 'conciliacion/summary'], []],
     ['retencion', '/panel/inmobiliaria/retencion', ['retencion/riesgo', 'retencion/metricas', 'retencion/decisions?reviewableOnly=true', 'retencion/umbral'], []],
     ['agente-de-pagos', '/panel/inmobiliaria/pagos/agente', ['ai-hub/inbox', 'ai-hub/gobierno'], ['/inmobiliaria/cobros/links?mes=2026-10', '/inmobiliaria/cobros/links/resumen?mes=2026-10']],
-    ['desempeno-ia', '/panel/inmobiliaria/reportes/ia', ['ai-hub/agentes/cobranza/overview', 'ai-hub/agentes/pagos/overview', 'ai-hub/agentes/cotizador/overview'], []],
+    ['desempeno-ia', '/panel/inmobiliaria/reportes/ia', ['ai-hub/agentes/cobranza/overview', 'ai-hub/agentes/pagos/overview', 'ai-hub/agentes/cotizador/overview'], ['/inmobiliaria/ai/metrics']],
+    ['listas-restrictivas', '/panel/inmobiliaria/clientes/listas', [], ['/inmobiliaria/captacion/listas', '/inmobiliaria/captacion/listas/cargadas']],
   ] as const)('«%s» trae sus datos de ejemplo, del micro y del back, sin salir de la pestaña', async (clave, ruta, delMicro, delBack) => {
     entrarAlModoDemo();
     window.history.pushState({}, '', ruta);

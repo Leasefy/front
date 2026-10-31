@@ -4,6 +4,7 @@
  * pagos (Cobri). Inmuebles y personas de las demás demos (Contratos, Propietarios); cifras INVENTADAS.
  */
 import type { AgencyAvaluoItem, AgencyAvaluoListResponse, AiMetricsResponse } from '@/lib/api/inmobiliaria.service';
+import type { ConsultaDeListas } from '@/lib/api/crm.service';
 import type { EstadoDelLinkDePago, LinkDePagoDeCuota, PaginaDeLinksDePago, ResumenDeLinksDePago } from '@/lib/types/payu';
 import type { LecturaDeLaDemo } from './index';
 
@@ -82,7 +83,44 @@ const metricasDeIa = (): AiMetricsResponse => ({
   summary: { actionsThisWeek: 318, hoursSavedThisMonth: '64 h' },
 });
 
+/** Listas restrictivas: las tres listas cargadas y lo que se comprobó de cada tercero (una coincidencia que no era). */
+const LISTAS_CARGADAS = [
+  { id: 'demo-ls-ofac', lista: 'OFAC', etiqueta: 'OFAC · SDN', vigenteDesde: '2026-10-28', filas: 17_842, fuente: 'treasury.gov' },
+  { id: 'demo-ls-onu', lista: 'ONU', etiqueta: 'Consejo de Seguridad de la ONU', vigenteDesde: '2026-10-27', filas: 1_006, fuente: 'un.org' },
+  { id: 'demo-ls-ue', lista: 'UE', etiqueta: 'Sanciones consolidadas de la UE', vigenteDesde: '2026-10-25', filas: 5_412, fuente: 'europa.eu' },
+].map((l) => ({ ...l, agencyId: null, activa: true }));
+
+function consulta(id: string, terceroTipo: string, nombre: string, resultado: ConsultaDeListas['resultado'], estado: ConsultaDeListas['estado'], dia: string, coincidencia?: string): ConsultaDeListas {
+  return {
+    id,
+    terceroTipo,
+    nombre,
+    documento: null,
+    proveedor: 'Leasefy',
+    resultado,
+    estado,
+    coincidencias: coincidencia ? [{ lista: 'OFAC', nombreEnLaLista: coincidencia, parecido: 0.86 }] : null,
+    motivoDeLaRevision: estado === 'LIBERADO' ? 'Otra persona: el documento y la fecha de nacimiento no coinciden.' : null,
+    createdAt: `${dia}T15:00:00.000Z`,
+  };
+}
+
+const CONSULTAS: readonly ConsultaDeListas[] = [
+  consulta('demo-cl-1', 'INQUILINO', 'Daniela Cardona', 'LIBRE', 'SIN_BLOQUEO', '2026-10-29'),
+  consulta('demo-cl-2', 'INQUILINO', 'Sebastián Mesa', 'COINCIDENCIA', 'BLOQUEADO', '2026-10-29', 'SEBASTIAN MEZA ROJAS'),
+  consulta('demo-cl-3', 'PROPIETARIO', 'Inversiones Palmas SAS', 'LIBRE', 'SIN_BLOQUEO', '2026-10-27'),
+  consulta('demo-cl-4', 'CODEUDOR', 'Mariana Ochoa', 'LIBRE', 'SIN_BLOQUEO', '2026-10-16'),
+  consulta('demo-cl-5', 'PROPIETARIO', 'Carlos Mejía', 'LIBRE', 'SIN_BLOQUEO', '2026-10-02'),
+];
+
+function consultasDeListas(camino: string) {
+  const estado = new URLSearchParams(camino.split('?')[1] ?? '').get('estado');
+  return { disponible: true, motivo: null, hayListaCargada: true, sinVerificar: 0, consultas: CONSULTAS.filter((c) => !estado || c.estado === estado) };
+}
+
 export const AGENTES_DEL_BACK_DEMO: readonly LecturaDeLaDemo[] = [
+  { patron: /^\/inmobiliaria\/captacion\/listas\/cargadas(\?|$)/, respuesta: () => ({ disponible: true, motivo: null, listas: LISTAS_CARGADAS }) },
+  { patron: /^\/inmobiliaria\/captacion\/listas(\?|$)/, respuesta: consultasDeListas },
   { patron: /^\/inmobiliaria\/ai\/metrics(\?|$)/, respuesta: metricasDeIa },
   { patron: /^\/inmobiliaria\/avaluos(\?|$)/, respuesta: avaluos },
   { patron: /^\/inmobiliaria\/cobros\/links\/resumen(\?|$)/, respuesta: resumen },

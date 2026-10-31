@@ -116,6 +116,7 @@ const NOMBRES: Record<string, string> = {
   retencion: 'la retención',
   'agente-de-pagos': 'el agente de pagos',
   'desempeno-ia': 'el desempeño de tus agentes',
+  'listas-restrictivas': 'las listas restrictivas',
   contratos: 'los contratos',
   pagos: 'los pagos y giros',
   facturacion: 'la facturación electrónica',

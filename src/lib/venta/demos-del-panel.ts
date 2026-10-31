@@ -155,6 +155,7 @@ const DE_LA_INMOBILIARIA: Record<string, DemoDelModulo> = {
     promesa: 'Consulta a inquilinos y propietarios en listas restrictivas antes de firmar.',
     puntos: ['Consulta en listas', 'Soporte para tu SARLAFT', 'Queda en la ficha de cada persona'],
     capturas: [cap('inq-detalle', 'Ficha de la persona con su consulta')],
+    video: video('listas-restrictivas', 'Recorrido por las listas restrictivas con datos de ejemplo: los terceros consultados, el que espera revisión y las listas cargadas'),
   },
   pagos: {
     titulo: 'Recaudo y giros a propietarios',

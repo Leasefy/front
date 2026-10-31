@@ -209,13 +209,14 @@ function DominioConectado({ d, onCambio }: { d: DominioPropio; onCambio: (d: Dom
       <div className="space-y-5" data-testid="dominio-conectado">
         <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0 space-y-1">
-            <p className="flex flex-wrap items-center gap-2">
-              <Globe className="h-4 w-4 shrink-0 text-fg-muted" aria-hidden />
-              <span className="truncate font-mono text-body text-fg" data-testid="dominio-conectado-nombre">
+            {/* El dominio entero, aunque sea largo: es lo que la persona compara con su proveedor (QA 390, 31-10). */}
+            <p className="flex items-start gap-2">
+              <Globe className="mt-1 h-4 w-4 shrink-0 text-fg-muted" aria-hidden />
+              <span className="min-w-0 break-all font-mono text-body text-fg" data-testid="dominio-conectado-nombre">
                 {d.dominio}
               </span>
-              <StatusBadge tone={activo ? 'success' : 'warning'}>{activo ? 'Activo' : 'Esperando el DNS'}</StatusBadge>
             </p>
+            <StatusBadge tone={activo ? 'success' : 'warning'}>{activo ? 'Activo' : 'Esperando el DNS'}</StatusBadge>
             <p className="text-caption text-fg-muted">
               {activo
                 ? 'Tu página y las fichas que compartas salen con este dominio.'

@@ -34,12 +34,12 @@ export function CTASection() {
       >
         <div className="bg-white/95 backdrop-blur-xl rounded-xl border border-white/50 p-5 w-[220px]">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/12 flex items-center justify-center shadow-[#2C7A53]/25">
+            <div className="w-10 h-10 rounded-xl bg-success-soft flex items-center justify-center shadow-success/25">
               <TrendUp className="w-5 h-5 text-white" />
             </div>
             <div>
               <MonoLabel className="block text-[11px] font-normal text-muted-foreground tracking-wide">Este mes</MonoLabel>
-              <p className="text-lg font-bold text-foreground">+340 arriendos</p>
+              <p className="text-lg font-medium text-foreground">+340 arriendos</p>
             </div>
           </div>
           <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent mb-3" />
@@ -68,11 +68,11 @@ export function CTASection() {
       >
         <div className="bg-white/95 backdrop-blur-xl rounded-xl border border-white/50 p-4 w-[200px]">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-[#1A40FF] flex items-center justify-center shadow-primary/25">
+            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-primary/25">
               <CheckCircle className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="text-[20px] font-bold text-foreground">98%</p>
+              <p className="text-[20px] font-medium text-foreground">98%</p>
               <p className="text-[11px] text-muted-foreground">Satisfacción</p>
             </div>
           </div>
@@ -85,12 +85,12 @@ export function CTASection() {
       >
         <div className="bg-white/95 backdrop-blur-xl rounded-xl border border-white/50 p-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#B7791F] to-[#B7791F] flex items-center justify-center shadow-[#B7791F]/25">
+            <div className="w-10 h-10 rounded-xl bg-warning flex items-center justify-center shadow-warning/25">
               <Lightning className="w-5 h-5 text-white" />
             </div>
             <div>
               <MonoLabel className="block text-[11px] font-normal text-muted-foreground tracking-wide">Tiempo promedio</MonoLabel>
-              <p className="text-lg font-bold text-foreground">48 horas</p>
+              <p className="text-lg font-medium text-foreground">48 horas</p>
               <p className="text-[11px] text-muted-foreground">De aplicación a aprobación</p>
             </div>
           </div>
@@ -102,7 +102,7 @@ export function CTASection() {
         className="absolute left-8 bottom-[20%] z-10 hidden 2xl:block"
       >
         <div className="bg-white/90 backdrop-blur-xl rounded-full border border-white/50 px-4 py-2.5 flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-[#2C7A53] animate-pulse" />
+          <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
           <MonoLabel className="text-[12px] font-normal text-foreground">2,847 propiedades activas</MonoLabel>
         </div>
       </Appear>
@@ -115,7 +115,7 @@ export function CTASection() {
             className="inline-flex items-center gap-2 mb-8"
           >
             <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-5 py-2.5">
-              <Sparkle className="w-4 h-4 text-[#B7791F]" />
+              <Sparkle className="w-4 h-4 text-warning" />
               <span className="text-[13px] font-medium text-white">+200 inmobiliarias ya confían en nosotros</span>
             </div>
           </Appear>
@@ -184,7 +184,7 @@ export function CTASection() {
               return (
                 <div key={index} className="flex items-center gap-2.5">
                   <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center">
-                    <Icon className="w-3 h-3 text-[#2C7A53]" strokeWidth={2} />
+                    <Icon className="w-3 h-3 text-success" strokeWidth={2} />
                   </div>
                   <span className="text-[14px] text-white/80">{item.text}</span>
                 </div>
@@ -218,7 +218,7 @@ export function CTASection() {
             <div className="flex items-center gap-1.5">
               <div className="flex gap-0.5">
                 {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-4 h-4 text-[#B7791F] fill-[#B7791F]" />
+                  <Star key={i} className="w-4 h-4 text-warning fill-warning" />
                 ))}
               </div>
               <span className="text-[14px] font-medium text-white ml-1">4.9</span>

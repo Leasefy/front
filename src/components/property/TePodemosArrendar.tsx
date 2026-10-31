@@ -84,7 +84,7 @@ function PasosEnLaNoche() {
             <div className="min-w-0">
               <p className="text-[14.5px] font-medium text-fg">{paso.titulo}</p>
               <p className="text-[13px] text-fg-muted">{paso.detalle}</p>
-              <p className={`mt-0.5 font-mono text-[13px] uppercase tracking-[0.08em] ${enCurso ? 'text-[#8FA2FF]' : 'text-fg-subtle'}`}>
+              <p className={`mt-0.5 font-mono text-[13px] uppercase tracking-[0.08em] ${enCurso ? 'text-ink-primary' : 'text-fg-subtle'}`}>
                 {enCurso ? 'En curso' : 'Pendiente'}
               </p>
             </div>

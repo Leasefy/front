@@ -374,7 +374,7 @@ function RegistroContent() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted px-4">
         {/* Llega después de la carga (nunca en el HTML del servidor): sube 8 px. */}
-        <Appear className="max-w-sm w-full bg-white rounded-lg border border-border p-8 text-center">
+        <Appear className="max-w-sm w-full bg-surface rounded-lg border border-border p-8 text-center">
           <WarningCircle className="w-7 h-7 text-destructive shrink-0 mx-auto" aria-hidden="true" />
           <h1 className="text-lg font-medium text-foreground mb-2">
             {invitacionNoCargo ? 'No pudimos validar la invitación' : 'Invitación inválida'}
@@ -419,9 +419,9 @@ function RegistroContent() {
       <Stagger className="max-w-md w-full" layout={false}>
 
         {/* Invitation card */}
-        <StaggerItem key="invitacion" className="bg-white rounded-lg border border-border p-6 mb-6">
+        <StaggerItem key="invitacion" className="bg-surface rounded-lg border border-border p-6 mb-6">
           <div className="flex items-center gap-4">
-            <Buildings className="w-6 h-6 text-[#1A40FF] shrink-0" aria-hidden="true" />
+            <Buildings className="w-6 h-6 text-primary shrink-0" aria-hidden="true" />
             <div>
               <p className="text-caption text-muted-foreground uppercase tracking-wide font-mono">Invitación de</p>
               <p className="text-[17px] font-medium text-foreground">{invitation.agencyName ?? 'una inmobiliaria'}</p>
@@ -452,7 +452,7 @@ function RegistroContent() {
         </StaggerItem>
 
         {!isExpired && (
-          <StaggerItem key="formulario" className="bg-white rounded-lg border border-border p-6">
+          <StaggerItem key="formulario" className="bg-surface rounded-lg border border-border p-6">
             {/* Perfil ↔ crear cuenta ↔ «Revisa tu email»: se cruzan (`CrossFade`). */}
             <CrossFade swapKey={needsOnboarding ? 'perfil' : confirmed ? 'revisa-tu-correo' : 'crear-cuenta'}>
 
@@ -470,9 +470,9 @@ function RegistroContent() {
                     to (the agent does NOT choose the role). Reuses ROLE_LABELS. */}
                 <div
                   data-testid="invite-confirmation"
-                  className="mb-5 flex items-start gap-2 p-3 rounded-lg bg-[#EEF1FF]"
+                  className="mb-5 flex items-start gap-2 p-3 rounded-lg bg-primary-soft"
                 >
-                  <CheckCircle className="w-4 h-4 text-[#1A40FF] mt-0.5 shrink-0" weight="fill" />
+                  <CheckCircle className="w-4 h-4 text-primary mt-0.5 shrink-0" weight="fill" />
                   <p className="text-[13px] text-foreground">
                     Te uniste al equipo de{' '}
                     <strong>{invitation.agencyName ?? 'una inmobiliaria'}</strong> como{' '}

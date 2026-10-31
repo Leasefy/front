@@ -76,7 +76,7 @@ export function CodigoDelColega() {
       <button
         type="button"
         onClick={() => setAbierto(true)}
-        className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[#1A40FF] underline-offset-2 hover:underline"
+        className="inline-flex items-center gap-1.5 text-[13px] font-medium text-primary underline-offset-2 hover:underline"
         data-testid="abrir-codigo-del-colega"
       >
         <Gift size={15} weight="duotone" aria-hidden="true" />

@@ -141,7 +141,7 @@ export function StepPhotos() {
           isFull
             ? 'border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50 cursor-not-allowed'
             : isDragOver
-              ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
+              ? 'border-primary/30 bg-primary-soft'
               : 'border-neutral-300 dark:border-neutral-600 hover:border-neutral-400 dark:hover:border-neutral-500 hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
         )}
       >
@@ -159,7 +159,7 @@ export function StepPhotos() {
       </button>
 
       {error && (
-        <p className="text-sm text-[#C4503B] dark:text-[#E0664D]">{error}</p>
+        <p className="text-sm text-danger">{error}</p>
       )}
 
       {/* Photo grid */}
@@ -189,7 +189,7 @@ export function StepPhotos() {
 
               {/* Primary badge */}
               {index === 0 && (
-                <span className="absolute top-2 left-2 px-2 py-1 bg-[#1A40FF] text-white uppercase tracking-wide font-mono text-caption font-medium rounded-md">
+                <span className="absolute top-2 left-2 px-2 py-1 bg-primary text-white uppercase tracking-wide font-mono text-caption font-medium rounded-md">
                   Principal
                 </span>
               )}

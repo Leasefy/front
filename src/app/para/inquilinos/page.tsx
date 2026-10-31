@@ -75,7 +75,7 @@ function Chips({ items }: { items: string[] }) {
         <li
           key={c}
           className={cn(
-            'inline-flex h-8 items-center gap-2 rounded-[10px] bg-white/[0.06] px-3 font-mono text-caption uppercase tracking-[0.06em] text-[#B9BCD0]',
+            'inline-flex h-8 items-center gap-2 rounded-[10px] bg-white/[0.06] px-3 font-mono text-caption uppercase tracking-[0.06em] text-ink-fg-muted',
             ESQUINA,
           )}
         >
@@ -95,26 +95,26 @@ function PiezaDelHeroe() {
         <div className="flex items-center gap-3">
           <Avatar name="María López" size="md" />
           <div className="min-w-0 flex-1">
-            <p className="text-[15px] font-[450] text-[#121110]">María López</p>
-            <p className="text-caption text-[#706B64]">Inquilina verificada</p>
+            <p className="text-[15px] font-[450] text-fg">María López</p>
+            <p className="text-caption text-fg-subtle">Inquilina verificada</p>
           </div>
         </div>
-        <div className={cn('mt-4 rounded-[16px] bg-[#0A0F2C] p-4 text-white', ESQUINA)}>
+        <div className={cn('mt-4 rounded-[16px] bg-ink p-4 text-white', ESQUINA)}>
           <div className="flex items-center justify-between">
-            <span className="font-mono text-caption uppercase tracking-[0.08em] text-[#B9BCD0]">Arriendo Pass</span>
+            <span className="font-mono text-caption uppercase tracking-[0.08em] text-ink-fg-muted">Arriendo Pass</span>
             <Punto enNoche />
           </div>
           <p className="mt-2 font-mono text-[28px] leading-none tracking-[-0.03em]">60 días</p>
-          <p className="mt-1 text-caption text-[#B9BCD0]">Aplicaciones ilimitadas</p>
+          <p className="mt-1 text-caption text-ink-fg-muted">Aplicaciones ilimitadas</p>
         </div>
         <dl className="mt-3 grid grid-cols-2 gap-2">
           {[
             { v: '12', l: 'Aplicaciones' },
             { v: '3', l: 'Favoritos' },
           ].map((s) => (
-            <div key={s.l} className="rounded-[12px] bg-[#FBFAF8] px-3 py-2.5 ring-1 ring-[#ECE8E1]">
-              <dt className="text-caption text-[#706B64]">{s.l}</dt>
-              <dd className="font-mono text-[18px] text-[#121110]">{s.v}</dd>
+            <div key={s.l} className="rounded-[12px] bg-bg px-3 py-2.5 ring-1 ring-border">
+              <dt className="text-caption text-fg-subtle">{s.l}</dt>
+              <dd className="font-mono text-[18px] text-fg">{s.v}</dd>
             </div>
           ))}
         </dl>
@@ -122,8 +122,8 @@ function PiezaDelHeroe() {
       <Tarjeta className="flex items-center gap-3 px-4 py-3">
         <Punto />
         <div className="min-w-0">
-          <p className="text-caption font-medium text-[#121110]">Nuevo inmueble</p>
-          <p className="font-mono text-caption text-[#706B64]">Chapinero · $1.8M/mes</p>
+          <p className="text-caption font-medium text-fg">Nuevo inmueble</p>
+          <p className="font-mono text-caption text-fg-subtle">Chapinero · $1.8M/mes</p>
         </div>
       </Tarjeta>
     </div>
@@ -133,7 +133,7 @@ function PiezaDelHeroe() {
 export default function InquilinosPage() {
   return (
     <LandingChrome>
-      <main className="overflow-hidden bg-[#FBFAF8]">
+      <main className="overflow-hidden bg-bg">
         <HeroeDePara
           ceja="Inmuebles verificados"
           titulo={
@@ -144,7 +144,7 @@ export default function InquilinosPage() {
           entrada={
             <>
               Inmuebles verificados, postulación simple, contratos claros.
-              <span className="text-[#121110]"> Cero estafas, cero sorpresas.</span>
+              <span className="text-fg"> Cero estafas, cero sorpresas.</span>
             </>
           }
           principal={{ href: '/propiedades', texto: 'Ver inmuebles' }}
@@ -182,15 +182,15 @@ export default function InquilinosPage() {
                     <div className="grid items-center gap-6 py-8 md:grid-cols-[.9fr_1.1fr_1fr] md:gap-10">
                       <div>
                         <Rotulo tono="neutro">{p.rotulo}</Rotulo>
-                        <p className="mt-4 font-mono text-[clamp(44px,5vw,76px)] font-normal leading-none tracking-[-0.045em] text-[#121110]">
+                        <p className="mt-4 font-mono text-[clamp(44px,5vw,76px)] font-normal leading-none tracking-[-0.045em] text-fg">
                           {p.cifra}
                         </p>
-                        <p className="mt-3 flex items-center gap-2 text-caption text-[#706B64]">
+                        <p className="mt-3 flex items-center gap-2 text-caption text-fg-subtle">
                           <Punto className="h-1.5 w-1.5" />
                           {p.detalle}
                         </p>
                       </div>
-                      <p className="text-[clamp(19px,1.6vw,24px)] font-[360] leading-[1.35] tracking-[-0.015em] text-[#121110]">
+                      <p className="text-[clamp(19px,1.6vw,24px)] font-[360] leading-[1.35] tracking-[-0.015em] text-fg">
                         {p.texto}
                       </p>
                       <FotoQueSeRevela src={p.foto} alt={p.alt} proporcion={16 / 10} />
@@ -205,21 +205,21 @@ export default function InquilinosPage() {
                 <Tarjeta className="flex h-full flex-col gap-8 p-7 sm:flex-row sm:items-center sm:p-8">
                   <div className="min-w-0 flex-1">
                     <h3 className="text-[24px] font-[420] leading-tight tracking-[-0.02em]">«Precio demasiado bueno»</h3>
-                    <p className="mt-2 text-[15px] leading-[1.5] text-[#5B5751]">
+                    <p className="mt-2 text-[15px] leading-[1.5] text-fg-muted">
                       Anuncios falsos con precios irreales para capturar tu dinero. Sin verificación, estás solo.
                     </p>
                   </div>
-                  <div className="w-full flex-none overflow-hidden rounded-[18px] bg-[#FBFAF8] ring-1 ring-[#ECE8E1] sm:w-[220px]">
-                    <div className="grid aspect-[16/10] place-items-center bg-[#F3F1ED] text-caption text-[#706B64]">
+                  <div className="w-full flex-none overflow-hidden rounded-[18px] bg-bg ring-1 ring-border sm:w-[220px]">
+                    <div className="grid aspect-[16/10] place-items-center bg-surface-muted text-caption text-fg-subtle">
                       Foto no disponible
                     </div>
                     <div className="p-4">
                       <div className="flex items-center justify-between">
-                        <span className="text-caption font-medium text-[#121110]">Apto Chapinero</span>
+                        <span className="text-caption font-medium text-fg">Apto Chapinero</span>
                         <Rotulo tono="aviso">¿Real?</Rotulo>
                       </div>
-                      <p className="mt-2 font-mono text-[20px] text-[#B8372A]">$800.000</p>
-                      <p className="font-mono text-caption text-[#706B64] line-through">$2.5M valor real</p>
+                      <p className="mt-2 font-mono text-[20px] text-danger">$800.000</p>
+                      <p className="font-mono text-caption text-fg-subtle line-through">$2.5M valor real</p>
                     </div>
                   </div>
                 </Tarjeta>
@@ -228,21 +228,21 @@ export default function InquilinosPage() {
                 <Tarjeta className="flex h-full flex-col gap-8 p-7 sm:flex-row sm:items-center sm:p-8">
                   <div className="min-w-0 flex-1">
                     <h3 className="text-[24px] font-[420] leading-tight tracking-[-0.02em]">«Necesitas un codeudor»</h3>
-                    <p className="mt-2 text-[15px] leading-[1.5] text-[#5B5751]">
+                    <p className="mt-2 text-[15px] leading-[1.5] text-fg-muted">
                       Requisitos infinitos que varían en cada propiedad. Un proceso diseñado para excluir.
                     </p>
                   </div>
-                  <div className="w-full flex-none rounded-[18px] bg-[#FBFAF8] p-4 ring-1 ring-[#ECE8E1] sm:w-[220px]">
-                    <p className="text-caption font-medium text-[#121110]">Documentos requeridos</p>
+                  <div className="w-full flex-none rounded-[18px] bg-bg p-4 ring-1 ring-border sm:w-[220px]">
+                    <p className="text-caption font-medium text-fg">Documentos requeridos</p>
                     <ul className="mt-3 space-y-2">
                       {['Carta laboral', 'Extractos bancarios', 'Referencias personales', 'Codeudor con finca raíz', 'Declaración de renta'].map((doc) => (
-                        <li key={doc} className="flex items-center gap-2 text-caption text-[#5B5751]">
-                          <i aria-hidden="true" className="h-2 w-2 flex-none rounded-[2px] bg-[#D9911C]" />
+                        <li key={doc} className="flex items-center gap-2 text-caption text-fg-muted">
+                          <i aria-hidden="true" className="h-2 w-2 flex-none rounded-[2px] bg-warning" />
                           {doc}
                         </li>
                       ))}
                     </ul>
-                    <p className="mt-3 border-t border-[#ECE8E1] pt-3 font-mono text-caption text-[#B8372A]">+15 más</p>
+                    <p className="mt-3 border-t border-border pt-3 font-mono text-caption text-danger">+15 más</p>
                   </div>
                 </Tarjeta>
               </Appear>
@@ -276,9 +276,9 @@ export default function InquilinosPage() {
               {soluciones.map((s, i) => (
                 <Appear key={s.titulo} inView distance="md" duration="slow" delay={i * 0.08}>
                   <Tarjeta enNoche className="flex h-full flex-col p-7">
-                    <span className="font-mono text-caption tracking-[0.06em] text-[#8FA2FF]">{String(i + 1).padStart(2, '0')}</span>
-                    <h3 className="mt-3 text-[24px] font-[420] leading-tight tracking-[-0.02em] text-[#F3F1ED]">{s.titulo}</h3>
-                    <p className="mt-2 text-[15px] leading-[1.5] text-[#B9BCD0]">{s.texto}</p>
+                    <span className="font-mono text-caption tracking-[0.06em] text-ink-primary">{String(i + 1).padStart(2, '0')}</span>
+                    <h3 className="mt-3 text-[24px] font-[420] leading-tight tracking-[-0.02em] text-ink-fg">{s.titulo}</h3>
+                    <p className="mt-2 text-[15px] leading-[1.5] text-ink-fg-muted">{s.texto}</p>
                     <div className="mt-auto">
                       <Chips items={s.chips} />
                     </div>
@@ -295,14 +295,14 @@ export default function InquilinosPage() {
                   tono="voltaje-sobre-medianoche"
                   proporcion={16 / 9}
                   rotulo="CONTRATOS DIGITALES"
-                  className="bg-[#0A0F2C]"
+                  className="bg-ink"
                 />
                 <div className="px-3 pb-4 md:px-4 md:pb-0">
-                  <span className="font-mono text-caption tracking-[0.06em] text-[#8FA2FF]">04</span>
-                  <h3 className="mt-3 text-[clamp(24px,2.4vw,34px)] font-[400] leading-tight tracking-[-0.025em] text-[#F3F1ED]">
+                  <span className="font-mono text-caption tracking-[0.06em] text-ink-primary">04</span>
+                  <h3 className="mt-3 text-[clamp(24px,2.4vw,34px)] font-[400] leading-tight tracking-[-0.025em] text-ink-fg">
                     Contratos Digitales
                   </h3>
-                  <p className="mt-2 text-[15px] leading-[1.5] text-[#B9BCD0]">
+                  <p className="mt-2 text-[15px] leading-[1.5] text-ink-fg-muted">
                     Firma desde tu celular con validez legal. Sabes exactamente qué firmas, sin letra pequeña.
                   </p>
                   <Chips items={['Firma electrónica', 'Ley 820', '100% legal']} />
@@ -314,7 +314,7 @@ export default function InquilinosPage() {
 
         {/* Ronda 30: fuera los testimonios: eran inventados (nombres, cifras y fotos de banco). Vuelven cuando haya reales. */}
 
-        <div className="[&>section]:!bg-[#FBFAF8]">
+        <div className="[&>section]:!bg-bg">
           <FAQSection />
         </div>
         <CierreDePara semilla={31} />

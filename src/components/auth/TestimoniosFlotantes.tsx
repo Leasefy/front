@@ -133,7 +133,7 @@ export function TestimoniosFlotantes({
       */}
       <CrossFade swapKey={indice} distance="sm" duration="slow">
         <figure
-          className="relative overflow-hidden rounded-lg border border-white/15 bg-[#14130f]/45 p-6 text-white shadow-[0_24px_64px_-20px_rgba(0,0,0,0.6)] backdrop-blur-2xl"
+          className="relative overflow-hidden rounded-lg border border-white/15 bg-fg/45 p-6 text-white shadow-[0_24px_64px_-20px_rgba(0,0,0,0.6)] backdrop-blur-2xl"
           data-testid="testimonio"
         >
           {/* Un brillo arriba, como el borde de un vidrio de verdad. */}

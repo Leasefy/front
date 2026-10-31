@@ -27,6 +27,13 @@ const config: Config = {
   		},
   	},
   	extend: {
+  		// Las dos sombras de Cadence 2 (DESIGN.md §5): `shadow-susurro` para lo que apenas se separa del papel y
+  		// `shadow-flotante` para lo que flota. Las variables vivían en globals.css pero nadie las había declarado
+  		// aquí, así que las clases no pintaban nada (31-10-2026).
+  		boxShadow: {
+  			susurro: 'var(--shadow-susurro)',
+  			flotante: 'var(--shadow-flotante)',
+  		},
   		fontFamily: {
   			sans: ['var(--font-sans)'],
   			heading: ['var(--font-heading)'],
@@ -238,6 +245,15 @@ const config: Config = {
   			// `nest*`, `brand-ink/paper/night`) eran del admin viejo y se fueron con
   			// él: el admin ahora habla Cadence como el resto de la plataforma.
   			brand: '#1A40FF',
+  			// Sobre medianoche (Cadence 2, 31-10-2026, «lleva todo a colores de Cadence 2.0»): el azul de un enlace o una
+  			// cifra y el verde de un «al día» SOBRE la superficie de marca (`bg-ink`), donde el voltaje y el éxito de
+  			// siempre no se leen. Se suman a los `ink-*` del preset de Cadence (texto, suave, tenue, contorno).
+  			ink: {
+  				primary: 'var(--ink-primary)',
+  				success: 'var(--ink-success)',
+  			},
+  			// El verde de WhatsApp: SÓLO su logo (nunca un botón ni un estado).
+  			whatsapp: 'var(--whatsapp)',
   			/* ── New design system scales ── */
   			indigo: {
   				50: 'hsl(var(--indigo-50))',

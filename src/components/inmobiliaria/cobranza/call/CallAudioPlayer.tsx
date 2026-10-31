@@ -247,7 +247,7 @@ export default function CallAudioPlayer({
             aria-valuemax={Number.isFinite(duration) && duration > 0 ? duration : 0}
             aria-valuenow={Math.floor(currentTime)}
             aria-valuetext={formatSec(currentTime)}
-            className="flex-1 h-11 accent-[#14130F] cursor-pointer"
+            className="flex-1 h-11 accent-fg cursor-pointer"
             // h-11 gives a 44px tap row; the visual thumb sits centered inside.
           />
           <span className="text-caption tabular-nums text-fg-muted min-w-[4ch]">

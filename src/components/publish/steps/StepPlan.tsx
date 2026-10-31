@@ -1,6 +1,18 @@
 'use client';
 
-import { Check, Buildings, User, EnvelopeSimple } from '@phosphor-icons/react';
+import {
+  ArrowsClockwise,
+  Buildings,
+  Check,
+  Crown,
+  EnvelopeSimple,
+  Lightning,
+  Package,
+  RocketLaunch,
+  Star,
+  User,
+  type Icon as IconoDePhosphor,
+} from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { usePublish } from '@/lib/context/PublishContext';
 import { motion } from 'framer-motion';
@@ -11,9 +23,10 @@ import { usePlanesDelPropietario } from '@/lib/planes/use-planes-del-propietario
 import type { Plan } from '@/lib/types/subscription';
 import { formatCurrency } from '@/lib/format';
 
-const PLAN_ICONS: Record<string, string> = {
-  free: '⚡', pro: '✨', business: '🏢',
-  starter: '🚀', flex: '🔄', enterprise: '👑',
+// Íconos de la familia de Leasefy (antes emojis; DESIGN.md §1.6).
+const PLAN_ICONS: Record<string, IconoDePhosphor> = {
+  free: Lightning, pro: Star, business: Buildings,
+  starter: RocketLaunch, flex: ArrowsClockwise, enterprise: Crown,
 };
 
 /** Con el precio que cobra el back (QA 23-09): `PLANS` ya no trae cifras. */
@@ -23,7 +36,7 @@ const opcionesDelPropietario = (planes: Plan[]) => planes.map((plan) => ({
   price: plan.price.monthly === 0 ? '$0' : precioLegible(plan.price.monthly),
   priceNote: plan.price.monthly === 0 ? 'Para siempre' : '/mes',
   description: plan.description,
-  icon: PLAN_ICONS[plan.id] ?? '📦',
+  icon: PLAN_ICONS[plan.id] ?? Package,
   features: plan.features
     .filter((f) => f.included)
     .map((f) =>
@@ -44,7 +57,7 @@ const INMOBILIARIA_OPTIONS = AGENCY_PLANS.map((plan) => ({
   price: plan.price.monthly != null ? formatCurrency(plan.price.monthly) : null,
   priceNote: plan.price.monthly != null ? '/mes' : null,
   description: plan.description,
-  icon: PLAN_ICONS[plan.id] ?? '📦',
+  icon: PLAN_ICONS[plan.id] ?? Package,
   features: [
     ...(plan.limits.properties != null ? [`${plan.limits.properties} inmuebles`] : []),
     ...(plan.limits.users != null ? [`${plan.limits.users} usuarios`] : []),
@@ -106,7 +119,7 @@ export function StepPlan() {
                 className={cn(
                   'relative p-4 rounded-xl border text-left transition-colors duration-base',
                   isSelected
-                    ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
+                    ? 'border-primary/30 bg-primary-soft'
                     : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-border',
                 )}
               >
@@ -170,7 +183,7 @@ export function StepPlan() {
                     >
                       <div className="flex items-start gap-4">
                         <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 bg-neutral-100 dark:bg-neutral-800">
-                          <span className="text-2xl">{plan.icon}</span>
+                          <plan.icon className="h-6 w-6 text-fg-muted" weight="duotone" aria-hidden="true" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <h4 className="text-base font-medium text-neutral-700 dark:text-neutral-300">
@@ -184,7 +197,7 @@ export function StepPlan() {
                           </p>
                           <a
                             href="mailto:ventas@leasefy.co?subject=Plan%20Enterprise"
-                            className="inline-flex items-center gap-1.5 mt-3 text-sm font-medium text-[#1A40FF] dark:text-[#5570FF] hover:underline"
+                            className="inline-flex items-center gap-1.5 mt-3 text-sm font-medium text-primary hover:underline"
                           >
                             <EnvelopeSimple className="w-4 h-4" />
                             Contactar ventas
@@ -204,13 +217,13 @@ export function StepPlan() {
                       'relative w-full text-left p-5 rounded-xl border transition-[transform,background-color,border-color] duration-base',
                       plan.highlighted &&
                         !isSelected &&
-                        'border-[#1A40FF]/30 dark:border-[#1A40FF]/40 bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/10 hover:border-[#1A40FF]/30 dark:hover:border-[#1A40FF]/30 scale-[1.01]',
+                        'border-primary/30 bg-primary-soft/50 hover:border-primary/30 scale-[1.01]',
                       plan.highlighted &&
                         isSelected &&
-                        'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 scale-[1.01]',
+                        'border-primary/30 bg-primary-soft scale-[1.01]',
                       !plan.highlighted &&
                         isSelected &&
-                        'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+                        'border-primary/30 bg-primary-soft',
                       !plan.highlighted &&
                         !isSelected &&
                         'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-border hover:',
@@ -231,11 +244,11 @@ export function StepPlan() {
                           plan.highlighted
                             ? 'bg-primary text-white uppercase tracking-wide font-mono'
                             : isSelected
-                              ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
+                              ? 'bg-primary-soft'
                               : 'bg-neutral-100 dark:bg-neutral-800',
                         )}
                       >
-                        <span className="text-2xl">{plan.icon}</span>
+                        <plan.icon className="h-6 w-6 text-fg-muted" weight="duotone" aria-hidden="true" />
                       </div>
 
                       {/* Content */}
@@ -286,7 +299,7 @@ export function StepPlan() {
                                 className={cn(
                                   'w-3.5 h-3.5 flex-shrink-0',
                                   isSelected || plan.highlighted
-                                    ? 'text-[#1A40FF] dark:text-[#5570FF]'
+                                    ? 'text-primary'
                                     : 'text-fg-muted',
                                 )}
                               />
@@ -305,7 +318,7 @@ export function StepPlan() {
                           isSelected
                             ? 'border-primary/30 bg-primary'
                             : plan.highlighted
-                              ? 'border-[#1A40FF]/30 dark:border-[#1A40FF]/40'
+                              ? 'border-primary/30'
                               : 'border-neutral-300 dark:border-neutral-600',
                         )}
                       >

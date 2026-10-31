@@ -88,7 +88,7 @@ export function EntradaAlMarketplace() {
           {/* La landing se aleja un poco: profundidad sin oscurecer. */}
           <motion.div
             aria-hidden="true"
-            className="absolute inset-0 bg-[#0b0b0f]/25 backdrop-blur-[2px]"
+            className="absolute inset-0 bg-ink/25 backdrop-blur-[2px]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.25 }}
@@ -96,7 +96,7 @@ export function EntradaAlMarketplace() {
           {/* La hoja del marketplace: sube desde abajo con esquinas que se abren a pantalla completa. */}
           <motion.div
             aria-hidden="true"
-            className="absolute inset-0 bg-[#f8f7f5]"
+            className="absolute inset-0 bg-bg"
             initial={reducido ? { opacity: 0 } : { y: '100%', borderTopLeftRadius: 48, borderTopRightRadius: 48 }}
             animate={reducido ? { opacity: 1 } : { y: '0%', borderTopLeftRadius: 0, borderTopRightRadius: 0 }}
             transition={reducido ? { duration: 0.15 } : { duration: 0.55, ease: [0.76, 0, 0.24, 1] }}
@@ -104,7 +104,7 @@ export function EntradaAlMarketplace() {
           {/* La línea azul que avanza mientras llega la página (sin brillo: Cadence 2). */}
           <motion.div
             aria-hidden="true"
-            className="absolute left-0 top-0 h-[3px] bg-[#1A40FF]"
+            className="absolute left-0 top-0 h-[3px] bg-primary"
             initial={{ width: '0%' }}
             animate={{ width: ['0%', '45%', '78%', '92%'] }}
             transition={{ duration: 3.2, times: [0, 0.2, 0.55, 1], ease: 'easeOut', delay: reducido ? 0 : 0.25 }}
@@ -116,7 +116,7 @@ export function EntradaAlMarketplace() {
             transition={{ duration: 0.35, delay: reducido ? 0 : 0.32, ease: [0.16, 1, 0.3, 1] }}
           >
             <CargaDeMarca tono="sobre-blanco" tamano="lg" etiqueta={tx('Abriendo el marketplace', 'Opening the marketplace')} />
-            <span className="font-mono text-[11px] font-medium uppercase tracking-[0.22em] text-[#1A40FF]">
+            <span className="font-mono text-[11px] font-medium uppercase tracking-[0.22em] text-primary">
               {tx('Abriendo el marketplace', 'Opening the marketplace')}
             </span>
           </motion.div>

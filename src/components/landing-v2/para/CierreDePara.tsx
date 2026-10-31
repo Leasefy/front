@@ -16,7 +16,7 @@ export function CierreDePara({ semilla = 11 }: { semilla?: number }) {
   return (
     <section
       data-testid="cierre-de-para"
-      className="relative overflow-hidden bg-[#FBFAF8] pb-[clamp(200px,22vw,320px)] pt-[clamp(110px,13vw,190px)] text-center text-[#121110]"
+      className="relative overflow-hidden bg-bg pb-[clamp(200px,22vw,320px)] pt-[clamp(110px,13vw,190px)] text-center text-fg"
     >
       <CorrienteDeVoltaje
         fondo="papel"
@@ -35,7 +35,7 @@ export function CierreDePara({ semilla = 11 }: { semilla?: number }) {
           </h2>
         </Appear>
         <Appear inView as="p" distance="md" duration="slow" delay={0.16}
-          className="mx-auto mt-6 max-w-[620px] text-[clamp(17px,1.35vw,20px)] leading-[1.55] text-[#5B5751]"
+          className="mx-auto mt-6 max-w-[620px] text-[clamp(17px,1.35vw,20px)] leading-[1.55] text-fg-muted"
         >
           Sube tu portafolio, activa los agentes de IA, y deja que la plataforma haga el trabajo pesado por ti.
         </Appear>
@@ -50,7 +50,7 @@ export function CierreDePara({ semilla = 11 }: { semilla?: number }) {
           </BotonDePara>
         </Appear>
         <Appear inView distance="md" duration="slow" delay={0.28}>
-          <ul className="mt-8 flex flex-wrap justify-center gap-x-7 gap-y-3 text-[15px] text-[#5B5751]">
+          <ul className="mt-8 flex flex-wrap justify-center gap-x-7 gap-y-3 text-[15px] text-fg-muted">
             {['Sin compromiso', 'Activo en 5 min', 'Plan gratis disponible'].map((t) => (
               <li key={t} className="inline-flex items-center gap-2">
                 <Punto className="h-1.5 w-1.5" />

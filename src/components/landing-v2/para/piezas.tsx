@@ -30,7 +30,7 @@ export function Punto({ className, enNoche = false }: { className?: string; enNo
       aria-hidden="true"
       className={cn(
         'inline-block h-2 w-2 flex-none rounded-[2px]',
-        enNoche ? 'bg-[#4D6BFF]' : 'bg-[#1A40FF]',
+        enNoche ? 'bg-ink-primary' : 'bg-primary',
         className,
       )}
     />
@@ -54,13 +54,13 @@ export function Ceja({
     <p
       className={cn(
         'inline-flex items-center gap-2.5 font-mono text-caption uppercase leading-[1.3] tracking-[0.08em]',
-        enNoche ? 'text-[#8E93B0]' : 'text-[#706B64]',
+        enNoche ? 'text-ink-fg-subtle' : 'text-fg-subtle',
         className,
       )}
     >
       <Punto enNoche={enNoche} />
       {marca ? (
-        <b className={cn('font-medium', enNoche ? 'text-[#F3F1ED]' : 'text-[#121110]')}>{marca}</b>
+        <b className={cn('font-medium', enNoche ? 'text-ink-fg' : 'text-fg')}>{marca}</b>
       ) : null}
       <span>{children}</span>
     </p>
@@ -69,7 +69,7 @@ export function Ceja({
 
 /** El azul de la marca dentro de un título. */
 export function Acento({ children, enNoche = false }: { children: ReactNode; enNoche?: boolean }) {
-  return <span className={enNoche ? 'text-[#8FA2FF]' : 'text-[#1A40FF]'}>{children}</span>;
+  return <span className={enNoche ? 'text-ink-primary' : 'text-primary'}>{children}</span>;
 }
 
 /** Título de sección: liviano, grande y apretado; la jerarquía la da el tamaño. */
@@ -86,7 +86,7 @@ export function TituloDeSeccion({
     <h2
       className={cn(
         'font-heading text-[clamp(34px,4.4vw,64px)] font-[360] leading-[1.03] tracking-[-0.04em]',
-        enNoche ? 'text-[#F3F1ED]' : 'text-[#121110]',
+        enNoche ? 'text-ink-fg' : 'text-fg',
         className,
       )}
     >
@@ -108,7 +108,7 @@ export function Entrada({
     <p
       className={cn(
         'max-w-[620px] text-[clamp(17px,1.3vw,19px)] leading-[1.55]',
-        enNoche ? 'text-[#B9BCD0]' : 'text-[#5B5751]',
+        enNoche ? 'text-ink-fg-muted' : 'text-fg-muted',
         className,
       )}
     >
@@ -120,10 +120,10 @@ export function Entrada({
 type Variante = 'azul' | 'arena' | 'blanco' | 'linea-noche';
 
 const VARIANTES: Record<Variante, string> = {
-  azul: 'bg-[#1A40FF] text-white hover:bg-[#1535E6]',
-  arena: 'bg-[#F3F1ED] text-[#121110] hover:bg-[#E7E3DC]',
-  blanco: 'bg-white text-[#0A0F2C] hover:bg-[#E9EDFF]',
-  'linea-noche': 'bg-white/[0.08] text-[#F3F1ED] hover:bg-white/[0.14]',
+  azul: 'bg-primary text-white hover:bg-primary-hover',
+  arena: 'bg-surface-muted text-fg hover:bg-border',
+  blanco: 'bg-ink-fg text-ink hover:bg-ink-fg/90',
+  'linea-noche': 'bg-white/[0.08] text-ink-fg hover:bg-white/[0.14]',
 };
 
 /**
@@ -149,7 +149,7 @@ export function BotonDePara({
       className={cn(
         'inline-flex items-center justify-center gap-2.5 whitespace-nowrap rounded-full font-medium tracking-[-0.005em]',
         'transition-[transform,background-color,color] duration-fast ease-spring active:scale-[0.97]',
-        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[#1A40FF]',
+        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-primary',
         grande ? 'h-[58px] px-[34px] text-[18px]' : 'h-[50px] px-[26px] text-[16px]',
         ESQUINA,
         VARIANTES[variante],
@@ -185,7 +185,7 @@ export function CifrasConPunto({
       className={cn(
         'grid border-t sm:grid-cols-[repeat(var(--n),minmax(0,1fr))]',
         cifras.length <= 3 ? 'grid-cols-[repeat(var(--n),minmax(0,1fr))]' : 'grid-cols-2',
-        enNoche ? 'border-white/[0.08]' : 'border-[#E7E3DC]',
+        enNoche ? 'border-white/[0.08]' : 'border-border',
         className,
       )}
       style={{ ['--n' as string]: String(cifras.length) }}
@@ -195,17 +195,17 @@ export function CifrasConPunto({
           key={i}
           className={cn(
             'flex flex-col gap-2 border-b py-5 pr-4',
-            enNoche ? 'border-white/[0.08]' : 'border-[#E7E3DC]',
+            enNoche ? 'border-white/[0.08]' : 'border-border',
           )}
         >
-          <dt className={cn('flex items-center gap-2 text-caption', enNoche ? 'text-[#B9BCD0]' : 'text-[#5B5751]')}>
+          <dt className={cn('flex items-center gap-2 text-caption', enNoche ? 'text-ink-fg-muted' : 'text-fg-muted')}>
             <Punto enNoche={enNoche} className="h-1.5 w-1.5" />
             {c.rotulo}
           </dt>
           <dd
             className={cn(
               'font-mono text-[clamp(26px,2.6vw,36px)] font-normal leading-none tracking-[-0.03em] tabular-nums',
-              enNoche ? 'text-[#F3F1ED]' : 'text-[#121110]',
+              enNoche ? 'text-ink-fg' : 'text-fg',
             )}
           >
             {c.valor}
@@ -272,7 +272,7 @@ export function ListaNumerada({
   enNoche?: boolean;
   columnas?: 1 | 2 | 3;
 }) {
-  const filete = enNoche ? 'border-white/[0.08]' : 'border-[#E7E3DC]';
+  const filete = enNoche ? 'border-white/[0.08]' : 'border-border';
   return (
     <ol
       className={cn(
@@ -285,19 +285,19 @@ export function ListaNumerada({
     >
       {items.map((it, i) => (
         <li key={i} className={cn('border-b py-5', filete)}>
-          <span className={cn('font-mono text-caption tracking-[0.06em]', enNoche ? 'text-[#8FA2FF]' : 'text-[#1A40FF]')}>
+          <span className={cn('font-mono text-caption tracking-[0.06em]', enNoche ? 'text-ink-primary' : 'text-primary')}>
             {String(i + 1).padStart(2, '0')}
           </span>
           <p
             className={cn(
               'mt-1.5 text-[17px] font-[450] leading-snug tracking-[-0.01em]',
-              enNoche ? 'text-[#F3F1ED]' : 'text-[#121110]',
+              enNoche ? 'text-ink-fg' : 'text-fg',
             )}
           >
             {it.titulo}
           </p>
           {it.texto ? (
-            <p className={cn('mt-1 text-[15px] leading-[1.45]', enNoche ? 'text-[#B9BCD0]' : 'text-[#5B5751]')}>
+            <p className={cn('mt-1 text-[15px] leading-[1.45]', enNoche ? 'text-ink-fg-muted' : 'text-fg-muted')}>
               {it.texto}
             </p>
           ) : null}
@@ -324,8 +324,8 @@ export function Tarjeta({
         'rounded-[24px]',
         ESQUINA,
         enNoche
-          ? 'bg-[#101116] text-[#F3F1ED] ring-1 ring-white/[0.08]'
-          : 'bg-white text-[#121110] shadow-[0_1px_2px_rgba(18,17,16,.06),0_2px_8px_-2px_rgba(18,17,16,.06)] ring-1 ring-[#ECE8E1]',
+          ? 'bg-ink text-ink-fg ring-1 ring-white/[0.08]'
+          : 'bg-surface text-fg shadow-susurro ring-1 ring-border',
         className,
       )}
     >
@@ -345,10 +345,10 @@ export function Rotulo({
   className?: string;
 }) {
   const tonos = {
-    voltaje: 'bg-[#E9EDFF] text-[#1A40FF]',
-    exito: 'bg-[#E3F1E8] text-[#2B7549]',
-    aviso: 'bg-[#FBF0DC] text-[#8A5A0F]',
-    neutro: 'bg-[#F3F1ED] text-[#5B5751]',
+    voltaje: 'bg-primary-soft text-primary',
+    exito: 'bg-success-soft text-success',
+    aviso: 'bg-warning-soft text-warning',
+    neutro: 'bg-surface-muted text-fg-muted',
   } as const;
   return (
     <span
@@ -382,9 +382,9 @@ export function Seccion({
       data-fondo={fondo}
       className={cn(
         'relative overflow-hidden py-[clamp(88px,11vw,150px)]',
-        fondo === 'papel' && 'bg-[#FBFAF8] text-[#121110]',
-        fondo === 'arena' && 'bg-[#F3F1ED] text-[#121110]',
-        fondo === 'noche' && 'bg-[#07080C] text-[#F3F1ED]',
+        fondo === 'papel' && 'bg-bg text-fg',
+        fondo === 'arena' && 'bg-surface-muted text-fg',
+        fondo === 'noche' && 'bg-ink text-ink-fg',
         className,
       )}
     >

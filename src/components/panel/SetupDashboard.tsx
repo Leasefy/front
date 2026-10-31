@@ -144,7 +144,7 @@ export function SetupDashboard({ onDismiss }: SetupDashboardProps) {
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-h3 text-plan-primary">Progreso de configuración</h2>
-                <span className="text-2xl font-bold text-primary">
+                <span className="text-2xl font-medium text-primary">
                   <AnimatedNumber value={progressPercentage} from={0} format={(n) => String(Math.round(n))} />%
                 </span>
               </div>
@@ -155,7 +155,7 @@ export function SetupDashboard({ onDismiss }: SetupDashboardProps) {
                   initial={{ x: '-100%' }}
                   animate={{ x: `${progressPercentage - 100}%` }}
                   transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
-                  className="h-full w-full bg-primary-soft dark:bg-[#1A40FF]/12 rounded-full"
+                  className="h-full w-full bg-primary-soft rounded-full"
                 />
               </div>
 
@@ -287,7 +287,7 @@ export function SetupDashboard({ onDismiss }: SetupDashboardProps) {
 
         {/* Quick tips */}
         <section className="mt-6">
-          <div className="bg-primary-soft dark:bg-[#1A40FF]/12 rounded-md p-6 text-primary">
+          <div className="bg-primary-soft rounded-md p-6 text-primary">
             <div className="flex items-start gap-4">
               <Sparkle className="w-6 h-6 text-primary shrink-0" aria-hidden="true" />
               <div>

@@ -91,7 +91,7 @@ export function VentanaDeCuenta({
  */
 export function ObraDeMarca({ children, className }: { children?: ReactNode; className?: string }) {
   return (
-    <div className={cn('relative isolate flex h-full min-h-[560px] flex-col overflow-hidden bg-[#0c1a2b] text-white', className)}>
+    <div className={cn('relative isolate flex h-full min-h-[560px] flex-col overflow-hidden bg-ink text-white', className)}>
       <Image src={POSTER} alt="" aria-hidden="true" fill sizes="380px" className="-z-20 object-cover object-[38%_50%]" />
       <video
         className="absolute inset-0 -z-20 h-full w-full object-cover object-[38%_50%] motion-reduce:hidden"

@@ -171,7 +171,7 @@ export function PropertyCard({
   // Ronda 30 (diseño nuevo): las marcas sobre la foto son papel blanco con letra en mono, sin vidrio
   // ni velo; la primera lleva el cuadrito de voltaje. Se leen igual sobre una foto clara u oscura.
   const marca =
-    'inline-flex h-6 items-center gap-1.5 whitespace-nowrap rounded-sm bg-white px-[9px] font-mono text-[11px] uppercase tracking-[0.08em] text-[#121110]';
+    'inline-flex h-6 items-center gap-1.5 whitespace-nowrap rounded-sm bg-ink-fg px-[9px] font-mono text-[11px] uppercase tracking-[0.08em] text-ink';
 
   return (
     <Link
@@ -222,7 +222,7 @@ export function PropertyCard({
               className={cn(
                 'absolute left-2.5 top-1/2 -translate-y-1/2 z-20',
                 'h-[34px] w-[34px] rounded-full',
-                'bg-white text-[#121110] hover:bg-white',
+                'bg-ink-fg text-ink hover:bg-ink-fg',
                 'transition-[opacity,transform] duration-slow ease-enter',
                 isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-1.5 pointer-events-none'
               )}
@@ -236,7 +236,7 @@ export function PropertyCard({
               className={cn(
                 'absolute right-2.5 top-1/2 -translate-y-1/2 z-20',
                 'h-[34px] w-[34px] rounded-full',
-                'bg-white text-[#121110] hover:bg-white',
+                'bg-ink-fg text-ink hover:bg-ink-fg',
                 'transition-[opacity,transform] duration-slow ease-enter',
                 isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-1.5 pointer-events-none'
               )}
@@ -261,7 +261,7 @@ export function PropertyCard({
                 className={cn(
                   'rounded-[2px] transition-[background-color,width,height] duration-slow ease-enter',
                   chico ? 'h-[5px] w-[5px]' : 'h-[7px] w-[7px]',
-                  i === activeImage ? 'bg-white' : 'bg-white/55 hover:bg-white/80'
+                  i === activeImage ? 'bg-ink-fg' : 'bg-white/55 hover:bg-white/80'
                 )}
                 aria-label={`Ver imagen ${i + 1} de ${allImages.length}`}
               />
@@ -273,7 +273,7 @@ export function PropertyCard({
         <div className="absolute top-3 left-3 z-10 flex flex-col items-start gap-1.5 pointer-events-none">
           <div className="flex flex-wrap gap-1.5">
             <span className={marca}>
-              <span className="h-1.5 w-1.5 rounded-[2px] bg-[#1A40FF]" aria-hidden />
+              <span className="h-1.5 w-1.5 rounded-[2px] bg-primary" aria-hidden />
               {isSaleListing ? 'En venta' : 'En arriendo'}
             </span>
             <span className={marca}>{typeLabels[type] || type}</span>
@@ -295,9 +295,9 @@ export function PropertyCard({
             onClick={handleWishlistClick}
             aria-label={isWishlisted ? 'Quitar de favoritos' : 'Agregar a favoritos'}
             className={cn(
-              'absolute right-3 top-3 z-10 h-[38px] w-[38px] rounded-full bg-white hover:bg-white',
+              'absolute right-3 top-3 z-10 h-[38px] w-[38px] rounded-full bg-ink-fg hover:bg-ink-fg',
               'transition-[color,transform] duration-base active:scale-[0.94]',
-              isWishlisted ? 'text-primary' : 'text-[#121110]'
+              isWishlisted ? 'text-primary' : 'text-ink'
             )}
           />
         )}
@@ -305,7 +305,7 @@ export function PropertyCard({
         {/* Arrendado: la foto se apaga y lo dice una marca blanca (sin vidrio). */}
         {status === 'rented' && (
           <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/50">
-            <span className="rounded-sm bg-white px-3 py-1.5 font-mono text-[12px] uppercase tracking-[0.08em] text-[#121110]">
+            <span className="rounded-sm bg-ink-fg px-3 py-1.5 font-mono text-[12px] uppercase tracking-[0.08em] text-ink">
               Arrendado
             </span>
           </div>

@@ -82,7 +82,7 @@ function Chips({ items, enNoche = false }: { items: string[]; enNoche?: boolean 
           key={c}
           className={cn(
             'inline-flex h-8 items-center gap-2 rounded-[10px] px-3 font-mono text-caption uppercase tracking-[0.06em]',
-            enNoche ? 'bg-white/[0.06] text-[#B9BCD0]' : 'bg-[#F3F1ED] text-[#5B5751]',
+            enNoche ? 'bg-white/[0.06] text-ink-fg-muted' : 'bg-surface-muted text-fg-muted',
             ESQUINA,
           )}
         >
@@ -102,25 +102,25 @@ function PiezaDelHeroe() {
         <div className="flex items-center gap-3">
           <Avatar name="Juan Nicolás M." size="md" />
           <div className="min-w-0 flex-1">
-            <p className="text-[15px] font-[450] text-[#121110]">Juan Nicolás M.</p>
-            <p className="text-caption text-[#706B64]">Propietario verificado</p>
+            <p className="text-[15px] font-[450] text-fg">Juan Nicolás M.</p>
+            <p className="text-caption text-fg-subtle">Propietario verificado</p>
           </div>
         </div>
-        <div className="mt-4 rounded-[16px] bg-[#F3F1ED] p-4">
+        <div className="mt-4 rounded-[16px] bg-surface-muted p-4">
           <div className="flex items-center justify-between text-caption">
-            <span className="text-[#5B5751]">Ingresos este mes</span>
-            <span className="font-mono text-[#2B7549]">+12%</span>
+            <span className="text-fg-muted">Ingresos este mes</span>
+            <span className="font-mono text-success">+12%</span>
           </div>
-          <p className="mt-1 font-mono text-[28px] font-normal leading-none tracking-[-0.03em] text-[#121110]">$4.800.000</p>
+          <p className="mt-1 font-mono text-[28px] font-normal leading-none tracking-[-0.03em] text-fg">$4.800.000</p>
         </div>
         <dl className="mt-3 grid grid-cols-2 gap-2">
           {[
             { v: '2', l: 'Propiedades' },
             { v: '100%', l: 'Ocupación' },
           ].map((s) => (
-            <div key={s.l} className="rounded-[12px] bg-[#FBFAF8] px-3 py-2.5 ring-1 ring-[#ECE8E1]">
-              <dt className="text-caption text-[#706B64]">{s.l}</dt>
-              <dd className="font-mono text-[18px] text-[#121110]">{s.v}</dd>
+            <div key={s.l} className="rounded-[12px] bg-bg px-3 py-2.5 ring-1 ring-border">
+              <dt className="text-caption text-fg-subtle">{s.l}</dt>
+              <dd className="font-mono text-[18px] text-fg">{s.v}</dd>
             </div>
           ))}
         </dl>
@@ -128,8 +128,8 @@ function PiezaDelHeroe() {
       <Tarjeta className="flex items-center gap-3 px-4 py-3">
         <Punto />
         <div className="min-w-0">
-          <p className="text-caption font-medium text-[#121110]">Pago recibido</p>
-          <p className="font-mono text-caption text-[#706B64]">$2.400.000 · Hace 2min</p>
+          <p className="text-caption font-medium text-fg">Pago recibido</p>
+          <p className="font-mono text-caption text-fg-subtle">$2.400.000 · Hace 2min</p>
         </div>
       </Tarjeta>
     </div>
@@ -139,7 +139,7 @@ function PiezaDelHeroe() {
 export default function PropietariosPage() {
   return (
     <LandingChrome>
-      <main className="overflow-hidden bg-[#FBFAF8]">
+      <main className="overflow-hidden bg-bg">
         <HeroeDePara
           ceja="Plataforma #1 para propietarios en Colombia"
           titulo={
@@ -150,7 +150,7 @@ export default function PropietariosPage() {
           entrada={
             <>
               Evaluación de inquilinos gratis, publicación en portales gratis, cobro automatizado.
-              <span className="text-[#121110]"> Tú mantienes el control.</span>
+              <span className="text-fg"> Tú mantienes el control.</span>
             </>
           }
           principal={{ href: '/auth', texto: 'Comenzar gratis' }}
@@ -184,14 +184,14 @@ export default function PropietariosPage() {
               {problemas.map((p, i) => (
                 <Appear key={p.rotulo} inView distance="md" duration="slow" delay={i * 0.08}>
                   <FotoQueSeRevela src={p.foto} alt={p.alt} proporcion={4 / 3} rotulo={p.rotulo} />
-                  <p className="mt-6 font-mono text-[clamp(36px,3.6vw,52px)] font-normal leading-none tracking-[-0.04em] text-[#121110]">
+                  <p className="mt-6 font-mono text-[clamp(36px,3.6vw,52px)] font-normal leading-none tracking-[-0.04em] text-fg">
                     {p.cifra}
                   </p>
-                  <p className="mt-2 flex items-center gap-2 text-caption text-[#706B64]">
+                  <p className="mt-2 flex items-center gap-2 text-caption text-fg-subtle">
                     <Punto className="h-1.5 w-1.5" />
                     {p.detalle}
                   </p>
-                  <p className="mt-4 text-[15px] leading-[1.5] text-[#5B5751]">{p.texto}</p>
+                  <p className="mt-4 text-[15px] leading-[1.5] text-fg-muted">{p.texto}</p>
                 </Appear>
               ))}
             </div>
@@ -201,24 +201,24 @@ export default function PropietariosPage() {
                 <Tarjeta className="flex h-full flex-col gap-8 p-7 sm:flex-row sm:items-center sm:p-8">
                   <div className="min-w-0 flex-1">
                     <h3 className="text-[24px] font-[420] leading-tight tracking-[-0.02em]">«Elegir a ciegas»</h3>
-                    <p className="mt-2 text-[15px] leading-[1.5] text-[#5B5751]">
+                    <p className="mt-2 text-[15px] leading-[1.5] text-fg-muted">
                       Sin datos reales, seleccionar inquilinos es apostar. Un mal candidato puede costarte millones.
                     </p>
                   </div>
-                  <div className="w-full flex-none rounded-[18px] bg-[#FBFAF8] p-4 ring-1 ring-[#ECE8E1] sm:w-[220px]">
-                    <div className="flex items-center gap-3 border-b border-[#ECE8E1] pb-3">
+                  <div className="w-full flex-none rounded-[18px] bg-bg p-4 ring-1 ring-border sm:w-[220px]">
+                    <div className="flex items-center gap-3 border-b border-border pb-3">
                       <Avatar name="Candidato" size="md" />
                       <div className="min-w-0 flex-1">
-                        <p className="text-caption font-medium text-[#121110]">Candidato #1</p>
-                        <p className="text-caption text-[#706B64]">Sin verificar</p>
+                        <p className="text-caption font-medium text-fg">Candidato #1</p>
+                        <p className="text-caption text-fg-subtle">Sin verificar</p>
                       </div>
                       <Rotulo tono="aviso">?</Rotulo>
                     </div>
                     <dl className="mt-3 space-y-2">
                       {['Ingresos', 'Historial', 'Score'].map((l) => (
                         <div key={l} className="flex items-center justify-between text-caption">
-                          <dt className="text-[#5B5751]">{l}</dt>
-                          <dd className="font-mono text-[#A8A29A]">— — —</dd>
+                          <dt className="text-fg-muted">{l}</dt>
+                          <dd className="font-mono text-fg-subtle">— — —</dd>
                         </div>
                       ))}
                     </dl>
@@ -229,14 +229,14 @@ export default function PropietariosPage() {
                 <Tarjeta className="flex h-full flex-col gap-8 p-7 sm:flex-row sm:items-center sm:p-8">
                   <div className="min-w-0 flex-1">
                     <h3 className="text-[24px] font-[420] leading-tight tracking-[-0.02em]">«4 meses sin cobrar arriendo»</h3>
-                    <p className="mt-2 text-[15px] leading-[1.5] text-[#5B5751]">
+                    <p className="mt-2 text-[15px] leading-[1.5] text-fg-muted">
                       Sin verificación real, el propietario asume todo el riesgo de impago. Y recuperarlo puede tomar más de un año.
                     </p>
                   </div>
-                  <div className="w-full flex-none rounded-[18px] bg-[#FBFAF8] p-4 ring-1 ring-[#ECE8E1] sm:w-[220px]">
+                  <div className="w-full flex-none rounded-[18px] bg-bg p-4 ring-1 ring-border sm:w-[220px]">
                     <div className="flex items-center justify-between">
-                      <span className="text-caption font-medium text-[#121110]">Cuenta de arriendo</span>
-                      <span className="font-mono text-caption text-[#706B64]">2024</span>
+                      <span className="text-caption font-medium text-fg">Cuenta de arriendo</span>
+                      <span className="font-mono text-caption text-fg-subtle">2024</span>
                     </div>
                     <ul className="mt-3 space-y-2">
                       {[
@@ -246,20 +246,20 @@ export default function PropietariosPage() {
                         { month: 'Abr', paid: false, amount: '$2.5M' },
                       ].map((item) => (
                         <li key={item.month} className="flex items-center justify-between text-caption">
-                          <span className="flex items-center gap-2 text-[#5B5751]">
-                            <i aria-hidden="true" className={cn('h-2 w-2 rounded-[2px]', item.paid ? 'bg-[#2B7549]' : 'bg-[#B8372A]')} />
+                          <span className="flex items-center gap-2 text-fg-muted">
+                            <i aria-hidden="true" className={cn('h-2 w-2 rounded-[2px]', item.paid ? 'bg-success' : 'bg-danger')} />
                             {item.month}
                             <span className="sr-only">{item.paid ? 'pagado' : 'sin pagar'}</span>
                           </span>
-                          <span className={cn('font-mono', item.paid ? 'text-[#121110]' : 'text-[#B8372A]')}>{item.amount}</span>
+                          <span className={cn('font-mono', item.paid ? 'text-fg' : 'text-danger')}>{item.amount}</span>
                         </li>
                       ))}
                     </ul>
-                    <div className="mt-3 flex items-center justify-between border-t border-[#ECE8E1] pt-3 text-caption">
-                      <span className="text-[#5B5751]">Deuda acumulada:</span>
-                      <span className="font-mono text-[#B8372A]">$5.0M</span>
+                    <div className="mt-3 flex items-center justify-between border-t border-border pt-3 text-caption">
+                      <span className="text-fg-muted">Deuda acumulada:</span>
+                      <span className="font-mono text-danger">$5.0M</span>
                     </div>
-                    <p className="mt-1 text-right font-mono text-caption text-[#706B64]">4 meses</p>
+                    <p className="mt-1 text-right font-mono text-caption text-fg-subtle">4 meses</p>
                   </div>
                 </Tarjeta>
               </Appear>
@@ -292,7 +292,7 @@ export default function PropietariosPage() {
                   tono="voltaje-sobre-medianoche"
                   proporcion={16 / 10}
                   rotulo="PUBLICACIÓN MULTI-PORTAL"
-                  className="mt-10 bg-[#0A0F2C]"
+                  className="mt-10 bg-ink"
                 />
               </div>
               <Appear inView distance="md" duration="slow">
@@ -313,7 +313,7 @@ export default function PropietariosPage() {
 
         {/* Ronda 30: fuera los testimonios: eran inventados (nombres, cifras y fotos de banco). Vuelven cuando haya reales. */}
 
-        <div className="[&>section]:!bg-[#FBFAF8]">
+        <div className="[&>section]:!bg-bg">
           <FAQSection />
         </div>
         <CierreDePara semilla={23} />

@@ -1042,4 +1042,6 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   'Para girar, sigue el paso a paso de Giros a propietarios.': 'To pay out, follow the steps in Owner payouts.',
   'Ir al paso a paso': 'Go to the steps',
   'Autoriza el giro suelto': 'Authorize the single payout',
+  // components/inmobiliaria/NuevoLeadDialog.tsx (31-10-2026)
+  '(opcional: si llegó por uno, sus características ayudan a buscarle otros)': '(optional: if they came for one, its features help find others)',
 }

@@ -323,8 +323,12 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
   // duplicado, y el back lo rechaza con `CONTACTO_SIN_LLAVE`.
   const faltaLlave =
     conCrm && documento.trim() === '' && telefono.trim() === '';
+  // 🔴 31-10-2026 (Juan, reunión: «no me deja seguir si no selecciono uno de los inmuebles… debe tener la
+  // opción de dejar asociado un inmueble, pero no necesariamente»): con el CRM el inmueble es OPCIONAL (el
+  // back ya lo acepta así); sin el CRM el embudo de siempre lo sigue pidiendo.
+  const inmuebleOpcional = conCrm;
   const listo =
-    consignacionId !== '' &&
+    (inmuebleOpcional || consignacionId !== '') &&
     nombre.trim() !== '' &&
     !correoMalo &&
     !presupuestoMalo &&
@@ -352,7 +356,7 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
     try {
       if (conCrm) {
         const r = await leadsApi.entra({
-          consignacionId,
+          ...(consignacionId ? { consignacionId } : {}),
           origen,
           nombre: nombre.trim(),
           ...(correo.trim() ? { correo: correo.trim() } : {}),
@@ -418,7 +422,7 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
         {/* El cuerpo ya trae su margen: un `px-6` acá corría el formulario
             hacia adentro respecto del título. */}
         <div className="space-y-4">
-          {consignaciones.length === 0 ? (
+          {consignaciones.length === 0 && !inmuebleOpcional ? (
             <p className="text-sm text-fg-muted" data-testid="nuevo-lead-sin-inmuebles">
               <Ilustracion nombre="casa" tamano={56} className="mb-2 block" />
               {tr("Todavía no tienes inmuebles consignados. Un interesado se anota sobre uno: consigna el primero y vuelve aquí.")}
@@ -427,6 +431,9 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-fg" htmlFor="nuevo-lead-inmueble">
                 {tr("Inmueble")}
+                {inmuebleOpcional ? (
+                  <span className="font-normal text-fg-subtle"> {tr("(opcional: si llegó por uno, sus características ayudan a buscarle otros)")}</span>
+                ) : null}
               </label>
               {/* PL-07: con código y dirección, con buscador, y sólo los que
                   se pueden ofrecer (ni arrendados ni borradores). */}

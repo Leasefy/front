@@ -16,6 +16,7 @@ import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { erroresDelInmueble } from '@/lib/inmuebles/limites-del-inmueble';
 import { SegmentedControl } from '@leasefy/cadence';
 import type { AgencyProperty, PropertyType } from '@/lib/types/property';
+import { EditorDeDescripcion } from '@/components/property/EditorDeDescripcion';
 
 /** Todas las ciudades del país (antes eran 10 y una de Sabaneta abría vacía). */
 const OPCIONES_DE_CIUDAD = CIUDADES_DE_COLOMBIA.map((c) => ({ value: c.ciudad, label: etiquetaDeCiudad(c) }));
@@ -281,7 +282,7 @@ export function PropertyEditModal({ property, onClose, onSuccess }: PropertyEdit
 
           <div className="space-y-1.5">
             <label htmlFor={idDelCampo('description')} className="text-body-sm text-fg">Descripción</label>
-            <Textarea
+            <EditorDeDescripcion
               {...a11y('description')}
               value={form.description}
               onChange={(e) => update('description', e.target.value)}

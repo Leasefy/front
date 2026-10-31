@@ -100,6 +100,7 @@ import { SelectorDeCaracteristicas } from '@/components/property/SelectorDeCarac
 import { COLOMBIAN_DEPARTMENTS, type Consignacion } from '@/lib/types/inmobiliaria';
 import { COLOMBIAN_CITIES, type Property, type PropertyType } from '@/lib/types/property';
 import { ariaDelCampoDeDia, CampoDeDia } from '@/components/contabilidad/CampoDeDia';
+import { EditorDeDescripcion } from '@/components/property/EditorDeDescripcion';
 
 export interface ConsignacionEditFormProps {
   abierto: boolean;
@@ -824,7 +825,7 @@ export function ConsignacionEditForm({
                 error={errores.description}
                 campo="description"
               >
-                <Textarea
+                <EditorDeDescripcion
                   {...a11y('description')}
                   name="description"
                   value={valores.description}

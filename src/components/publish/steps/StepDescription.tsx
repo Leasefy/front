@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { ariaDelCampo, idDelCampo, idDelError } from '../campos-con-error';
 import { nombreDeLaCaracteristica } from '@/lib/inmuebles/caracteristicas';
+import { EditorDeDescripcion } from '@/components/property/EditorDeDescripcion';
 
 function useTextTwriter() {
   const [isTyping, setIsTyping] = useState(false);
@@ -205,7 +206,7 @@ export function StepDescription() {
             </Button>
           </div>
           <div className="relative">
-            <Textarea
+            <EditorDeDescripcion
               {...ariaDelCampo('description', errorDescripcion)}
               placeholder="Describe las características únicas de tu inmueble, la zona, accesibilidad, y cualquier detalle relevante..."
               value={draft.description}

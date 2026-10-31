@@ -64,6 +64,8 @@ import { PROPERTY_PHOTO_MAX_COUNT } from '@/lib/api/property-photos';
 import { PASO } from '@/lib/inmuebles/pasos-del-asistente';
 import { ilustracionDe } from '@/components/property/PortadaSinFotos';
 import { EmptyState } from '@/components/ui/empty-state';
+import { EditorDeDescripcion } from '@/components/property/EditorDeDescripcion';
+import { Avatar } from '@/components/ui/avatar';
 // ============================================================================
 // Shared Types
 // ============================================================================
@@ -699,7 +701,7 @@ export function StepPropertyData({ formData, updateFormData, erroresDelServidor 
           <label htmlFor={idDelCampoDelAsistente('propertyDescription')} className="block text-sm font-medium text-fg">
             {t('inmobiliaria.consignaciones.wizard.step2.descriptionLabel')}
           </label>
-          <Textarea
+          <EditorDeDescripcion
             value={formData.propertyDescription || ''}
             onChange={(e) => updateFormData({ propertyDescription: e.target.value })}
             onBlur={() => handleBlur('propertyDescription')}
@@ -1271,7 +1273,7 @@ export function PublicarEnElMarketplace({ formData, updateFormData }: Pick<StepP
               <span className="size-1.5 rounded-full bg-success" />
               Marketplace · Leasefy
             </div>
-            <div className="mx-1.5 overflow-hidden rounded-md bg-gradient-to-b from-[#EEEBE5] to-[#E2DED6]">
+            <div className="mx-1.5 overflow-hidden rounded-md bg-surface-muted">
               {urlDeLaFoto ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={urlDeLaFoto} alt="" className="h-[84px] w-full object-cover" />
@@ -1520,9 +1522,7 @@ export function StepConfirmation({
           <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.agentSection')} step={PASO.agente} />
           {agente ? (
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-fg-muted flex items-center justify-center text-primary-fg font-medium text-sm">
-                {agente.name.split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()}
-              </div>
+              <Avatar name={agente.name} size="md" className="shrink-0" />
               <div>
                 <p className="font-medium text-fg">{agente.name}</p>
                 <p className="text-sm text-fg-muted">

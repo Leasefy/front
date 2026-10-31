@@ -27,6 +27,8 @@ import { caracteristicasPorGrupo } from '@/lib/inmuebles/caracteristicas';
 import type { RedDelVideo } from '@/lib/marketplace/video';
 import type { Property } from '@/lib/types/property';
 import { cn } from '@/lib/utils';
+import { DescripcionConFormato } from '@/components/property/DescripcionConFormato';
+import { textoPlanoDeLaDescripcion } from '@/lib/inmuebles/descripcion-con-formato';
 
 /**
  * ══ LA FICHA DEL INMUEBLE (Nico, 09-10-2026: «quiero que sea perfecta») ═════
@@ -104,7 +106,7 @@ function Foto({
 
 /** «Ver las N fotos» y «Ver el video»: blanco sólido, sin sombra ni vidrio (ronda 30). */
 const BOTON_SOBRE_LA_FOTO =
-  'inline-flex h-[38px] items-center gap-2 whitespace-nowrap rounded-full bg-white px-4 text-[14px] font-medium text-[#121110] transition-colors duration-fast hover:bg-[#E9EDFF] active:scale-[0.97] [@media(pointer:coarse)]:h-11';
+  'inline-flex h-[38px] items-center gap-2 whitespace-nowrap rounded-full bg-white px-4 text-[14px] font-medium text-neutral-900 transition-colors duration-fast hover:bg-white/85 active:scale-[0.97] [@media(pointer:coarse)]:h-11';
 
 /**
  * 1 foto: a lo ancho. 2: mitad y mitad. 3: una grande y dos. 4: una grande y
@@ -177,7 +179,7 @@ export function MosaicoDeFotos({
           {etiquetas.map((e, k) => (
             <span
               key={e}
-              className="inline-flex h-7 items-center gap-1.5 whitespace-nowrap rounded-[9px] bg-white px-2.5 font-mono text-[13px] uppercase tracking-[0.08em] text-[#121110]"
+              className="inline-flex h-7 items-center gap-1.5 whitespace-nowrap rounded-[9px] bg-white px-2.5 font-mono text-[13px] uppercase tracking-[0.08em] text-neutral-900"
             >
               {k === 0 && <span className="h-1.5 w-1.5 rounded-[2px] bg-primary" aria-hidden />}
               {e}
@@ -434,17 +436,25 @@ export function Descripcion({ texto }: { texto: string | null | undefined }) {
   // 🔴 Nunca lo interno de la importación (dónde están las llaves, el otro precio): Nico 30-10-2026.
   const limpio = descripcionPublica(texto);
   if (!limpio) return null;
-  const larga = limpio.length > 420;
+  // Con formato (31-10-2026) el largo se mide sin las marcas, y una lista de muchas líneas cortas también es larga.
+  const plano = textoPlanoDeLaDescripcion(limpio);
+  const larga = plano.length > 420 || plano.split('\n').length > 9;
   return (
     <section className={AIRE_DE_SECCION} aria-labelledby="descripcion">
       <h2 id="descripcion" className={TITULO_DE_SECCION}>
         Descripción
       </h2>
-      <p className={cn('mt-4 whitespace-pre-line text-[15.5px] leading-[1.6] text-fg-muted', larga && !abierta && 'line-clamp-5')}>
-        {limpio}
-      </p>
+      <DescripcionConFormato
+        texto={limpio}
+        className={cn('mt-4 text-[15.5px] leading-[1.6] text-fg-muted', larga && !abierta && 'max-h-[9.6em] overflow-hidden')}
+      />
       {larga && (
-        <button type="button" onClick={() => setAbierta((v) => !v)} className="mt-2 text-[14px] font-medium text-primary hover:underline hover:underline-offset-4">
+        <button
+          type="button"
+          onClick={() => setAbierta((v) => !v)}
+          aria-expanded={abierta}
+          className="mt-2 text-[14px] font-medium text-primary hover:underline hover:underline-offset-4"
+        >
           {abierta ? 'Ver menos' : 'Ver más'}
         </button>
       )}

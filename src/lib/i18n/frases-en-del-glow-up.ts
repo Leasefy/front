@@ -1060,7 +1060,6 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   'Primero dibuja tu firma y marca que los leíste.': 'First draw your signature and check that you read them.',
   // components/inmobiliaria/NuevoLeadDialog.tsx · lo que busca (31-10-2026)
   'Lo que busca': "What they're looking for",
-  'Zona': 'Area',
   'Zona o barrio (ej. Sabaneta, La Doctora)': 'Area or neighborhood (e.g. Sabaneta, La Doctora)',
   'Parqueadero': 'Parking',
   'Cuarto útil': 'Storage room',

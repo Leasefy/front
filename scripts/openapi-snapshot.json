@@ -705,6 +705,29 @@
           "accion"
         ]
       },
+      "AiHubChatDescargaEnLaTarjeta": {
+        "type": "object",
+        "properties": {
+          "ruta": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "forma": {
+            "type": "string",
+            "enum": [
+              "archivo",
+              "enlace"
+            ]
+          }
+        },
+        "required": [
+          "ruta",
+          "nombre",
+          "forma"
+        ]
+      },
       "AiHubChatTarjetaResultado": {
         "type": "object",
         "properties": {
@@ -771,6 +794,9 @@
               "etiqueta",
               "intencion"
             ]
+          },
+          "descarga": {
+            "$ref": "#/components/schemas/AiHubChatDescargaEnLaTarjeta"
           }
         },
         "required": [
@@ -15450,6 +15476,78 @@
             "type": "string"
           },
           "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "AiHubChatProgramadoListoResponse": {
+        "type": "object",
+        "properties": {
+          "listas": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "que": {
+                  "type": "string"
+                },
+                "texto": {
+                  "type": "string"
+                },
+                "desde": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "que",
+                "texto",
+                "desde"
+              ]
+            }
+          },
+          "salieronSolas": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "que": {
+                  "type": "string"
+                },
+                "texto": {
+                  "type": "string"
+                },
+                "en": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "que",
+                "texto",
+                "en"
+              ]
+            }
+          }
+        },
+        "required": [
+          "listas",
+          "salieronSolas"
+        ]
+      },
+      "AiHubChatProgramadoListoError": {
+        "type": "object",
+        "properties": {
+          "error": {
             "type": "string"
           }
         },
@@ -32902,6 +33000,7 @@
               "pagar_en_linea",
               "bajar_extracto",
               "bajar_certificado_de_ingresos",
+              "bajar_documento",
               "decidir_reparacion",
               "decidir_sobrecosto",
               "avisar_que_quedo",
@@ -32911,7 +33010,20 @@
               "pedir_visita",
               "mover_visita",
               "cancelar_visita",
-              "borrar_documento"
+              "borrar_documento",
+              "pedir_renovacion",
+              "aceptar_renovacion",
+              "avisar_que_no_renuevo",
+              "retirar_aviso_de_no_renovar",
+              "responder_revision_del_canon",
+              "escoger_inquilino",
+              "ninguno_me_sirve",
+              "responder_terminacion",
+              "cancelar_reporte_de_pago",
+              "pausar_autopago",
+              "reactivar_autopago",
+              "cancelar_autopago",
+              "cobrar_autopago_ahora"
             ]
           },
           "titulo": {
@@ -32926,7 +33038,8 @@
               "Sí, hazlo",
               "Descargar extracto",
               "Abrir el formulario",
-              "Descargar certificado"
+              "Descargar certificado",
+              "Descargar"
             ]
           },
           "datos": {
@@ -32984,7 +33097,32 @@
               "pedir_visita",
               "mover_visita",
               "cancelar_visita",
-              "borrar_documento"
+              "borrar_documento",
+              "renovar",
+              "aceptar_renovacion",
+              "no_renovar",
+              "retirar_aviso",
+              "mis_recibos",
+              "pagos_reportados",
+              "documentos_del_arriendo",
+              "certificaciones",
+              "mis_facturas",
+              "mis_informes",
+              "reparaciones_descontadas",
+              "cuenta_de_giro",
+              "revision_del_canon",
+              "eleccion_de_inquilino",
+              "terminaciones",
+              "solicitud_dirigida",
+              "resumen_del_arriendo",
+              "tablero_del_propietario",
+              "cobro_que_no_es",
+              "pago_a_cuenta_equivocada",
+              "que_puedo_pagar",
+              "mi_acuerdo_de_pago",
+              "mis_solicitudes",
+              "cancelar_reporte_de_pago",
+              "autopago"
             ]
           },
           "texto": {
@@ -53887,6 +54025,76 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AiHubChatLoteError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/ai-hub/chat/programado/listo": {
+      "get": {
+        "operationId": "getAiHubChatProgramadoListo",
+        "summary": "Chat del panel — lo programado que quedó listo o salió solo",
+        "description": "Lo que el chat programó para quien llama y que el disparo dejó listo esperando su clic, más lo que salió solo en Automático en los últimos tres días. Sólo lo de esa persona en esa inmobiliaria; no ejecuta nada. Cualquier miembro de la agencia.",
+        "tags": [
+          "agency",
+          "ai-hub"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lo listo y lo que salió solo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatProgramadoListoResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el bearer JWT o es inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatProgramadoListoError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "agencyId distinto al del token / no es miembro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatProgramadoListoError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Sin base",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatProgramadoListoError"
                 }
               }
             }

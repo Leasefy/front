@@ -36,6 +36,7 @@ const INSIGNIA: Record<EstadoDeLaTarjetaDelPortal, Insignia> = {
 const PENDIENTE_POR_ACCION: Partial<Record<Tarjeta['accion'], Insignia>> = {
   bajar_extracto: { variante: 'neutral', texto: 'Para descargar' },
   bajar_certificado_de_ingresos: { variante: 'neutral', texto: 'Para descargar' },
+  bajar_documento: { variante: 'neutral', texto: 'Para descargar' },
   decidir_reparacion: { variante: 'warning', texto: 'Por decidir' },
   decidir_sobrecosto: { variante: 'warning', texto: 'Por decidir' },
 };
@@ -44,6 +45,7 @@ const PENDIENTE_POR_ACCION: Partial<Record<Tarjeta['accion'], Insignia>> = {
 const SIN_AHORA_NO: ReadonlySet<Tarjeta['accion']> = new Set([
   'bajar_extracto',
   'bajar_certificado_de_ingresos',
+  'bajar_documento',
   'decidir_reparacion',
   'decidir_sobrecosto',
 ]);

@@ -166,3 +166,67 @@ describe('el propietario independiente en lo gratis (Nico 30-10)', () => {
     expect(hayDatosDeEjemploDelPropietario('contratos-que-no-existen')).toBe(false);
   });
 });
+
+describe('las demás secciones del propietario independiente (Nico 30-10: «cada sección»)', () => {
+  it('todas tienen datos de ejemplo', () => {
+    for (const clave of ['cobro', 'estudio', 'aprobaciones', 'revisar-canon', 'informes', 'certificados', 'solicitudes']) {
+      expect(hayDatosDeEjemploDelPropietario(clave)).toBe(true);
+    }
+  });
+
+  it('cuadran entre sí: el canon de Contratos, el giro de Giros, el estado de cuenta, el certificado y la retención', () => {
+    const [arriendo] = lecturaDeLaDemo('/leases') as Array<{ monthlyRent: number; contractId: string }>;
+    const contrato = lecturaDeLaDemo(`/contracts/${arriendo!.contractId}`) as { monthlyRent: number };
+    expect(arriendo!.monthlyRent).toBe(contrato.monthlyRent);
+
+    const giros = (lecturaDeLaDemo('/portal/propietario/giros') as { giros: Array<{ mes: string; estado: string; valorCop: number }> }).giros;
+    const estado = lecturaDeLaDemo('/portal/estado-de-cuenta') as {
+      contratos: Array<{ secciones: { arriendos: Array<{ fechaVencimiento: string; estado: string; valorNeto: number }> } }>;
+      porGirar: { porGirarCop: number };
+    };
+    const filas = estado.contratos[0]!.secciones.arriendos;
+    for (const g of giros.filter((x) => x.mes >= '2026-03')) {
+      const fila = filas.find((f) => f.fechaVencimiento.startsWith(g.mes))!;
+      expect(fila.valorNeto).toBe(g.valorCop);
+      // Lo que va en camino en Giros sigue por girar en el estado de cuenta.
+      expect(fila.estado).toBe(g.estado === 'EN_CAMINO' ? 'PENDIENTE' : 'CANCELADA');
+    }
+    expect(estado.porGirar.porGirarCop).toBe(giros.find((g) => g.estado === 'EN_CAMINO')!.valorCop);
+
+    const informe = lecturaDeLaDemo('/portal/propietario/certificado-de-ingresos?anio=2025') as { retencionesQueLePracticaronCop: number; ingresoBrutoCop: number };
+    const { certificados } = lecturaDeLaDemo('/portal/certificados-de-retencion') as { certificados: Array<{ anio: number; baseCop: number; totalRetenidoCop: number }> };
+    expect(certificados[0]).toMatchObject({ anio: 2025, baseCop: informe.ingresoBrutoCop, totalRetenidoCop: informe.retencionesQueLePracticaronCop });
+  });
+
+  it('Escoger inquilino trae candidatos sin datos de contacto; Aprobaciones, el historial por páginas y el detalle', () => {
+    const e = lecturaDeLaDemo('/portal/elecciones-de-inquilino') as { pendientes: Array<{ candidatos: object[] }> };
+    expect(e.pendientes[0]!.candidatos.length).toBeGreaterThan(2);
+    expect(JSON.stringify(e)).not.toMatch(/@|telefono|phone|documento/i);
+    const pagina = lecturaDeLaDemo('/portal/aprobaciones-de-reparacion/historial?pagina=1&porPagina=2') as { filas: object[]; total: number };
+    expect(pagina.filas).toHaveLength(2);
+    expect(pagina.total).toBe(3);
+    expect(lecturaDeLaDemo('/portal/aprobaciones-de-reparacion/demo-apr-1/detalle')).toMatchObject({ id: 'demo-apr-1' });
+  });
+
+  it('🔴 la pregunta del portal sobre la sesión NUNCA sale de la demo (si no, el independiente se volvía de inmobiliaria)', async () => {
+    entrarAlModoDemo();
+    window.history.pushState({}, '', '/panel/estado-de-cuenta');
+    const deEjemplo = await apiClient.get<{ contratos: unknown[] }>('/portal/estado-de-cuenta');
+    expect(deEjemplo.contratos).toHaveLength(1);
+    expect(pedir).not.toHaveBeenCalled();
+    const deVerdad = await apiClient.getDeVerdad<{ delBack?: boolean }>('/portal/estado-de-cuenta');
+    expect(deVerdad).toEqual({ delBack: true });
+    expect(pedir).toHaveBeenCalledTimes(1);
+  });
+
+  it('en la demo no se bajan documentos: se frena con su frase, sin pedirle nada al back', async () => {
+    entrarAlModoDemo();
+    window.history.pushState({}, '', '/panel/certificados');
+    await expect(apiClient.getBlob('/portal/propietario/facturas/demo-fc-2026-10/pdf')).rejects.toMatchObject({
+      status: 403,
+      code: 'MODO_DEMO',
+      message: 'En la demo no se descargan documentos: son datos de ejemplo.',
+    });
+    expect(pedir).not.toHaveBeenCalled();
+  });
+});

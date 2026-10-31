@@ -1,6 +1,6 @@
 import { compartirGet, invalidar, recursoDe, descartarEnVuelo } from './refresco-de-datos'
 import { sesionTerminada } from '@/lib/auth/session-terminal'
-import { CODIGO_DEL_MODO_DEMO, MENSAJE_DEL_MODO_DEMO } from '@/lib/demo/modo-demo-estado'
+import { CODIGO_DEL_MODO_DEMO, MENSAJE_DE_DESCARGA_EN_LA_DEMO, MENSAJE_DEL_MODO_DEMO } from '@/lib/demo/modo-demo-estado'
 import { enLaDemo } from '@/lib/demo/en-la-demo'
 import { lecturaDeLaDemo } from '@/lib/demo/datos-demo'
 import {
@@ -534,12 +534,14 @@ async function request<T>(
   yaSeReintento = false,
   /** Cabeceras extra (p. ej. `Idempotency-Key`). Se conservan en el reintento por token. */
   cabecerasExtra?: Record<string, string>,
+  /** Va al back aunque la pestaña esté en modo demo (`apiClient.getDeVerdad`). */
+  deVerdad = false,
 ): Promise<T> {
   const url = `${BACKEND_URL}${path}`
 
   // El modo demo (Nico 29-10-2026: «Ver con datos demo», sólo en lo cerrado): en una parte cerrada del panel, las
   // lecturas con dato de ejemplo salen de `lib/demo/datos-demo` y ninguna escritura sale de la pestaña.
-  if (enLaDemo()) {
+  if (!deVerdad && enLaDemo()) {
     if (method === 'GET') {
       const deEjemplo = lecturaDeLaDemo(path)
       if (deEjemplo !== undefined) return deEjemplo as T
@@ -601,7 +603,7 @@ async function request<T>(
       if (code === 'AUTH_TOKEN_EXPIRED' && !yaSeReintento) {
         const tokenNuevo = await renovarTokenVencido(tokenUsado)
         if (tokenNuevo) {
-          return request<T>(method, path, body, tokenNuevo, true, cabecerasExtra)
+          return request<T>(method, path, body, tokenNuevo, true, cabecerasExtra, deVerdad)
         }
       }
       // Un SUPERSEDED para un token que YA no es el de esta pestaña es una
@@ -623,7 +625,7 @@ async function request<T>(
     if (!yaSeReintento) {
       const tokenNuevo = await esperarUnTokenDistinto(tokenUsado)
       if (tokenNuevo) {
-        return request<T>(method, path, body, tokenNuevo, true, cabecerasExtra)
+        return request<T>(method, path, body, tokenNuevo, true, cabecerasExtra, deVerdad)
       }
     }
 
@@ -731,6 +733,7 @@ async function request<T>(
  * Se repite UNA vez, igual que allá: `yaSeReintento` corta la cadena.
  */
 async function requestBlob(path: string, token?: string, yaSeReintento = false): Promise<Blob> {
+  if (enLaDemo()) throw new ApiError(403, MENSAJE_DE_DESCARGA_EN_LA_DEMO, CODIGO_DEL_MODO_DEMO)
   const url = `${BACKEND_URL}${path}`
   const tokenUsado = token ?? _accessToken
   const headers = getAuthHeaders()
@@ -836,6 +839,14 @@ export const apiClient = {
       cabecerasExtra ? `${claveDeGet(path, token)}\0${JSON.stringify(cabecerasExtra)}` : claveDeGet(path, token),
       () => request<T>('GET', path, undefined, token, false, cabecerasExtra),
     ),
+  /**
+   * Un GET que NUNCA sale de los datos de ejemplo del modo demo. Para lo que el portal pregunta sobre la sesión de
+   * verdad —¿una inmobiliaria le administra los inmuebles?— y que una pantalla en demo también lee por la misma ruta
+   * (el estado de cuenta, los informes): con la respuesta de ejemplo el portal del propietario independiente se volvía
+   * el del propietario de inmobiliaria. No comparte petición con el GET de siempre: puede contestar distinto.
+   */
+  getDeVerdad: <T>(path: string) =>
+    compartirGet(`${claveDeGet(path)}\0de-verdad`, () => request<T>('GET', path, undefined, undefined, false, undefined, true)),
   post: <T>(path: string, body?: unknown, token?: string, cabecerasExtra?: Record<string, string>) =>
     request<T>('POST', path, body, token, false, cabecerasExtra),
   put: <T>(path: string, body?: unknown, token?: string) => request<T>('PUT', path, body, token),

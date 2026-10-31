@@ -73,8 +73,11 @@ export interface ReparacionDelPropietario {
 }
 
 export const informesDelPropietarioApi = {
-  async disponibles(): Promise<InformesDisponibles> {
-    return apiClient.get<InformesDisponibles>('/portal/propietario/informes');
+  /** `deVerdad`: la pregunta del portal sobre la sesión, nunca la respuesta de ejemplo del modo demo. */
+  async disponibles(opciones?: { deVerdad?: boolean }): Promise<InformesDisponibles> {
+    return opciones?.deVerdad
+      ? apiClient.getDeVerdad<InformesDisponibles>('/portal/propietario/informes')
+      : apiClient.get<InformesDisponibles>('/portal/propietario/informes');
   },
 
   async certificadoDeIngresos(anio?: number): Promise<CertificadoDeIngresos> {

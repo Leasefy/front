@@ -5,6 +5,13 @@
  *
  * Una lectura que no está aquí sigue al back como siempre (la pantalla muestra lo suyo, vacío si no tiene nada).
  */
+import { APROBACIONES_DEL_PROPIETARIO_DEMO } from './del-propietario-aprobaciones';
+import { CERTIFICADOS_DEL_PROPIETARIO_DEMO } from './del-propietario-certificados';
+import { COBRO_DEL_PROPIETARIO_DEMO } from './del-propietario-cobro';
+import { ESCOGER_INQUILINO_DEMO } from './del-propietario-escoger';
+import { INFORMES_DEL_PROPIETARIO_DEMO } from './del-propietario-informes';
+import { REVISAR_CANON_DEMO } from './del-propietario-revisar-canon';
+import { SOLICITUDES_DEL_PROPIETARIO_DEMO } from './del-propietario-solicitudes';
 import { CONTABILIDAD_DEMO } from './contabilidad';
 import { CONTRATOS_DEMO } from './contratos';
 import { DOCUMENTOS_DEMO } from './documentos';
@@ -39,6 +46,13 @@ const LECTURAS: readonly LecturaDeLaDemo[] = [
   ...PAGOS_DEMO,
   // El propietario independiente (sus rutas `/portal/propietario/*` no chocan con las de la inmobiliaria).
   ...GIROS_DEL_PROPIETARIO_DEMO,
+  ...COBRO_DEL_PROPIETARIO_DEMO,
+  ...ESCOGER_INQUILINO_DEMO,
+  ...APROBACIONES_DEL_PROPIETARIO_DEMO,
+  ...REVISAR_CANON_DEMO,
+  ...INFORMES_DEL_PROPIETARIO_DEMO,
+  ...CERTIFICADOS_DEL_PROPIETARIO_DEMO,
+  ...SOLICITUDES_DEL_PROPIETARIO_DEMO,
 ];
 
 /** Las secciones del panel (su clave en `arquitectura-del-panel.ts`) que ya tienen datos de ejemplo. */
@@ -52,7 +66,17 @@ export function hayDatosDeEjemplo(claveDelModulo: string | null | undefined): bo
  * Las del propietario independiente en lo gratis (Nico 30-10-2026: «la posibilidad de… ver cómo quedaría pintada cada
  * sección»), por su clave de demo (`claveDeDemoDelPropietario`).
  */
-const SECCIONES_DEL_PROPIETARIO_CON_DATOS: ReadonlySet<string> = new Set(['giros', 'contratos']);
+const SECCIONES_DEL_PROPIETARIO_CON_DATOS: ReadonlySet<string> = new Set([
+  'giros',
+  'contratos',
+  'cobro',
+  'estudio',
+  'aprobaciones',
+  'revisar-canon',
+  'informes',
+  'certificados',
+  'solicitudes',
+]);
 
 export function hayDatosDeEjemploDelPropietario(clave: string | null | undefined): boolean {
   return Boolean(clave && SECCIONES_DEL_PROPIETARIO_CON_DATOS.has(clave));

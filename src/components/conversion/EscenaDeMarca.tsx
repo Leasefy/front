@@ -42,6 +42,11 @@ export interface EscenaDeMarcaProps {
   marca?: ReactNode;
   /** La foto de fondo (del banco de imágenes de Leasefy). Sin ella, la sala de Laureles al atardecer. */
   foto?: string;
+  /**
+   * Lo del centro arranca arriba y se corta en el borde de abajo, como una pantalla que asoma (la `VentanaDelProducto`
+   * de los modales del plan). Sin esto, va centrado.
+   */
+  asomando?: boolean;
   className?: string;
 }
 
@@ -53,7 +58,7 @@ export const FOTOS_DE_LA_ESCENA = [
   '/imagenes/banco/sala-nordica-luz.webp',
 ] as const;
 
-export function EscenaDeMarca({ principal, children, celebrar = false, marca, foto, className }: EscenaDeMarcaProps) {
+export function EscenaDeMarca({ principal, children, celebrar = false, marca, foto, asomando = false, className }: EscenaDeMarcaProps) {
   const reducido = usePrefersReducedMotion();
   const centro = useRef<HTMLDivElement>(null);
   const imagen = foto ?? FOTOS_DE_LA_ESCENA[0];
@@ -61,7 +66,7 @@ export function EscenaDeMarca({ principal, children, celebrar = false, marca, fo
   useChispa(celebrar, centro);
 
   return (
-    <div className={cn('relative isolate h-56 overflow-hidden bg-[#1b2340] sm:h-64', className)} data-testid="escena-de-marca">
+    <div className={cn('relative isolate h-56 overflow-hidden bg-ink sm:h-64', className)} data-testid="escena-de-marca">
       {/* La foto entra con un acercamiento lento (Ken Burns), sin aurora ni 3D flotando (Nico, 28-10: «más como nosotros»). */}
       <motion.img
         src={imagen}
@@ -72,23 +77,67 @@ export function EscenaDeMarca({ principal, children, celebrar = false, marca, fo
         animate={reducido ? { opacity: 1 } : { opacity: 1, scale: 1 }}
         transition={{ opacity: { duration: 0.5 }, scale: { duration: 6, ease: [0.16, 1, 0.3, 1] } }}
       />
-      <span aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-t from-[#0d1330]/55 via-[#0d1330]/10 to-transparent" />
+      {/* El velo que hace legible lo de encima de la foto (DESIGN.md §3.1: degradado funcional y neutro). */}
+      <span aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-t from-ink/55 via-ink/10 to-transparent" />
 
-      <div ref={centro} className="absolute inset-0 flex items-center justify-center px-6">
+      <div ref={centro} className={cn('absolute inset-0 flex justify-center px-6', asomando ? 'items-start pt-8 sm:pt-10' : 'items-center')}>
         <motion.div
           initial={reducido ? { opacity: 0 } : { opacity: 0, y: 14, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={reducido ? { duration: 0.2 } : { ...motionSpring.soft, delay: 0.15 }}
         >
-          {children ?? (principal ? (
-            <span className="flex size-32 items-center justify-center rounded-[28px] bg-[#f7f6f2] shadow-[0_24px_48px_-16px_rgba(4,16,48,0.55)]">
-              <Ilustracion nombre={principal} tamano={104} tono="auto" alt="" />
-            </span>
-          ) : null)}
+          {children ?? (principal ? <PlacaDe3D nombre={principal} /> : null)}
         </motion.div>
       </div>
 
       {marca ? <div className="absolute bottom-3 left-3">{marca}</div> : null}
+    </div>
+  );
+}
+
+/** Un 3D en su placa de papel, para el centro de la escena o la esquina de una ventana. Flota despacio. */
+export function PlacaDe3D({ nombre, tamano = 104 }: { nombre: NombreIlustracion; tamano?: number }) {
+  const reducido = usePrefersReducedMotion();
+  const lado = Math.round(tamano * 1.24);
+  return (
+    <motion.span
+      className="flex items-center justify-center rounded-[28px] bg-bg shadow-[0_24px_48px_-16px_rgba(4,16,48,0.55)] ring-1 ring-border"
+      style={{ width: lado, height: lado }}
+      animate={reducido ? undefined : { y: [0, -6, 0] }}
+      transition={reducido ? undefined : { duration: 4.2, repeat: Infinity, ease: 'easeInOut', delay: 0.9 }}
+      data-testid="placa-de-3d"
+    >
+      <Ilustracion nombre={nombre} tamano={tamano} tono="auto" alt="" />
+    </motion.span>
+  );
+}
+
+/**
+ * La pantalla REAL de esa parte de Leasefy asomando sobre la foto (Nico, 31-10-2026: «haz más hermosos los modales de
+ * mejora tu plan»; landing: «las imágenes del producto salen del producto real»). La captura de su demo en una ventana
+ * con esquina y sombra flotante, cortada por el borde de abajo de la escena (`EscenaDeMarca asomando`), y un acento —el
+ * 3D de la función o la cuenta de días— montado en una esquina.
+ */
+export function VentanaDelProducto({
+  captura,
+  alt,
+  acento,
+  lado = 'derecha',
+}: {
+  captura: string;
+  alt: string;
+  acento?: ReactNode;
+  lado?: 'derecha' | 'izquierda';
+}) {
+  return (
+    <div className="relative w-[min(78vw,440px)]" data-testid="ventana-del-producto">
+      <div className="overflow-hidden rounded-[14px] bg-surface shadow-[0_24px_60px_-18px_rgba(4,16,48,0.7)] ring-1 ring-border">
+        {/* eslint-disable-next-line @next/next/no-img-element -- captura estática de public/landing-v2/producto */}
+        <img src={captura} alt={alt} className="block aspect-[16/10] w-full object-cover object-left-top" />
+      </div>
+      {acento ? (
+        <div className={cn('absolute -top-4', lado === 'derecha' ? '-right-3 sm:-right-10' : '-left-3 sm:-left-10')}>{acento}</div>
+      ) : null}
     </div>
   );
 }
@@ -185,7 +234,7 @@ export function SelloDelAliado({ aliado, tamano = 'grande' }: { aliado: string; 
   return (
     <div
       className={cn(
-        'flex items-center bg-[#f7f6f2] shadow-[0_24px_48px_-16px_rgba(4,16,48,0.55)] ring-1 ring-black/5',
+        'flex items-center bg-bg shadow-[0_24px_48px_-16px_rgba(4,16,48,0.55)] ring-1 ring-border',
         grande ? 'gap-5 rounded-[22px] px-6 py-4 sm:gap-6 sm:px-7 sm:py-5' : 'gap-2.5 rounded-xl px-3 py-1.5',
       )}
       data-testid="sello-del-aliado"
@@ -195,11 +244,11 @@ export function SelloDelAliado({ aliado, tamano = 'grande' }: { aliado: string; 
           // eslint-disable-next-line @next/next/no-img-element -- logo estático de public/aliados
           <img src={logo.src} alt={aliado} className="max-h-full max-w-full object-contain" />
         ) : (
-          <span className={cn('text-center font-medium leading-tight text-[#0a0f2c]', grande ? 'text-lg' : 'text-[11px]')}>{aliado}</span>
+          <span className={cn('text-center font-medium leading-tight text-fg', grande ? 'text-lg' : 'text-[11px]')}>{aliado}</span>
         )}
       </span>
-      <span aria-hidden="true" className={cn('w-px self-stretch bg-[#1b2340]/15', grande ? 'my-1' : '')} />
-      <LeasefyLogotype size={grande ? 24 : 12} className="text-[#1a40ff]" title="Leasefy" />
+      <span aria-hidden="true" className={cn('w-px self-stretch bg-border', grande ? 'my-1' : '')} />
+      <LeasefyLogotype size={grande ? 24 : 12} className="text-primary" title="Leasefy" />
     </div>
   );
 }
@@ -209,7 +258,7 @@ export function ChipDelAliado({ aliado, texto }: { aliado: string; texto?: strin
   const logo = logoDelAliado(aliado);
   return (
     <span
-      className="inline-flex h-9 items-center gap-2 rounded-full bg-white/95 pl-1.5 pr-3.5 text-caption font-medium text-[#0a0f2c] shadow-[0_6px_18px_rgba(4,16,48,0.25)]"
+      className="inline-flex h-9 items-center gap-2 rounded-full bg-surface/95 pl-1.5 pr-3.5 text-caption font-medium text-fg shadow-[0_6px_18px_rgba(4,16,48,0.25)]"
       data-testid="chip-del-aliado"
     >
       {logo ? (

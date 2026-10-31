@@ -8,7 +8,7 @@ import type { NombreIlustracion } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogBody, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
-import { BeneficiosEn3D, ChipDelAliado, EscenaDeMarca } from '@/components/conversion/EscenaDeMarca';
+import { BeneficiosEn3D, ChipDelAliado, EscenaDeMarca, FOTOS_DE_LA_ESCENA, PlacaDe3D, VentanaDelProducto } from '@/components/conversion/EscenaDeMarca';
 import { useAuth } from '@/lib/auth/use-auth';
 import { conversionApi } from '@/lib/api/conversion.service';
 import { precioDelMes, type AccesoDeLaCuenta, type CotizacionDelPlan } from '@/lib/conversion/acceso';
@@ -78,17 +78,22 @@ export function fraseDelPrecio(cotizacion: CotizacionDelPlan | null): string {
   return 'Desde $99.000 al mes más IVA, según tus inmuebles. Dos usuarios incluidos.';
 }
 
-/** La escena de cada momento: el 3D del centro y sus acompañantes. */
-const ESCENAS: Record<MomentoDelModal['tipo'], { principal: NombreIlustracion; acompanantes: readonly NombreIlustracion[] }> = {
-  gratis: { principal: 'novedad_cohete', acompanantes: ['contrato', 'banco', 'factura', 'sobre_cobro'] },
-  faltan: { principal: 'reloj_mora', acompanantes: ['novedad_regalo', 'calendario_pago', 'contrato', 'banco'] },
-  termino: { principal: 'llaves', acompanantes: ['carpeta', 'contrato', 'banco', 'factura'] },
+/**
+ * La escena de cada momento (Nico 31-10-2026: «haz más hermosos los modales de mejora tu plan»): la foto, la pantalla
+ * REAL de Leasefy completo asomando (el tablero de la operación) y, en su esquina, la cuenta de días o el 3D.
+ */
+const ESCENAS: Record<MomentoDelModal['tipo'], { principal: NombreIlustracion; foto: string }> = {
+  gratis: { principal: 'novedad_cohete', foto: FOTOS_DE_LA_ESCENA[1] },
+  faltan: { principal: 'reloj_mora', foto: FOTOS_DE_LA_ESCENA[0] },
+  termino: { principal: 'llaves', foto: FOTOS_DE_LA_ESCENA[3] },
 };
+
+const TABLERO = { src: '/landing-v2/producto/erp-tablero.webp', alt: 'El tablero de Leasefy completo: recaudo, cartera y giros del mes' };
 
 /** La cuenta de días en el centro de la escena: el número grande en su ficha. */
 function CuentaDeDias({ dias }: { dias: number }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-[28px] bg-white px-7 py-5 shadow-[0_18px_40px_rgba(4,16,48,0.35)] ring-1 ring-black/5">
+    <div className="flex flex-col items-center justify-center rounded-[28px] bg-bg px-7 py-5 shadow-[0_18px_40px_rgba(4,16,48,0.35)] ring-1 ring-border">
       <span className="text-[56px] font-[420] leading-none tracking-[-0.04em] text-primary tabular-nums" data-testid="modal-del-plan-dias">
         {dias}
       </span>
@@ -158,17 +163,27 @@ export function ModalDelPlan() {
       <DialogContent size="lg" className="overflow-hidden p-0" data-testid={`modal-del-plan-${momento.tipo}`}>
         <DialogBody className="p-0 sm:p-0">
           <EscenaDeMarca
-            principal={escena.principal}
-            acompanantes={escena.acompanantes}
+            foto={escena.foto}
+            asomando
             marca={
               aliado && momento.tipo !== 'gratis' ? <ChipDelAliado aliado={aliado} /> : undefined
             }
           >
-            {momento.tipo === 'faltan' && momento.dias !== undefined ? <CuentaDeDias dias={momento.dias} /> : undefined}
+            <VentanaDelProducto
+              captura={TABLERO.src}
+              alt={TABLERO.alt}
+              acento={
+                momento.tipo === 'faltan' && momento.dias !== undefined ? (
+                  <CuentaDeDias dias={momento.dias} />
+                ) : (
+                  <PlacaDe3D nombre={escena.principal} tamano={64} />
+                )
+              }
+            />
           </EscenaDeMarca>
           <div className="space-y-5 p-6 sm:p-8">
             <div className="space-y-2">
-              <p className="font-mono text-[11px] uppercase tracking-wider text-primary">
+              <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-fg-muted">
                 {momento.tipo === 'gratis' ? 'Leasefy completo' : aliado ? `Tu mes gratis con ${aliado}` : 'Tu mes gratis'}
               </p>
               <DialogTitle className="text-h2 text-fg">{titulo}</DialogTitle>

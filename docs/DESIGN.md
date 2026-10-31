@@ -294,6 +294,12 @@ Blender (`archivos/identidad-v3/blender/escena.py` en la memoria del proyecto) y
 - **Logo:** proporción 2,08 : 1, nunca deformado. En arquitectura u objetos (fachada, placa, bordado) va como OBJETO REAL
   hecho por el generador, nunca pegado plano; lo plano sólo en pantallas, hojas, paredes pintadas y lonas. Revisar manos
   y letras de cada imagen generada. Nada repetido (Nico, 28-10). Manual: https://claude.ai/artifact/KmyeY1Fqv5qVwAfQmxBX3R
+- **Los modales que invitan a pagar** (el del plan, la invitación por función del plan gratis; Nico 31-10: «haz más
+  hermosos los modales de mejora tu plan… ya te lo había pedido»): `EscenaDeMarca asomando` (foto del banco + velo) con
+  la **`VentanaDelProducto`**: la captura REAL de esa parte de Leasefy (la de su demo, en `public/landing-v2/producto`)
+  en una ventana con esquina y sombra flotante que asoma y se corta en el borde de abajo, y en su esquina el acento —la
+  cuenta de días o el 3D de la función en su `PlacaDe3D`—. Debajo: rótulo DM Mono callado, título `text-h2`, la lista
+  con chulos (`BeneficiosEn3D`) y los botones. Nunca el ícono en una cajita de color con anillos.
 
 ---
 

@@ -58,15 +58,14 @@ const fila = (estado: string, dispersiones: { id: string; status: string; aGirar
 });
 
 describe('Giros — la tarjeta «Lo que falta del mes» (decisión 17 de Nico)', () => {
-  it('arranca con la respuesta y ofrece el botón del paso que toca', async () => {
+  it('🔴 arranca con la respuesta y lleva al paso a paso de Giros a propietarios (31-10: ya no manda a aprobar uno por uno)', async () => {
     m.liquidacionDelMes.mockResolvedValue({ propietarios: [fila('GENERADA', [{ id: '1', status: 'DISP_PENDING', aGirarCop: 2_371_800 }])] });
     await montar('liquidar');
     expect(host.querySelector('[data-testid="respuesta-del-mes"]')?.textContent).toContain('Falta girar');
     expect(host.querySelector('[data-testid="respuesta-del-mes"]')?.textContent).toContain('1 propietario');
-    const accion = host.querySelector('[data-testid="accion-del-paso-revisar"]');
-    expect(accion?.textContent).toBe('Revisar 1 giro');
-    expect(accion?.getAttribute('href')).toBe('/panel/inmobiliaria/pagos/dispersiones?mes=2026-10');
-    expect(host.querySelector('[data-testid="paso-del-mes-liquidar"] [aria-current="page"]')).not.toBeNull();
+    const ir = host.querySelector('[data-testid="volver-al-paso-a-paso"]');
+    expect(ir?.getAttribute('href')).toBe('/panel/inmobiliaria/pagos/giros?mes=2026-10');
+    expect(host.querySelector('[data-testid^="accion-del-paso-"]')).toBeNull();
   });
 
   it('🔴 con el mes girado entero no se contradice con «Por girar»: dice que lo que queda es de otros meses', async () => {

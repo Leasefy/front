@@ -42,7 +42,8 @@ export const PASOS_DE_LOS_GIROS: readonly {
   {
     id: 'revisar',
     titulo: 'Revisar y aprobar',
-    descripcion: 'Los giros del mes, uno por uno: revísalos y apruébalos antes de armar el lote.',
+    // 31-10-2026: aprobarlos uno por uno los mandaba a giro suelto (fuera del lote); se giran desde Giros a propietarios.
+    descripcion: 'Los giros del mes, uno por uno. Se giran juntos desde Giros a propietarios, con el botón Girar.',
     href: `${RAIZ}/dispersiones`,
   },
   {

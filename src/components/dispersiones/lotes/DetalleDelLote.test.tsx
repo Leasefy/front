@@ -76,6 +76,15 @@ vi.mock('@/components/procesos/descargar-archivo-del-proceso', () => ({
   descargarArchivoDelProceso: vi.fn(async () => 'archivo.txt'),
 }));
 
+// El campo del código de la aplicación (31-10): un botón que «escribe» las seis cifras ya verificadas.
+vi.mock('@/components/seguridad/CodigoDeLaApp', () => ({
+  CampoDelCodigoDeLaApp: ({ onVerificado, deshabilitado }: { onVerificado: () => void | Promise<void>; deshabilitado?: boolean }) => (
+    <button type="button" data-testid="codigo-de-la-app" disabled={deshabilitado} onClick={() => void onVerificado()}>
+      Escribir el código de la aplicación
+    </button>
+  ),
+}));
+
 import { lotesDeDispersionApi } from '@/lib/api/lotes-de-dispersion.service';
 import { descargarArchivoDelProceso } from '@/components/procesos/descargar-archivo-del-proceso';
 import { procesosApi } from '@/lib/api/procesos.service';
@@ -289,6 +298,20 @@ async function clicEnDialogo(testId: string, texto: string) {
   });
 }
 
+function campoDelCodigo(): HTMLButtonElement {
+  const b = document.body.querySelector('[data-testid="codigo-de-la-app"]') as HTMLButtonElement | null;
+  if (!b) throw new Error('No está el campo del código de la aplicación');
+  return b;
+}
+
+/** Escribe el código de la aplicación (el campo simulado ya lo da por verificado). */
+async function escribirElCodigoDeLaApp() {
+  await act(async () => {
+    campoDelCodigo().click();
+    await new Promise((r) => setTimeout(r, 0));
+  });
+}
+
 function acciones(): string[] {
   const zona = container.querySelector('[data-testid="acciones-del-lote"]');
   if (!zona) return [];
@@ -304,7 +327,7 @@ describe('<DetalleDelLote> — qué se ofrece en cada estado', () => {
     await render(vista(lote()));
 
     expect(container.querySelector('[data-testid="estado-del-lote"]')?.textContent).toBe('Borrador');
-    expect(acciones()).toEqual(['Pedir aprobación', 'Anular']);
+    expect(acciones()).toEqual(['Pedir la autorización', 'Anular']);
     expect(container.querySelector('[data-testid="excluidos-del-lote"]')?.textContent).toContain(
       'Falta el número de cuenta.',
     );
@@ -350,136 +373,109 @@ describe('<DetalleDelLote> — qué se ofrece en cada estado', () => {
   });
 });
 
-describe('<DetalleDelLote> — aprobación', () => {
-  it('🔴 quien armó el lote ve «Aprobar» apagado y el aviso, antes de gastar un clic', async () => {
+/*
+ * 🔴 31-10-2026 (Nico: «sí o sí lo autoriza un administrador», con el código de su aplicación): el
+ * giro lo AUTORIZA un administrador escribiendo el código de su aplicación de autenticación (el campo
+ * de `CodigoDeLaApp`, aquí un botón que «lo escribe»). El código por correo ya no se pide; los demás
+ * roles «piden la autorización» y le avisamos a los administradores.
+ */
+describe('<DetalleDelLote> — autorizar el giro', () => {
+  it('🔴 quien armó el lote y no es administrador no lo autoriza: dice que lo autoriza un administrador', async () => {
     usuarioActual = 'u-creador';
     await render(vista(lote({ estado: 'ESPERANDO_APROBACION', codigoHash: 'hash', codigoExpiraAt: '2026-09-01T15:10:00.000Z' })));
 
-    expect(boton('Aprobar').disabled).toBe(true);
-    expect(container.textContent).toContain('Tú armaste este lote');
+    expect(acciones()).not.toContain('Autorizar el giro');
+    expect(container.textContent).toContain('Lo autoriza un administrador');
   });
 
-  it('otra persona aprueba con el código, y el cuerpo lleva lo que escribió', async () => {
+  it('🔴 un administrador autoriza el de otro con el código de SU aplicación, sin el código del correo', async () => {
+    soyAdmin = true;
     await render(vista(lote({ estado: 'ESPERANDO_APROBACION', codigoHash: 'hash', codigoExpiraAt: '2026-09-01T15:10:00.000Z' })));
     vi.mocked(lotesDeDispersionApi.aprobar).mockResolvedValue(
       lote({ estado: 'APROBADO', aprobadoPorUserId: 'u-otro', aprobadoAt: '2026-09-01T15:05:00.000Z' }),
     );
 
-    await clic('Aprobar');
+    await clic('Autorizar el giro');
     expect(document.body.querySelector('[data-testid="dialogo-aprobar"]')).toBeTruthy();
-    expect(cuerpo()).toContain('5 intentos');
+    expect(document.body.querySelector('[data-testid="codigo-de-aprobacion"]')).toBeNull();
+    await escribirElCodigoDeLaApp();
 
-    await escribir('codigo-de-aprobacion', '048213');
-    // El «Aprobar» del pie del diálogo, no el de la página.
-    const aprobarDelDialogo = botones('Aprobar').find((b) => b.closest('[data-testid="dialogo-aprobar"]'));
-    await act(async () => {
-      aprobarDelDialogo?.click();
-      await new Promise((r) => setTimeout(r, 0));
-    });
-
-    expect(lotesDeDispersionApi.aprobar).toHaveBeenCalledWith(ID, '048213');
+    expect(lotesDeDispersionApi.aprobar).toHaveBeenCalledWith(ID, undefined);
     expect(container.querySelector('[data-testid="estado-del-lote"]')?.textContent).toBe('Aprobado');
   });
 
-  it('🔴 GIRI (Nico 18-10): con algo que revisar, la fila lo dice y «Aprobar» pide «Ya lo revisé»', async () => {
+  it('🔴 GIRI (Nico 18-10): con algo que revisar, el código se escribe sólo después de «Ya lo revisé»', async () => {
+    soyAdmin = true;
     const l = lote({ estado: 'ESPERANDO_APROBACION' });
-    const conGiri = vista(l, {
-      revisarConGiri: [
-        {
-          dispersionId: l.items[0].dispersionId,
-          propietarioId: l.items[0].propietarioId,
-          motivos: ['El inquilino del contrato #1850 no ha pagado la cuota de octubre de 2026.'],
-        },
-      ],
-    });
-    await render(conGiri);
+    await render(
+      vista(l, {
+        revisarConGiri: [
+          {
+            dispersionId: l.items[0].dispersionId,
+            propietarioId: l.items[0].propietarioId,
+            motivos: ['El inquilino del contrato #1850 no ha pagado la cuota de octubre de 2026.'],
+          },
+        ],
+      }),
+    );
     vi.mocked(lotesDeDispersionApi.aprobar).mockResolvedValue(lote({ estado: 'APROBADO', aprobadoPorUserId: 'u-otro', aprobadoAt: '2026-09-01T15:05:00.000Z' }));
 
     expect(container.querySelector(`[data-testid="giri-item-${l.items[0].dispersionId}"]`)?.textContent).toContain('no ha pagado la cuota de octubre');
-    await clic('Aprobar');
+    await clic('Autorizar el giro');
     expect(document.body.querySelector('[data-testid="giri-antes-de-aprobar"]')?.textContent).toContain('Giri pide revisar una liquidación');
-    const aprobarDelDialogo = () => botones('Aprobar').find((b) => b.closest('[data-testid="dialogo-aprobar"]'))!;
-    expect(aprobarDelDialogo().disabled).toBe(true);
+    expect(campoDelCodigo().disabled).toBe(true);
 
     await act(async () => {
       (document.body.querySelector('[data-testid="giri-ya-lo-revise"]') as HTMLButtonElement).click();
     });
-    expect(aprobarDelDialogo().disabled).toBe(false);
-    await act(async () => {
-      aprobarDelDialogo().click();
-      await new Promise((r) => setTimeout(r, 0));
-    });
+    expect(campoDelCodigo().disabled).toBe(false);
+    await escribirElCodigoDeLaApp();
     expect(lotesDeDispersionApi.aprobar).toHaveBeenCalledWith(ID, undefined, true);
   });
 
-  it('🔴 el error del back se muestra tal cual y se vuelve a leer cuántos intentos quedan', async () => {
-    await render(vista(lote({ estado: 'ESPERANDO_APROBACION', codigoHash: 'hash', codigoExpiraAt: '2026-09-01T15:10:00.000Z' })));
+  it('🔴 el error del back se muestra tal cual y se vuelve a leer el lote', async () => {
+    soyAdmin = true;
+    await render(vista(lote({ estado: 'ESPERANDO_APROBACION' })));
     vi.mocked(lotesDeDispersionApi.aprobar).mockRejectedValue(
-      new Error('Código incorrecto. 4 intentos antes de que el lote se bloquee.'),
-    );
-    vi.mocked(lotesDeDispersionApi.ver).mockResolvedValue(
-      vista(lote({ estado: 'ESPERANDO_APROBACION', codigoHash: 'hash', codigoExpiraAt: '2026-09-01T15:10:00.000Z', codigoIntentos: 1 }), {
-        intentosRestantes: 4,
-      }),
+      new Error('Para autorizar el giro, escribe el código de seis cifras de tu aplicación de autenticación.'),
     );
 
-    await clic('Aprobar');
-    await escribir('codigo-de-aprobacion', '111111');
-    const aprobarDelDialogo = botones('Aprobar').find((b) => b.closest('[data-testid="dialogo-aprobar"]'));
-    await act(async () => {
-      aprobarDelDialogo?.click();
-      await new Promise((r) => setTimeout(r, 0));
-    });
+    await clic('Autorizar el giro');
+    await escribirElCodigoDeLaApp();
 
-    expect(cuerpo()).toContain('Código incorrecto. 4 intentos antes de que el lote se bloquee.');
-    // Un intento gastado: la vista se vuelve a pedir.
+    expect(cuerpo()).toContain('Para autorizar el giro, escribe el código de seis cifras');
     expect(lotesDeDispersionApi.ver).toHaveBeenCalledTimes(2);
   });
 
-  it('un lote sin código no pide código, pero sí pide al segundo aprobador', async () => {
+  it('quien no es administrador no ve «Autorizar el giro» en un lote de otro', async () => {
     await render(vista(lote({ estado: 'ESPERANDO_APROBACION' })));
-    vi.mocked(lotesDeDispersionApi.aprobar).mockResolvedValue(lote({ estado: 'APROBADO', aprobadoPorUserId: 'u-otro' }));
-
-    await clic('Aprobar');
-    expect(document.body.querySelector('[data-testid="codigo-de-aprobacion"]')).toBeNull();
-    expect(cuerpo()).toContain('no exige código');
-
-    const aprobarDelDialogo = botones('Aprobar').find((b) => b.closest('[data-testid="dialogo-aprobar"]'));
-    await act(async () => {
-      aprobarDelDialogo?.click();
-      await new Promise((r) => setTimeout(r, 0));
-    });
-    expect(lotesDeDispersionApi.aprobar).toHaveBeenCalledWith(ID, undefined);
+    expect(acciones()).not.toContain('Autorizar el giro');
   });
 
-  it('pedir aprobación muestra a qué correos tapados fue el código y hasta cuándo vale', async () => {
+  it('pedir la autorización (sin ser administrador): les avisa a los administradores', async () => {
     await render(vista(lote()));
     vi.mocked(lotesDeDispersionApi.solicitarAprobacion).mockResolvedValue({
-      lote: lote({ estado: 'ESPERANDO_APROBACION', codigoExpiraAt: '2026-09-01T15:10:00.000Z' }),
-      exigeCodigo: true,
-      motivoDelCodigo: 'La inmobiliaria tiene prendido el PIN para todos los lotes.',
-      expiraAt: '2026-09-01T15:10:00.000Z',
-      enviadoA: ['con***@portofino.co', 'ger***@portofino.co'],
+      lote: lote({ estado: 'ESPERANDO_APROBACION' }),
+      exigeCodigo: false,
+      motivoDelCodigo: null,
+      expiraAt: null,
+      enviadoA: ['nic***@portofino.co'],
     });
 
-    await clic('Pedir aprobación');
-    await clic('Mandar a aprobación');
+    await clic('Pedir la autorización');
+    await clicEnDialogo('dialogo-pedir-aprobacion', 'Pedir la autorización');
 
     expect(lotesDeDispersionApi.solicitarAprobacion).toHaveBeenCalledWith(ID);
     const resultado = document.body.querySelector('[data-testid="resultado-de-aprobacion"]')?.textContent ?? '';
-    expect(resultado).toContain('con***@portofino.co');
-    expect(resultado).toContain('ger***@portofino.co');
-    expect(resultado).toContain('PIN para todos los lotes');
-    expect(resultado).toContain('Vale hasta');
+    expect(resultado).toContain('Les avisamos a los administradores');
+    expect(resultado).toContain('nic***@portofino.co');
     expect(container.querySelector('[data-testid="estado-del-lote"]')?.textContent).toBe('Por aprobar');
   });
 });
 
 /**
- * P-4 aclarado (Nico, 24-09): «si quien propone es ADMINISTRADOR, no se le
- * pide que se confirme a sí mismo». El lote que él arma vuelve del back ya
- * aprobado: acá no se le muestra un «Aprobar» apagado ni un «pendiente de
- * aprobación» que nunca llega.
+ * P-4 aclarado (Nico, 24-09): el administrador no se pide la aprobación a sí
+ * mismo. Desde el 31-10 lo autoriza con el código de su aplicación.
  */
 describe('<DetalleDelLote> — P-4: el administrador no se confirma a sí mismo', () => {
   it('🔴 el lote que armó y quedó aprobado dice «Aprobado por ti como administrador (P-4)», sin nada apagado', async () => {
@@ -492,10 +488,8 @@ describe('<DetalleDelLote> — P-4: el administrador no se confirma a sí mismo'
     const nota = container.querySelector('[data-testid="aprobado-por-la-misma-persona"]');
     expect(nota?.textContent).toContain('Aprobado por ti como administrador');
     expect(nota?.textContent).not.toContain('(P-4)');
-    expect(nota?.textContent).toContain('sin código');
     expect(container.querySelector('[data-testid="estado-del-lote"]')?.textContent).toBe('Aprobado');
     expect(acciones()).toEqual(['Generar archivo', 'Anular']);
-    expect(container.textContent).not.toContain('Tú armaste este lote');
     expect(container.textContent).toContain('Como administrador, en el mismo paso');
   });
 
@@ -515,39 +509,33 @@ describe('<DetalleDelLote> — P-4: el administrador no se confirma a sí mismo'
     expect(container.querySelector('[data-testid="aprobado-por-la-misma-persona"]')).toBeNull();
   });
 
-  it('🔴 un borrador suyo (de antes de la regla): el botón dice «Aprobar» y lo aprueba en un paso, sin código', async () => {
+  it('🔴 un borrador suyo: «Autorizar el giro» lo autoriza en un paso, con el código de su aplicación', async () => {
     usuarioActual = 'u-creador';
     soyAdmin = true;
     await render(vista(lote()));
-    expect(acciones()).toEqual(['Aprobar', 'Anular']);
-    expect(container.querySelector('[data-testid="lo-apruebas-tu"]')).toBeTruthy();
+    expect(acciones()).toEqual(['Autorizar el giro', 'Anular']);
+    expect(container.querySelector('[data-testid="lo-apruebas-tu"]')?.textContent).toContain('código de tu aplicación');
     vi.mocked(lotesDeDispersionApi.solicitarAprobacion).mockResolvedValue({
       lote: lote({ estado: 'APROBADO', aprobadoPorUserId: 'u-creador', aprobadoAt: '2026-09-01T15:05:00.000Z' }),
       exigeCodigo: false,
       motivoDelCodigo: null,
       expiraAt: null,
       enviadoA: [],
-      mismoPaso: {
-        aprobadoEnElMismoPaso: true,
-        porQueNo: null,
-        nota: 'Aprobado por ti como administrador (P-4): quedó aprobado en el mismo paso en que lo armaste, sin código.',
-      },
+      mismoPaso: { aprobadoEnElMismoPaso: true, porQueNo: null, nota: 'Aprobado por ti como administrador.' },
     });
 
-    await clic('Aprobar');
+    await clic('Autorizar el giro');
     const dialogo = document.body.querySelector('[data-testid="dialogo-pedir-aprobacion"]');
-    expect(dialogo?.textContent).toContain('Aprobar el lote');
-    expect(dialogo?.textContent).toContain('sin código');
-    await clicEnDialogo('dialogo-pedir-aprobacion', 'Aprobar');
+    expect(dialogo?.textContent).toContain('Autorizar el giro');
+    expect(dialogo?.textContent).toContain('código de tu aplicación');
+    await escribirElCodigoDeLaApp();
 
     expect(lotesDeDispersionApi.solicitarAprobacion).toHaveBeenCalledWith(ID);
-    const resultado = document.body.querySelector('[data-testid="resultado-de-aprobacion"]')?.textContent ?? '';
-    expect(resultado).toContain('Aprobado por ti como administrador (P-4)');
-    expect(resultado).not.toContain('Le llegó a');
+    expect(document.body.querySelector('[data-testid="resultado-de-aprobacion"]')?.textContent).toContain('Aprobado por ti como administrador');
     expect(container.querySelector('[data-testid="estado-del-lote"]')?.textContent).toBe('Aprobado');
   });
 
-  it('🔴 GIRI (Nico 18-10): un borrador suyo con algo que revisar: la tarjeta lo dice y «Aprobar» pide «Ya lo revisé»', async () => {
+  it('🔴 GIRI (Nico 18-10): un borrador suyo con algo que revisar: el código va después de «Ya lo revisé»', async () => {
     usuarioActual = 'u-creador';
     soyAdmin = true;
     const l = lote();
@@ -572,24 +560,22 @@ describe('<DetalleDelLote> — P-4: el administrador no se confirma a sí mismo'
       mismoPaso: { aprobadoEnElMismoPaso: true, porQueNo: null, nota: 'Aprobado por ti como administrador.' },
     });
 
-    await clic('Aprobar');
+    await clic('Autorizar el giro');
     const dialogo = () => document.body.querySelector('[data-testid="dialogo-pedir-aprobacion"]')!;
     expect(dialogo().textContent).toContain('Giri pide revisar una liquidación');
     expect(dialogo().textContent).toContain('no ha pagado la cuota de noviembre');
-    const aprobar = () =>
-      [...dialogo().querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Aprobar') as HTMLButtonElement;
-    expect(aprobar().disabled).toBe(true);
+    expect(campoDelCodigo().disabled).toBe(true);
 
     await act(async () => {
       (document.body.querySelector('[data-testid="giri-ya-lo-revise"]') as HTMLButtonElement).click();
     });
-    expect(aprobar().disabled).toBe(false);
-    await clicEnDialogo('dialogo-pedir-aprobacion', 'Aprobar');
+    expect(campoDelCodigo().disabled).toBe(false);
+    await escribirElCodigoDeLaApp();
     expect(lotesDeDispersionApi.solicitarAprobacion).toHaveBeenCalledWith(ID, true);
     expect(container.querySelector('[data-testid="estado-del-lote"]')?.textContent).toBe('Aprobado');
   });
 
-  it('🔴 un lote suyo esperando con código: «Aprobar» prendido y SIN pedirle el código', async () => {
+  it('🔴 un lote suyo esperando (con el código viejo del correo): lo autoriza con el de su aplicación', async () => {
     usuarioActual = 'u-creador';
     soyAdmin = true;
     await render(vista(lote({ estado: 'ESPERANDO_APROBACION', codigoHash: 'hash', codigoExpiraAt: '2026-09-01T15:10:00.000Z' })));
@@ -597,23 +583,21 @@ describe('<DetalleDelLote> — P-4: el administrador no se confirma a sí mismo'
       lote({ estado: 'APROBADO', aprobadoPorUserId: 'u-creador', aprobadoAt: '2026-09-01T15:05:00.000Z' }),
     );
 
-    expect(boton('Aprobar').disabled).toBe(false);
-    expect(container.textContent).not.toContain('Tú armaste este lote');
-    // No hay código que reenviar: a él no le sale uno.
+    expect(boton('Autorizar el giro').disabled).toBe(false);
     expect(acciones()).not.toContain('Volver a mandar el código');
 
-    await clic('Aprobar');
+    await clic('Autorizar el giro');
     expect(document.body.querySelector('[data-testid="codigo-de-aprobacion"]')).toBeNull();
-    await clicEnDialogo('dialogo-aprobar', 'Aprobar');
+    await escribirElCodigoDeLaApp();
     expect(lotesDeDispersionApi.aprobar).toHaveBeenCalledWith(ID, undefined);
   });
 
-  it('quien armó y NO es administrador: como hoy, «Aprobar» apagado', async () => {
+  it('quien armó y NO es administrador: no lo autoriza, le avisa que lo hace un administrador', async () => {
     usuarioActual = 'u-creador';
     soyAdmin = false;
     await render(vista(lote({ estado: 'ESPERANDO_APROBACION' })));
-    expect(boton('Aprobar').disabled).toBe(true);
-    expect(container.textContent).toContain('Tú armaste este lote');
+    expect(acciones()).not.toContain('Autorizar el giro');
+    expect(container.textContent).toContain('Lo autoriza un administrador');
     expect(container.querySelector('[data-testid="lo-apruebas-tu"]')).toBeNull();
   });
 });
@@ -623,30 +607,29 @@ describe('<DetalleDelLote> — QA-PAGOS-95: desde el monto, una segunda persona 
     'El lote suma $7.011.000 y desde $5.000.000 lo aprueba una segunda persona (el monto que escogió tu inmobiliaria). Quien lo armó no lo puede aprobar, aunque sea administrador.';
   const sobreElMonto = { montoCop: 5_000_000, porDefecto: false, exige: true, hayOtra: true, nota: NOTA };
 
-  it('🔴 el administrador que armó un borrador sobre el monto: «Pedir aprobación», no «Aprobar», y el porqué', async () => {
+  it('🔴 el administrador que armó un borrador sobre el monto: «Pedir la autorización», no «Autorizar», y el porqué', async () => {
     usuarioActual = 'u-creador';
     soyAdmin = true;
     await render(vista(lote(), { segundaPersona: sobreElMonto }));
-    expect(acciones()).toEqual(['Pedir aprobación', 'Anular']);
+    expect(acciones()).toEqual(['Pedir la autorización', 'Anular']);
     expect(container.querySelector('[data-testid="lo-apruebas-tu"]')).toBeNull();
     expect(container.querySelector('[data-testid="segunda-persona-por-monto"]')?.textContent).toContain(NOTA);
     expect(container.textContent).toContain('Armado por ti');
   });
 
-  it('🔴 esperando aprobación: a él «Aprobar» se le apaga con la frase; a otra persona no', async () => {
+  it('🔴 esperando: a él «Autorizar el giro» se le apaga con la frase', async () => {
     usuarioActual = 'u-creador';
     soyAdmin = true;
     await render(vista(lote({ estado: 'ESPERANDO_APROBACION', codigoHash: 'hash', codigoExpiraAt: '2026-09-01T15:10:00.000Z' }), { segundaPersona: sobreElMonto }));
-    expect(boton('Aprobar').disabled).toBe(true);
-    expect(boton('Aprobar').title).toBe(NOTA);
-    expect(container.textContent).not.toContain('Tú armaste este lote');
+    expect(boton('Autorizar el giro').disabled).toBe(true);
+    expect(boton('Autorizar el giro').title).toBe(NOTA);
   });
 
-  it('bajo el monto (o back anterior sin el campo) P-4 sigue: «Aprobar» en un paso', async () => {
+  it('bajo el monto (o back anterior sin el campo) P-4 sigue: «Autorizar el giro» en un paso', async () => {
     usuarioActual = 'u-creador';
     soyAdmin = true;
     await render(vista(lote(), { segundaPersona: { ...sobreElMonto, exige: false, nota: null } }));
-    expect(acciones()).toEqual(['Aprobar', 'Anular']);
+    expect(acciones()).toEqual(['Autorizar el giro', 'Anular']);
     expect(container.querySelector('[data-testid="segunda-persona-por-monto"]')).toBeNull();
   });
 });
@@ -1147,7 +1130,7 @@ describe('<DetalleDelLote> — cierre', () => {
     );
 
     expect(container.textContent).toContain('Lote bloqueado');
-    expect(boton('Aprobar').disabled).toBe(true);
+    expect(botones('Autorizar el giro').every((b) => b.disabled)).toBe(true);
   });
 });
 
@@ -1267,23 +1250,23 @@ describe('<DetalleDelLote> — el archivo que pudo llegar al banco (23-09)', () 
 });
 
 describe('<DetalleDelLote> — quien registró una devolución no aprueba (Nico, 23-09)', () => {
-  it('🔴 «Aprobar» apagado con el porqué cuando yo registré la devolución de un giro del lote', async () => {
+  it('🔴 un administrador puede autorizar el regiro de la devolución que él registró (P-4, queda en la bitácora)', async () => {
     usuarioActual = 'u-otro';
+    soyAdmin = true;
     await render(
       vista(lote({ estado: 'ESPERANDO_APROBACION' }), { devolucionesRegistradasPor: ['u-otro'] }),
     );
-    const b = boton('Aprobar');
-    expect(b.disabled).toBe(true);
-    expect(b.getAttribute('title')).toContain('registraste la devolución');
-    expect(container.querySelector('[data-testid="registre-una-devolucion"]')).not.toBeNull();
+    expect(boton('Autorizar el giro').disabled).toBe(false);
+    expect(container.querySelector('[data-testid="registre-una-devolucion"]')).toBeNull();
   });
 
-  it('otra persona sí ve «Aprobar» prendido', async () => {
+  it('otro administrador ve «Autorizar el giro» prendido', async () => {
     usuarioActual = 'u-otro';
+    soyAdmin = true;
     await render(
       vista(lote({ estado: 'ESPERANDO_APROBACION' }), { devolucionesRegistradasPor: ['u-tercero'] }),
     );
-    expect(boton('Aprobar').disabled).toBe(false);
+    expect(boton('Autorizar el giro').disabled).toBe(false);
   });
 });
 
@@ -1318,54 +1301,23 @@ describe('<DetalleDelLote> — los errores de cada acción (02-10)', () => {
   const conCodigo = () =>
     vista(lote({ estado: 'ESPERANDO_APROBACION', codigoHash: 'hash', codigoExpiraAt: '2026-09-01T15:10:00.000Z' }));
 
-  it('🔴 un código incompleto se dice DEBAJO del campo, con el foco ahí, sin pegarle al back', async () => {
-    await render(conCodigo());
-    await clic('Aprobar');
-    await escribir('codigo-de-aprobacion', '123');
-    await clicDelDialogo('dialogo-aprobar', 'Aprobar');
-
-    expect(lotesDeDispersionApi.aprobar).not.toHaveBeenCalled();
-    expect(errorDe('codigo-de-aprobacion-error')).toBe('El código son 6 dígitos, tal como llegó en el correo.');
-    expect(document.activeElement?.id).toBe('codigo-de-aprobacion');
-    expect(
-      document.body.querySelector('#codigo-de-aprobacion')?.getAttribute('aria-describedby'),
-    ).toBe('codigo-de-aprobacion-error');
-  });
-
-  it('🔴 un 400 del back sobre el código va debajo del campo', async () => {
-    await render(conCodigo());
-    vi.mocked(lotesDeDispersionApi.aprobar).mockRejectedValue(
-      new ApiError(400, ['el código son 6 dígitos'], 'DATOS_INVALIDOS', {
-        statusCode: 400,
-        code: 'DATOS_INVALIDOS',
-        campos: [{ campo: 'codigo', regla: 'formato', mensaje: 'el código son 6 dígitos' }],
-      }),
-    );
-    await clic('Aprobar');
-    await escribir('codigo-de-aprobacion', '123456');
-    await clicDelDialogo('dialogo-aprobar', 'Aprobar');
-
-    expect(errorDe('codigo-de-aprobacion-error')).toBe('el código son 6 dígitos');
-    expect(document.activeElement?.id).toBe('codigo-de-aprobacion');
-  });
-
-  it('🔴 aprobar con un 5xx: «de nuestro lado» con la referencia, no «Error interno del servidor»', async () => {
+  it('🔴 autorizar con un 5xx: «de nuestro lado» con la referencia, no «Error interno del servidor»', async () => {
+    soyAdmin = true;
     await render(conCodigo());
     vi.mocked(lotesDeDispersionApi.aprobar).mockRejectedValue(fallo500());
-    await clic('Aprobar');
-    await escribir('codigo-de-aprobacion', '123456');
-    await clicDelDialogo('dialogo-aprobar', 'Aprobar');
+    await clic('Autorizar el giro');
+    await escribirElCodigoDeLaApp();
 
-    expect(dialogo('dialogo-aprobar')).toContain('No pudimos aprobar el lote: algo falló de nuestro lado');
+    expect(dialogo('dialogo-aprobar')).toContain('No pudimos autorizar el giro: algo falló de nuestro lado');
     expect(dialogo('dialogo-aprobar')).toContain('ab12cd34');
   });
 
-  it('aprobar sin respuesta: ahí sí habla de la conexión', async () => {
+  it('autorizar sin respuesta: ahí sí habla de la conexión', async () => {
+    soyAdmin = true;
     await render(conCodigo());
     vi.mocked(lotesDeDispersionApi.aprobar).mockRejectedValue(new ApiError(0, 'Failed to fetch'));
-    await clic('Aprobar');
-    await escribir('codigo-de-aprobacion', '123456');
-    await clicDelDialogo('dialogo-aprobar', 'Aprobar');
+    await clic('Autorizar el giro');
+    await escribirElCodigoDeLaApp();
 
     expect(dialogo('dialogo-aprobar')).toMatch(/conexi[oó]n/);
   });
@@ -1373,11 +1325,11 @@ describe('<DetalleDelLote> — los errores de cada acción (02-10)', () => {
   it('🔴 mandar a aprobación con un 5xx: «de nuestro lado» con la referencia', async () => {
     await render(vista(lote()));
     vi.mocked(lotesDeDispersionApi.solicitarAprobacion).mockRejectedValue(fallo500());
-    await clic('Pedir aprobación');
-    await clic('Mandar a aprobación');
+    await clic('Pedir la autorización');
+    await clicDelDialogo('dialogo-pedir-aprobacion', 'Pedir la autorización');
 
     expect(dialogo('dialogo-pedir-aprobacion')).toContain(
-      'No pudimos mandar el lote a aprobación: algo falló de nuestro lado',
+      'No pudimos pedir la autorización: algo falló de nuestro lado',
     );
     expect(dialogo('dialogo-pedir-aprobacion')).toContain('ab12cd34');
   });

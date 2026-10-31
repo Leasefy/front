@@ -31,9 +31,8 @@ import { conElMes } from '@/lib/giros/meses-de-los-giros';
 import { loQueFaltaDelMes } from '@/lib/giros/lo-que-falta-del-mes';
 import type { LiquidacionDelMesCompleto } from '@/lib/liquidaciones/liquidacion-del-mes';
 import type { PorGirarDelBack } from '@/lib/propietarios/por-girar';
-import { PASOS_DE_LOS_GIROS, type PasoDeLosGiros } from './PasosDeLosGiros';
+import { type PasoDeLosGiros } from './PasosDeLosGiros';
 import { MesDeLosGiros } from './MesDeLosGiros';
-import { MasDetalles } from '@/components/pantalla/MasDetalles';
 
 const RAIZ = '/panel/inmobiliaria/pagos';
 
@@ -142,9 +141,7 @@ export function LoQueFaltaDelMes({
   else if (resultado.completo) respuesta = tr('{mes} está girado completo', { mes: conMayuscula(delMes) });
   else if (resultado.faltaCop === null) respuesta = tr('No se pudo leer cuánto falta girar');
   else if (resultado.faltaCop === 0)
-    respuesta = tr('Ya no falta plata por girar: queda cerrar el paso {n}', {
-      n: PASOS_DE_LOS_GIROS.findIndex((p) => p.id === resultado.siguiente) + 1,
-    });
+    respuesta = tr('Ya no falta plata por girar: queda confirmar que el banco pagó');
   else
     respuesta = tr('Falta girar {plata} a {quien}', {
       plata: formatCurrency(resultado.faltaCop),
@@ -235,97 +232,21 @@ export function LoQueFaltaDelMes({
           ))}
         </ul>
       ) : null}
-      {/* Ronda 30 (revisora r27): el paso a paso ya no ocupa ≈320–450 px en las tres pantallas. A la vista
-          sólo el paso de esta pantalla y el que toca; los demás (y todos, con el mes girado completo)
-          plegados en «Ver los 4 pasos». */}
-      {(() => {
-        const pintarPaso = (p: (typeof PASOS_DE_LOS_GIROS)[number], i: number) => {
-          const delPaso = resultado?.pasos.find((x) => x.id === p.id);
-          const aqui = p.id === paso;
-          const toca = resultado?.siguiente === p.id;
-          const hecho = delPaso?.estado === 'hecho';
-          return (
-            <li
-              key={p.id}
-              className={cn(
-                'grid grid-cols-[1.75rem_minmax(0,1fr)] items-start gap-x-3 gap-y-2 px-4 py-3 sm:grid-cols-[1.75rem_minmax(0,1fr)_auto] sm:items-center sm:px-5',
-                aqui && 'bg-surface-muted/60',
-              )}
-              data-testid={`paso-del-mes-${p.id}`}
-              data-estado={delPaso?.estado ?? 'cargando'}
-            >
-              <span
-                className={cn(
-                  'flex h-7 w-7 items-center justify-center rounded-full font-mono text-caption tabular-nums',
-                  hecho
-                    ? 'bg-success-soft text-success'
-                    : toca
-                      ? 'bg-primary text-primary-fg'
-                      : 'bg-surface-muted text-fg-muted',
-                )}
-                aria-hidden="true"
-              >
-                {hecho ? <Check className="h-3.5 w-3.5" weight="bold" /> : i + 1}
-              </span>
-              <div className="min-w-0">
-                <p className="flex flex-wrap items-baseline gap-x-2">
-                  <Link
-                    href={conElMes(p.href, mes)}
-                    aria-current={aqui ? 'page' : undefined}
-                    className="font-medium text-fg underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                  >
-                    {tr(p.titulo)}
-                  </Link>
-                  {aqui ? <span className="font-mono text-caption uppercase tracking-wide text-fg-subtle">{tr('Estás aquí')}</span> : null}
-                  {hecho ? <span className="sr-only">{tr('(hecho)')}</span> : null}
-                </p>
-                <p className={cn('text-body-sm', toca ? 'text-fg' : 'text-fg-muted')}>
-                  {delPaso ? delPaso.detalle : cargando ? '…' : ''}
-                </p>
-              </div>
-              {toca && delPaso?.accion && !aqui ? (
-                <Link
-                  href={conElMes(DESTINO_DE_LA_ACCION[p.id], mes)}
-                  className={cn(buttonVariants({ variant: 'secondary', size: 'sm' }), 'col-start-2 w-fit sm:col-start-auto')}
-                  data-testid={`accion-del-paso-${p.id}`}
-                >
-                  {delPaso.accion}
-                </Link>
-              ) : toca && aqui ? (
-                <span className="col-start-2 text-caption text-fg-muted sm:col-start-auto">{tr('Es lo de esta pantalla')}</span>
-              ) : null}
-            </li>
-          );
-        };
-        const conIndice = PASOS_DE_LOS_GIROS.map((p, i) => ({ p, i }));
-        const aLaVista = completo
-          ? []
-          : conIndice.filter(({ p }) => p.id === paso || p.id === resultado?.siguiente);
-        const plegados = conIndice.filter((x) => !aLaVista.includes(x));
-        return (
-          <>
-            {aLaVista.length > 0 ? (
-              <ol className="divide-y divide-border-faint border-t border-border-faint">
-                {aLaVista.map(({ p, i }) => pintarPaso(p, i))}
-              </ol>
-            ) : null}
-            {plegados.length > 0 ? (
-              <div className="border-t border-border-faint px-4 py-2.5 sm:px-5" data-testid="pasos-plegados">
-                <MasDetalles
-                  montadoSiempre
-                  etiqueta={completo ? tr('Ver los 4 pasos') : tr('Ver los demás pasos')}
-                  etiquetaAbierto={tr('Ocultar')}
-                  classNameDelContenido="-mx-4 pt-2 sm:-mx-5"
-                >
-                  <ol className="divide-y divide-border-faint">
-                    {plegados.map(({ p, i }) => pintarPaso(p, i))}
-                  </ol>
-                </MasDetalles>
-              </div>
-            ) : null}
-          </>
-        );
-      })()}
+      {/* 🔴 31-10-2026 (Nico: «no se sabe qué es primero, segundo, se pierden en las navegaciones»): el paso a paso
+          vive en UNA pantalla, Giros a propietarios (`GirosDelMes`). Aquí ya no se listan los cuatro pasos —el 2
+          mandaba a aprobar uno por uno y eso sacaba los giros del lote—: se vuelve allá. */}
+      {!completo ? (
+        <div className="flex flex-col gap-2 border-t border-border-faint px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+          <p className="text-body-sm text-fg-muted">{tr('Para girar, sigue el paso a paso de Giros a propietarios.')}</p>
+          <Link
+            href={`${RAIZ}/giros?mes=${mes}`}
+            className={cn(buttonVariants({ variant: 'secondary', size: 'sm' }), 'w-fit shrink-0')}
+            data-testid="volver-al-paso-a-paso"
+          >
+            {tr('Ir al paso a paso')}
+          </Link>
+        </div>
+      ) : null}
     </section>
   );
 }

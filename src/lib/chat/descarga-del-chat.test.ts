@@ -32,6 +32,8 @@ describe('D1 · descargar dentro del chat', () => {
     expect(formaDeLaRutaDeDescarga(`/inmobiliaria/captacion/firmas/${PROCESO}/pdf`)).toBe('enlace')
     expect(formaDeLaRutaDeDescarga(`/inmobiliaria/consignaciones/${PROCESO}/acta.pdf`)).toBe('archivo')
     expect(formaDeLaRutaDeDescarga(`/inmobiliaria/propietarios/${PROCESO}/extracto.pdf?month=2026-09`)).toBe('archivo')
+    expect(formaDeLaRutaDeDescarga(`/inmobiliaria/finanzas/retenciones/certificado/pdf?anio=2025&propietarioId=${PROCESO}`)).toBe('archivo')
+    expect(formaDeLaRutaDeDescarga(`/inmobiliaria/finanzas/retenciones/certificado/pdf?anio=2025`)).toBeNull()
     for (const mala of [
       `/contracts/${PROCESO}/pdf/sellar`,
       '/contracts/24/pdf',

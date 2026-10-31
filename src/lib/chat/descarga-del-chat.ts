@@ -32,6 +32,7 @@ const RUTAS_DE_DESCARGA: ReadonlyArray<{ patron: RegExp; forma: FormaDeLaDescarg
   { patron: new RegExp(`^/inmobiliaria/captacion/firmas/${UUID}/pdf$`, 'i'), forma: 'enlace' },
   { patron: new RegExp(`^/inmobiliaria/consignaciones/${UUID}/acta\\.pdf$`, 'i'), forma: 'archivo' },
   { patron: new RegExp(`^/inmobiliaria/propietarios/${UUID}/extracto\\.pdf\\?month=[0-9]{4}-[0-9]{2}$`, 'i'), forma: 'archivo' },
+  { patron: new RegExp(`^/inmobiliaria/finanzas/retenciones/certificado/pdf\\?anio=[0-9]{4}&propietarioId=${UUID}$`, 'i'), forma: 'archivo' },
 ]
 
 /** La forma si la ruta es una descarga conocida y segura del back; `null` si no. */

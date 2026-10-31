@@ -88,7 +88,7 @@ export function EntradaAlMarketplace() {
           {/* La landing se aleja un poco: profundidad sin oscurecer. */}
           <motion.div
             aria-hidden="true"
-            className="absolute inset-0 bg-ink/25 backdrop-blur-[2px]"
+            className="absolute inset-0 bg-noche/25 backdrop-blur-[2px]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.25 }}

@@ -98,7 +98,7 @@ export function FotoQueSeRevela({
       {rotulo ? (
         <figcaption
           className={cn(
-            'absolute bottom-3.5 left-3.5 z-[2] inline-flex h-[30px] max-w-[calc(100%-28px)] items-center overflow-hidden whitespace-nowrap rounded-[10px] bg-ink-fg px-3 font-mono text-caption tracking-[0.06em] text-ink',
+            'absolute bottom-3.5 left-3.5 z-[2] inline-flex h-[30px] max-w-[calc(100%-28px)] items-center overflow-hidden whitespace-nowrap rounded-[10px] bg-white px-3 font-mono text-caption tracking-[0.06em] text-ink',
             ESQUINA,
           )}
         >

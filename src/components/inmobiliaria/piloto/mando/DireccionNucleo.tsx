@@ -175,11 +175,11 @@ export function DireccionNucleo({ datos, acciones, activacion, variante = 'compl
         className="relative isolate overflow-hidden rounded-xl border border-ink-border bg-ink text-ink-fg shadow-lg"
         aria-label="Centro de mando del piloto automático"
       >
-        {/* Fondo de marca: la medianoche que respira + grano (el único degradado de color, DESIGN.md §3.1). */}
+        {/* Fondo de marca: resplandor cobalto que respira + grano. Decorativo. */}
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
           <motion.div
-            className="absolute inset-0"
-            style={{ background: 'linear-gradient(150deg, var(--ink) 58%, var(--ink-2) 135%)' }}
+            className="absolute left-1/2 top-[28%] h-[720px] w-[720px] -translate-x-1/2 -translate-y-1/2 rounded-full"
+            style={{ background: 'radial-gradient(circle, color-mix(in srgb, hsl(var(--primary)) 30%, transparent) 0%, transparent 62%)' }}
             initial={false}
             animate={!vivo || apagado ? { opacity: apagado ? 0.35 : 0.8 } : { opacity: [0.65, 1, 0.65] }}
             transition={!vivo || apagado ? { duration: motionDuration.slow } : { duration: motionDuration.ambient * 2.5, repeat: Infinity, ease: motionEase.standard }}

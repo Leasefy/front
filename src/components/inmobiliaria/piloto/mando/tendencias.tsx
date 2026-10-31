@@ -245,8 +245,7 @@ export function TarjetaDelNegocio({ ind, datos, className }: { ind: IndicadoresD
 // ── El ritmo de los agentes ────────────────────────────────────────────────
 
 /** Las series en orden fijo (nunca rotadas): el cobalto es siempre el agente que más hizo. */
-// La rampa del voltaje y la ceniza (DESIGN.md §3.3: gráficas sin arcoíris).
-const COLORES = ['bg-primary', 'bg-primary/60', 'bg-primary/30', 'bg-fg-subtle'] as const
+const COLORES = ['bg-indigo-500 dark:bg-indigo-400', 'bg-cyan-600', 'bg-amber-600', 'bg-violet-600 dark:bg-violet-500'] as const
 const OTROS = 'bg-border-strong'
 const SERIES = COLORES.length
 

@@ -75,7 +75,7 @@ function Chips({ items }: { items: string[] }) {
         <li
           key={c}
           className={cn(
-            'inline-flex h-8 items-center gap-2 rounded-[10px] bg-white/[0.06] px-3 font-mono text-caption uppercase tracking-[0.06em] text-ink-fg-muted',
+            'inline-flex h-8 items-center gap-2 rounded-[10px] bg-white/[0.06] px-3 font-mono text-caption uppercase tracking-[0.06em] text-noche-fg-muted',
             ESQUINA,
           )}
         >
@@ -101,11 +101,11 @@ function PiezaDelHeroe() {
         </div>
         <div className={cn('mt-4 rounded-[16px] bg-ink p-4 text-white', ESQUINA)}>
           <div className="flex items-center justify-between">
-            <span className="font-mono text-caption uppercase tracking-[0.08em] text-ink-fg-muted">Arriendo Pass</span>
+            <span className="font-mono text-caption uppercase tracking-[0.08em] text-noche-fg-muted">Arriendo Pass</span>
             <Punto enNoche />
           </div>
           <p className="mt-2 font-mono text-[28px] leading-none tracking-[-0.03em]">60 días</p>
-          <p className="mt-1 text-caption text-ink-fg-muted">Aplicaciones ilimitadas</p>
+          <p className="mt-1 text-caption text-noche-fg-muted">Aplicaciones ilimitadas</p>
         </div>
         <dl className="mt-3 grid grid-cols-2 gap-2">
           {[
@@ -276,9 +276,9 @@ export default function InquilinosPage() {
               {soluciones.map((s, i) => (
                 <Appear key={s.titulo} inView distance="md" duration="slow" delay={i * 0.08}>
                   <Tarjeta enNoche className="flex h-full flex-col p-7">
-                    <span className="font-mono text-caption tracking-[0.06em] text-ink-primary">{String(i + 1).padStart(2, '0')}</span>
-                    <h3 className="mt-3 text-[24px] font-[420] leading-tight tracking-[-0.02em] text-ink-fg">{s.titulo}</h3>
-                    <p className="mt-2 text-[15px] leading-[1.5] text-ink-fg-muted">{s.texto}</p>
+                    <span className="font-mono text-caption tracking-[0.06em] text-noche-primary">{String(i + 1).padStart(2, '0')}</span>
+                    <h3 className="mt-3 text-[24px] font-[420] leading-tight tracking-[-0.02em] text-noche-fg">{s.titulo}</h3>
+                    <p className="mt-2 text-[15px] leading-[1.5] text-noche-fg-muted">{s.texto}</p>
                     <div className="mt-auto">
                       <Chips items={s.chips} />
                     </div>
@@ -298,11 +298,11 @@ export default function InquilinosPage() {
                   className="bg-ink"
                 />
                 <div className="px-3 pb-4 md:px-4 md:pb-0">
-                  <span className="font-mono text-caption tracking-[0.06em] text-ink-primary">04</span>
-                  <h3 className="mt-3 text-[clamp(24px,2.4vw,34px)] font-[400] leading-tight tracking-[-0.025em] text-ink-fg">
+                  <span className="font-mono text-caption tracking-[0.06em] text-noche-primary">04</span>
+                  <h3 className="mt-3 text-[clamp(24px,2.4vw,34px)] font-[400] leading-tight tracking-[-0.025em] text-noche-fg">
                     Contratos Digitales
                   </h3>
-                  <p className="mt-2 text-[15px] leading-[1.5] text-ink-fg-muted">
+                  <p className="mt-2 text-[15px] leading-[1.5] text-noche-fg-muted">
                     Firma desde tu celular con validez legal. Sabes exactamente qué firmas, sin letra pequeña.
                   </p>
                   <Chips items={['Firma electrónica', 'Ley 820', '100% legal']} />

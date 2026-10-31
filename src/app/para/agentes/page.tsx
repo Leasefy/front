@@ -46,9 +46,9 @@ function Medidor({ valor, rotulo }: { valor: number; rotulo: string }) {
             transform="rotate(-90 30 30)"
           />
         </svg>
-        <span className="absolute inset-0 grid place-items-center font-mono text-[18px] text-ink-fg">{valor}</span>
+        <span className="absolute inset-0 grid place-items-center font-mono text-[18px] text-noche-fg">{valor}</span>
       </div>
-      <span className="mt-2 text-caption text-ink-success">{rotulo}</span>
+      <span className="mt-2 text-caption text-noche-success">{rotulo}</span>
     </div>
   );
 }
@@ -77,19 +77,19 @@ function TarjetaDeNoche({
         <div className="min-w-0 flex-1">
           {insignia ? (
             <p className="mb-4 flex items-baseline gap-2">
-              <span className="font-mono text-[20px] text-ink-fg">{insignia.valor}</span>
-              <span className="text-caption text-ink-fg-subtle">{insignia.rotulo}</span>
+              <span className="font-mono text-[20px] text-noche-fg">{insignia.valor}</span>
+              <span className="text-caption text-noche-fg-subtle">{insignia.rotulo}</span>
             </p>
           ) : null}
-          <h3 className="text-[22px] font-[420] leading-tight tracking-[-0.02em] text-ink-fg">{titulo}</h3>
-          <p className="mt-2 text-[15px] leading-[1.5] text-ink-fg-muted">{texto}</p>
+          <h3 className="text-[22px] font-[420] leading-tight tracking-[-0.02em] text-noche-fg">{titulo}</h3>
+          <p className="mt-2 text-[15px] leading-[1.5] text-noche-fg-muted">{texto}</p>
           {chips ? (
             <ul className="mt-5 flex flex-wrap gap-2">
               {chips.map((c) => (
                 <li
                   key={c}
                   className={cn(
-                    'inline-flex h-8 items-center gap-2 rounded-[10px] bg-white/[0.06] px-3 font-mono text-caption uppercase tracking-[0.06em] text-ink-fg-muted',
+                    'inline-flex h-8 items-center gap-2 rounded-[10px] bg-white/[0.06] px-3 font-mono text-caption uppercase tracking-[0.06em] text-noche-fg-muted',
                     ESQUINA,
                   )}
                 >
@@ -305,13 +305,13 @@ export default function AgentesPage() {
               >
                 <div className="rounded-[16px] bg-white/[0.04] p-4 ring-1 ring-white/[0.08]">
                   <div className="flex items-center justify-between">
-                    <span className="text-caption text-ink-fg">Apto 302</span>
-                    <span className="inline-flex items-center gap-1.5 text-caption text-ink-success">
+                    <span className="text-caption text-noche-fg">Apto 302</span>
+                    <span className="inline-flex items-center gap-1.5 text-caption text-noche-success">
                       <i aria-hidden="true" className="h-1.5 w-1.5 rounded-[2px] bg-success" />
                       Activo
                     </span>
                   </div>
-                  <p className="mt-2 truncate rounded-[10px] font-mono text-caption text-ink-primary ring-1 ring-white/[0.08] px-2.5 py-1.5">
+                  <p className="mt-2 truncate rounded-[10px] font-mono text-caption text-noche-primary ring-1 ring-white/[0.08] px-2.5 py-1.5">
                     arriendo.co/ch302
                   </p>
                   <dl className="mt-3 grid grid-cols-2 gap-2">
@@ -320,8 +320,8 @@ export default function AgentesPage() {
                       { l: 'Aplicaciones', v: '8' },
                     ].map((s) => (
                       <div key={s.l}>
-                        <dt className="text-caption text-ink-fg-subtle">{s.l}</dt>
-                        <dd className="font-mono text-[20px] text-ink-fg">{s.v}</dd>
+                        <dt className="text-caption text-noche-fg-subtle">{s.l}</dt>
+                        <dd className="font-mono text-[20px] text-noche-fg">{s.v}</dd>
                       </div>
                     ))}
                   </dl>
@@ -353,9 +353,9 @@ export default function AgentesPage() {
                     { text: 'Reporte listo', time: '2h', on: false },
                   ].map((n) => (
                     <li key={n.text} className="flex items-center gap-2.5 rounded-[12px] bg-white/[0.04] px-3 py-2.5 ring-1 ring-white/[0.08]">
-                      <i aria-hidden="true" className={cn('h-2 w-2 flex-none rounded-[2px]', n.on ? 'bg-ink-primary' : 'bg-white/20')} />
-                      <span className="flex-1 text-caption text-ink-fg">{n.text}</span>
-                      <span className="font-mono text-caption text-ink-fg-subtle">{n.time}</span>
+                      <i aria-hidden="true" className={cn('h-2 w-2 flex-none rounded-[2px]', n.on ? 'bg-noche-voltaje' : 'bg-white/20')} />
+                      <span className="flex-1 text-caption text-noche-fg">{n.text}</span>
+                      <span className="font-mono text-caption text-noche-fg-subtle">{n.time}</span>
                     </li>
                   ))}
                 </ul>
@@ -371,16 +371,16 @@ export default function AgentesPage() {
               >
                 <div className="rounded-[16px] bg-white/[0.04] p-4 ring-1 ring-white/[0.08]">
                   <div className="flex items-baseline justify-between">
-                    <span className="font-mono text-[26px] leading-none text-ink-fg">$8.9M</span>
-                    <span className="font-mono text-caption text-ink-success">+23%</span>
+                    <span className="font-mono text-[26px] leading-none text-noche-fg">$8.9M</span>
+                    <span className="font-mono text-caption text-noche-success">+23%</span>
                   </div>
-                  <p className="mt-1 text-caption text-ink-fg-subtle">Comisiones este mes</p>
+                  <p className="mt-1 text-caption text-noche-fg-subtle">Comisiones este mes</p>
                   <div className="mt-4 flex items-center justify-between text-caption">
-                    <span className="text-ink-fg-subtle">Meta</span>
-                    <span className="font-mono text-ink-fg">89%</span>
+                    <span className="text-noche-fg-subtle">Meta</span>
+                    <span className="font-mono text-noche-fg">89%</span>
                   </div>
                   <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/10">
-                    <div className="h-full w-[89%] rounded-full bg-ink-primary" />
+                    <div className="h-full w-[89%] rounded-full bg-noche-voltaje" />
                   </div>
                 </div>
               </TarjetaDeNoche>
@@ -399,9 +399,9 @@ export default function AgentesPage() {
                       <div className="h-1 w-full rounded bg-white/20" />
                       <div className="h-1 w-1/2 rounded bg-white/20" />
                     </div>
-                    <CheckCircle className="absolute bottom-2 right-2 h-4 w-4 text-ink-primary" />
+                    <CheckCircle className="absolute bottom-2 right-2 h-4 w-4 text-noche-primary" />
                   </div>
-                  <span className="mt-2 text-caption text-ink-fg-subtle">Firmado</span>
+                  <span className="mt-2 text-caption text-noche-fg-subtle">Firmado</span>
                 </div>
               </TarjetaDeNoche>
 

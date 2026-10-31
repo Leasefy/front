@@ -30,7 +30,7 @@ export function Punto({ className, enNoche = false }: { className?: string; enNo
       aria-hidden="true"
       className={cn(
         'inline-block h-2 w-2 flex-none rounded-[2px]',
-        enNoche ? 'bg-ink-primary' : 'bg-primary',
+        enNoche ? 'bg-noche-voltaje' : 'bg-primary',
         className,
       )}
     />
@@ -54,13 +54,13 @@ export function Ceja({
     <p
       className={cn(
         'inline-flex items-center gap-2.5 font-mono text-caption uppercase leading-[1.3] tracking-[0.08em]',
-        enNoche ? 'text-ink-fg-subtle' : 'text-fg-subtle',
+        enNoche ? 'text-noche-fg-subtle' : 'text-fg-subtle',
         className,
       )}
     >
       <Punto enNoche={enNoche} />
       {marca ? (
-        <b className={cn('font-medium', enNoche ? 'text-ink-fg' : 'text-fg')}>{marca}</b>
+        <b className={cn('font-medium', enNoche ? 'text-noche-fg' : 'text-fg')}>{marca}</b>
       ) : null}
       <span>{children}</span>
     </p>
@@ -69,7 +69,7 @@ export function Ceja({
 
 /** El azul de la marca dentro de un título. */
 export function Acento({ children, enNoche = false }: { children: ReactNode; enNoche?: boolean }) {
-  return <span className={enNoche ? 'text-ink-primary' : 'text-primary'}>{children}</span>;
+  return <span className={enNoche ? 'text-noche-primary' : 'text-primary'}>{children}</span>;
 }
 
 /** Título de sección: liviano, grande y apretado; la jerarquía la da el tamaño. */
@@ -86,7 +86,7 @@ export function TituloDeSeccion({
     <h2
       className={cn(
         'font-heading text-[clamp(34px,4.4vw,64px)] font-[360] leading-[1.03] tracking-[-0.04em]',
-        enNoche ? 'text-ink-fg' : 'text-fg',
+        enNoche ? 'text-noche-fg' : 'text-fg',
         className,
       )}
     >
@@ -108,7 +108,7 @@ export function Entrada({
     <p
       className={cn(
         'max-w-[620px] text-[clamp(17px,1.3vw,19px)] leading-[1.55]',
-        enNoche ? 'text-ink-fg-muted' : 'text-fg-muted',
+        enNoche ? 'text-noche-fg-muted' : 'text-fg-muted',
         className,
       )}
     >
@@ -122,8 +122,8 @@ type Variante = 'azul' | 'arena' | 'blanco' | 'linea-noche';
 const VARIANTES: Record<Variante, string> = {
   azul: 'bg-primary text-white hover:bg-primary-hover',
   arena: 'bg-surface-muted text-fg hover:bg-border',
-  blanco: 'bg-ink-fg text-ink hover:bg-ink-fg/90',
-  'linea-noche': 'bg-white/[0.08] text-ink-fg hover:bg-white/[0.14]',
+  blanco: 'bg-white text-ink hover:bg-primary-soft',
+  'linea-noche': 'bg-white/[0.08] text-noche-fg hover:bg-white/[0.14]',
 };
 
 /**
@@ -198,14 +198,14 @@ export function CifrasConPunto({
             enNoche ? 'border-white/[0.08]' : 'border-border',
           )}
         >
-          <dt className={cn('flex items-center gap-2 text-caption', enNoche ? 'text-ink-fg-muted' : 'text-fg-muted')}>
+          <dt className={cn('flex items-center gap-2 text-caption', enNoche ? 'text-noche-fg-muted' : 'text-fg-muted')}>
             <Punto enNoche={enNoche} className="h-1.5 w-1.5" />
             {c.rotulo}
           </dt>
           <dd
             className={cn(
               'font-mono text-[clamp(26px,2.6vw,36px)] font-normal leading-none tracking-[-0.03em] tabular-nums',
-              enNoche ? 'text-ink-fg' : 'text-fg',
+              enNoche ? 'text-noche-fg' : 'text-fg',
             )}
           >
             {c.valor}
@@ -285,19 +285,19 @@ export function ListaNumerada({
     >
       {items.map((it, i) => (
         <li key={i} className={cn('border-b py-5', filete)}>
-          <span className={cn('font-mono text-caption tracking-[0.06em]', enNoche ? 'text-ink-primary' : 'text-primary')}>
+          <span className={cn('font-mono text-caption tracking-[0.06em]', enNoche ? 'text-noche-primary' : 'text-primary')}>
             {String(i + 1).padStart(2, '0')}
           </span>
           <p
             className={cn(
               'mt-1.5 text-[17px] font-[450] leading-snug tracking-[-0.01em]',
-              enNoche ? 'text-ink-fg' : 'text-fg',
+              enNoche ? 'text-noche-fg' : 'text-fg',
             )}
           >
             {it.titulo}
           </p>
           {it.texto ? (
-            <p className={cn('mt-1 text-[15px] leading-[1.45]', enNoche ? 'text-ink-fg-muted' : 'text-fg-muted')}>
+            <p className={cn('mt-1 text-[15px] leading-[1.45]', enNoche ? 'text-noche-fg-muted' : 'text-fg-muted')}>
               {it.texto}
             </p>
           ) : null}
@@ -324,7 +324,7 @@ export function Tarjeta({
         'rounded-[24px]',
         ESQUINA,
         enNoche
-          ? 'bg-ink text-ink-fg ring-1 ring-white/[0.08]'
+          ? 'bg-noche-tarjeta text-noche-fg ring-1 ring-white/[0.08]'
           : 'bg-surface text-fg shadow-[0_1px_2px_rgba(18,17,16,.06),0_2px_8px_-2px_rgba(18,17,16,.06)] ring-1 ring-border',
         className,
       )}
@@ -384,7 +384,7 @@ export function Seccion({
         'relative overflow-hidden py-[clamp(88px,11vw,150px)]',
         fondo === 'papel' && 'bg-bg text-fg',
         fondo === 'arena' && 'bg-surface-muted text-fg',
-        fondo === 'noche' && 'bg-ink text-ink-fg',
+        fondo === 'noche' && 'bg-noche text-noche-fg',
         className,
       )}
     >

@@ -214,8 +214,8 @@ export function MedallonDelFlujo({
   return (
     <div aria-hidden="true" data-medallon-del-flujo="" className={cn('relative grid shrink-0 place-items-center', className)} style={{ width: lado, height: lado }}>
       <motion.span
-        // Sin halo de color (DESIGN.md §3.1): un disco liso y tenue detrás del medallón.
-        className="absolute inset-[16%] rounded-full bg-primary/10"
+        className="absolute inset-0 rounded-full"
+        style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--primary) 26%, transparent) 0%, transparent 66%)' }}
         initial={reducido ? false : { opacity: 0, scale: 0.6 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}

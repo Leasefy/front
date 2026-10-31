@@ -82,7 +82,7 @@ function Chips({ items, enNoche = false }: { items: string[]; enNoche?: boolean 
           key={c}
           className={cn(
             'inline-flex h-8 items-center gap-2 rounded-[10px] px-3 font-mono text-caption uppercase tracking-[0.06em]',
-            enNoche ? 'bg-white/[0.06] text-ink-fg-muted' : 'bg-surface-muted text-fg-muted',
+            enNoche ? 'bg-white/[0.06] text-noche-fg-muted' : 'bg-surface-muted text-fg-muted',
             ESQUINA,
           )}
         >

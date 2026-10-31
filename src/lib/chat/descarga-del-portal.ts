@@ -17,7 +17,18 @@ const RUTAS_DEL_PORTAL: readonly RegExp[] = [
   new RegExp(`^/portal/recibos/${UUID}/pdf$`, 'i'),
   new RegExp(`^/portal/propietario/facturas/${UUID}/pdf$`, 'i'),
   new RegExp(`^/portal/propietario/certificaciones-del-mandatario/${UUID}/pdf$`, 'i'),
+  // Vuelta 4 (31-10): el contrato y el mandato firmados del propietario: la ruta da `{ url }` firmado.
+  new RegExp(`^/portal/propietario/contratos/${UUID}/documentos/(contrato|mandato)$`, 'i'),
 ]
+
+/** Las que responden con un enlace firmado (`{ url }`) en vez del archivo. */
+const CON_ENLACE = new RegExp(`^/portal/propietario/contratos/${UUID}/documentos/(contrato|mandato)$`, 'i')
+
+export type Navegar = (url: string) => void
+
+const navegarDeVerdad: Navegar = (url) => {
+  window.location.assign(url)
+}
 
 /** ¿Es una descarga conocida y segura del portal? */
 export function esUnaDescargaDelPortal(ruta: string): boolean {
@@ -33,9 +44,16 @@ function nombreSeguro(nombre: string | undefined): string {
 }
 
 /** Baja el PDF de la tarjeta con la sesión de la persona; si la ruta no es del portal, no llama a nada. */
-export async function bajarElDocumentoDelPortal(datos: Record<string, string>): Promise<void> {
+export async function bajarElDocumentoDelPortal(datos: Record<string, string>, navegar: Navegar = navegarDeVerdad): Promise<void> {
   const ruta = datos.ruta ?? ''
   if (!esUnaDescargaDelPortal(ruta)) throw new Error('Este documento no es de tu portal.')
+  if (CON_ENLACE.test(ruta)) {
+    const r = await apiClient.get<{ url?: unknown }>(ruta)
+    const url = typeof r?.url === 'string' ? r.url : ''
+    if (!/^https:\/\//i.test(url)) throw new Error('El documento ya no está disponible.')
+    navegar(url)
+    return
+  }
   const blob = await apiClient.getBlob(ruta)
   descargarBlob(blob, nombreSeguro(datos.nombre))
 }

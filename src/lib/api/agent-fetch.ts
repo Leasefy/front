@@ -45,6 +45,7 @@ import {
   textoParaUnAviso,
 } from '@/lib/conexion/servicio-no-disponible'
 import { enLaDemo } from '@/lib/demo/en-la-demo'
+import { lecturaDelMicroEnLaDemo } from '@/lib/demo/datos-demo/del-micro'
 import { CODIGO_DEL_MODO_DEMO, MENSAJE_DEL_MODO_DEMO } from '@/lib/demo/modo-demo-estado'
 
 /**
@@ -145,11 +146,23 @@ async function codigoDe(res: Response): Promise<string | undefined> {
  * `api/client.ts`: una lectura responde 404 (la pantalla lo muestra como «no disponible», nunca como «el asistente no
  * responde») y una escritura se frena con la frase de la demo. El chat de Ori sigue igual: es la ayuda, no los datos.
  */
+/** `https://micro/prefijo/api/agency/…?x` → `/api/agency/…?x`: sin la base del micro (con o sin prefijo). */
+function caminoDelMicro(url: string): string {
+  const base = (process.env.NEXT_PUBLIC_AGENT_URL ?? '').replace(/\/+$/, '')
+  return base && url.startsWith(base) ? url.slice(base.length) : url.replace(/^https?:\/\/[^/]+/, '')
+}
+
 function respuestaDeLaDemo(input: RequestInfo | URL, init?: RequestInit): Response | null {
   if (!enLaDemo()) return null
   const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
   if (/\/ai-hub\/chat(\/|\?|$)/.test(url)) return null
   const metodo = (init?.method ?? (typeof input === 'object' && 'method' in input ? input.method : 'GET')).toUpperCase()
+  if (metodo === 'GET') {
+    const deEjemplo = lecturaDelMicroEnLaDemo(caminoDelMicro(url))
+    if (deEjemplo !== undefined) {
+      return new Response(JSON.stringify(deEjemplo), { status: 200, headers: { 'Content-Type': 'application/json' } })
+    }
+  }
   const cuerpo =
     metodo === 'GET'
       ? { statusCode: 404, code: 'NO_ESTA_EN_LA_DEMO', message: 'Esta parte no trae datos de ejemplo.' }

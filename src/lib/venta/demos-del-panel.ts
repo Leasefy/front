@@ -42,6 +42,7 @@ const DE_LA_INMOBILIARIA: Record<string, DemoDelModulo> = {
     promesa: 'La mora se persigue sola: avisos, llamadas y WhatsApp a cada inquilino, con acuerdos de pago.',
     puntos: ['Recordatorios antes de que venza', 'Llamadas y WhatsApp que negocian', 'Acuerdos de pago con link de pago'],
     capturas: [cap('cob-resumen', 'Resumen de la cobranza del mes'), cap('cob-cartera', 'Cartera por edades'), cap('cob-whatsapp', 'Conversación de cobranza por WhatsApp')],
+    video: video('cobranza', 'Recorrido por la cobranza con datos de ejemplo: la mora, lo que te toca decidir, la cartera por etapa y cómo la está logrando el agente'),
   },
   conciliacion: {
     titulo: 'El banco cuadrado, sin Excel',
@@ -288,6 +289,7 @@ const DEL_AGENTE: Record<string, DemoDelModulo> = {
     promesa: 'Recordatorios, enlace de pago y seguimiento de la mora sin que tengas que llamar a nadie.',
     puntos: ['Recordatorios por WhatsApp', 'Enlace de pago', 'Tú sólo ves quién pagó'],
     capturas: [cap('cob-whatsapp', 'Cobranza por WhatsApp')],
+    video: video('cobranza', 'Recorrido por la cobranza con datos de ejemplo: la mora, lo que te toca decidir, la cartera por etapa y cómo la está logrando el agente'),
   },
   estudio: {
     titulo: 'Sabes a quién le arriendas',

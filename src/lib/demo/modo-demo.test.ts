@@ -254,3 +254,21 @@ describe('la franja de la demo', () => {
     expect(asiSeVe(null)).toBe('Así se ve con Leasefy.');
   });
 });
+
+describe('las secciones de IA de la inmobiliaria en la demo (Nico 30-10: «cómo quedaría pintada cada sección»)', () => {
+  it('Cobranza: las lecturas del micro salen de los datos de ejemplo, sin tocar el micro; con su cifra de mora', async () => {
+    entrarAlModoDemo();
+    window.history.pushState({}, '', '/panel/inmobiliaria/pagos/cobranza');
+    const micro = `${process.env.NEXT_PUBLIC_AGENT_URL ?? 'http://localhost:4300'}/api/agency/a1`;
+    const r = await agentFetch(`${micro}/cartera/overview`);
+    expect(r.status).toBe(200);
+    const panorama = (await r.json()) as { kpis: { deudoresActivos: number }; stages: Array<{ stage: string; count: number }> };
+    const enMora = panorama.stages.filter((s) => !['S0', 'SX'].includes(s.stage)).reduce((n, s) => n + s.count, 0);
+    expect(enMora).toBe(panorama.kpis.deudoresActivos);
+    for (const ruta of ['cobranza/escalations', 'cobranza/inbox', 'cobranza/daily-report/today', 'cobranza/recovery', 'cobranza/analytics/cadence']) {
+      expect((await agentFetch(`${micro}/${ruta}`)).status).toBe(200);
+    }
+    expect(pedir).not.toHaveBeenCalled();
+    expect(hayDatosDeEjemplo('cobranza')).toBe(true);
+  });
+});

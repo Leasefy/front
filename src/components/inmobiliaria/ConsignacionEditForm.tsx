@@ -110,6 +110,14 @@ export interface ConsignacionEditFormProps {
   cargandoProperty?: boolean;
   /** Tras guardar: la consignación releída, con la copia del inmueble ya sincronizada. */
   onGuardado: (consignacion: Consignacion) => void;
+  /**
+   * 🔴 31-10-2026 (Nico: «en la edición no muestra toooodo lo que se le puede agregar a un inmueble… cuando
+   * es creado por cuenta gratuita»): el inmueble SIN propietario todavía (sin mandato) se edita con este
+   * mismo cajón, sin la sección del mandato. `consignacion` es entonces una copia armada desde el inmueble.
+   */
+  soloElInmueble?: boolean;
+  /** Con `soloElInmueble`: tras guardar el inmueble. */
+  onGuardadoElInmueble?: () => void;
 }
 
 /** Tipo físico del inmueble. Con inmueble vinculado hay 9 (el `room` que el mandato no conoce). */
@@ -350,6 +358,8 @@ export function ConsignacionEditForm({
   property,
   cargandoProperty,
   onGuardado,
+  soloElInmueble = false,
+  onGuardadoElInmueble,
 }: ConsignacionEditFormProps) {
   const { t } = useI18n();
   const esVenta = consignacion.listingType === 'sale';
@@ -629,9 +639,9 @@ export function ConsignacionEditForm({
     if (!validar()) return;
 
     const pI = patchInmueble();
-    const pM = patchMandato();
+    const pM = soloElInmueble ? {} : patchMandato();
     const cambiaAgente =
-      !mandatoTerminado && !!valores.agenteId && valores.agenteId !== consignacion.agenteId;
+      !soloElInmueble && !mandatoTerminado && !!valores.agenteId && valores.agenteId !== consignacion.agenteId;
     const hayInmueble = Object.keys(pI).length > 0;
     const hayMandato = Object.keys(pM).length > 0;
 
@@ -650,6 +660,14 @@ export function ConsignacionEditForm({
         inmuebleGuardado = true;
         // La base del inmueble avanza: si el mandato falla, el reintento no lo repite.
         setBase((prev) => ({ ...prev, ...soloInmueble(valores) }));
+      }
+      if (soloElInmueble) {
+        toast.success(t('inmobiliaria.portafolio.detail.toasts.propertyUpdated'), {
+          description: t('inmobiliaria.portafolio.detail.toasts.changesSaved'),
+        });
+        onGuardadoElInmueble?.();
+        onCerrar();
+        return;
       }
       if (hayMandato) await consignacionesApi.update(consignacion.id, pM);
       if (cambiaAgente) await consignacionesApi.assignAgent(consignacion.id, valores.agenteId);
@@ -1099,6 +1117,7 @@ export function ConsignacionEditForm({
           )}
 
           {/* ── Mandato ──────────────────────────────────────────────────── */}
+          {!soloElInmueble && (
           <Seccion icon={CalendarBlank} titulo={tf('seccionMandato')} testId="seccion-mandato">
             <fieldset disabled={camposDelMandatoInactivos} className="space-y-4 min-w-0 disabled:opacity-60">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1214,6 +1233,7 @@ export function ConsignacionEditForm({
               </InputWrapper>
             </fieldset>
           </Seccion>
+          )}
 
           {/* ── Publicación ──────────────────────────────────────────────── */}
           {inmuebleEditable && (

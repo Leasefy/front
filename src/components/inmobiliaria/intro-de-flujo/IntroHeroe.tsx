@@ -48,10 +48,8 @@ export function IntroHeroe(props: PropsDeLaIntro) {
           {/* ── La banda de marca ── */}
           <div className="dark relative isolate overflow-hidden bg-ink px-6 pb-7 pt-8 text-fg sm:px-8">
             <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
-              <div
-                className="absolute -left-24 -top-40 h-[480px] w-[480px] rounded-full"
-                style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--primary) 34%, transparent) 0%, transparent 64%)' }}
-              />
+              {/* El único degradado de color: el de la medianoche (DESIGN.md §3.1). Antes, un halo de voltaje. */}
+              <div className="absolute inset-0" style={{ background: 'linear-gradient(150deg, var(--ink) 58%, var(--ink-2) 135%)' }} />
               <div className="absolute inset-0 opacity-[0.08] mix-blend-overlay" style={{ backgroundImage: GRANO }} />
             </div>
             <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:items-center sm:gap-6 sm:pr-10 sm:text-left">

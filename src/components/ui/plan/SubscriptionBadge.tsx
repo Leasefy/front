@@ -41,7 +41,7 @@ const TENANT_BADGES: Record<TenantSubscriptionTextT, {
     shortLabel: 'Pass',
     icon: SealCheck,
     colors: {
-      bg: 'bg-gradient-to-r from-primary/10 to-fg-muted/10',
+      bg: 'bg-primary-soft',
       text: 'text-primary',
       border: 'border-primary/30',
       iconBg: 'bg-primary',
@@ -82,7 +82,7 @@ const LANDLORD_BADGES: Record<PlanId, {
     shortLabel: 'Pro',
     icon: Shield,
     colors: {
-      bg: 'bg-gradient-to-r from-primary/10 to-primary/10',
+      bg: 'bg-primary-soft',
       text: 'text-primary',
       border: 'border-primary/30',
       iconBg: 'bg-primary',
@@ -93,7 +93,7 @@ const LANDLORD_BADGES: Record<PlanId, {
     shortLabel: 'Flex',
     icon: Crown,
     colors: {
-      bg: 'bg-gradient-to-r from-warning/10 to-warning/10',
+      bg: 'bg-warning-soft',
       text: 'text-warning',
       border: 'border-warning/30',
       iconBg: 'bg-warning',
@@ -206,7 +206,7 @@ function agencyBadgeConfig(plan: AgencyBadgePlan) {
       shortLabel: plan.name,
       icon: Crown,
       colors: {
-        bg: 'bg-gradient-to-r from-warning/10 to-warning/10',
+        bg: 'bg-warning-soft',
         text: 'text-warning',
         border: 'border-warning/30',
         iconBg: 'bg-warning',
@@ -219,7 +219,7 @@ function agencyBadgeConfig(plan: AgencyBadgePlan) {
     shortLabel: plan.name,
     icon: Shield,
     colors: {
-      bg: 'bg-gradient-to-r from-primary/10 to-primary/10',
+      bg: 'bg-primary-soft',
       text: 'text-primary',
       border: 'border-primary/30',
       iconBg: 'bg-primary',

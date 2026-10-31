@@ -337,11 +337,11 @@ export function GirosDelMes() {
       <div className="space-y-4" data-testid="paso-girar">
         {sueltos.length > 0 ? (
           <Banner variant="warning" title={tr('{n} quedaron fuera del lote', { n: cuantos(sueltos.length, 'giro', 'giros') })} data-testid="giros-sueltos">
-            <p>
+            <span className="block">
               {tr('Se aprobaron uno por uno como giros sueltos ({plata}) y todavía no se han girado. Pásalos al lote para girarlos con el archivo del banco.', {
                 plata: formatCurrency(sueltosCop),
               })}
-            </p>
+            </span>
             {puedeEditar ? (
               <Button variant="outline" size="sm" hideArrow className="mt-3" onClick={() => void pasarSueltosAlLote()} data-testid="pasar-sueltos-al-lote">
                 <ArrowsClockwise className="h-4 w-4" aria-hidden="true" />

@@ -48,6 +48,8 @@ const SIN_CABECERA_JUSTIFICADO: Record<string, string> = {
     'Los pasos para activar: dos columnas a sangre (la lista de pasos a la izquierda, el paso con su título a la derecha).',
   'components/landlord/PasosDelPropietario.tsx':
     'Los pasos del propietario al pagar: dos columnas a sangre (la lista de pasos y el paso con su título).',
+  'components/conversion/BienvenidaALaCuenta.tsx':
+    'La bienvenida de cada portal (30-10-2026): la escena de marca a sangre arriba, como la de la inmobiliaria; el título va debajo.',
 }
 
 function archivosTsx(dir: string, encontrados: string[] = []): string[] {

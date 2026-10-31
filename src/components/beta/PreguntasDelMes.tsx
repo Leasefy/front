@@ -64,7 +64,7 @@ export function PreguntasDelMes({ ocupado = false }: { ocupado?: boolean }) {
           <>
             {' · '}
             {/* En otra pestaña: el chat no tiene salidas (comprar no le quita la conversación a nadie). */}
-            <a href={PANTALLA_DE_LAS_RECARGAS} target="_blank" rel="noopener noreferrer" className="font-medium text-primary hover:underline" data-testid="recargar-preguntas">
+            <a href={PANTALLA_DE_LAS_RECARGAS} target="_blank" rel="noopener noreferrer" className="whitespace-nowrap font-medium text-primary hover:underline" data-testid="recargar-preguntas">
               {gratis ? 'Recargar o abrir todo' : 'Recargar'}
             </a>
           </>

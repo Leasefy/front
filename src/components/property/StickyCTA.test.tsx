@@ -559,3 +559,15 @@ describe('<StickyCTA> — contactar y agendar dicen la verdad del fallo', () => 
     })
   })
 })
+
+describe('el enlace que se comparte (Nico 31-10: «desde todo lado… siempre lleve la imagen»)', () => {
+  it('fuera de local va siempre al sitio público, no al dominio desde donde se abrió', async () => {
+    const { origenPublico } = await import('./CompartirLaFicha');
+    const antes = window.location.href;
+    const dom = (window as unknown as { happyDOM?: { setURL?: (u: string) => void } }).happyDOM;
+    expect(origenPublico()).toBe(window.location.origin); // en local (las pruebas) se queda en local
+    dom?.setURL?.('https://www.leasefy.co/panel/inmobiliaria/inmuebles');
+    if (window.location.hostname === 'www.leasefy.co') expect(origenPublico()).toBe('https://leasefy.co');
+    dom?.setURL?.(antes);
+  });
+});

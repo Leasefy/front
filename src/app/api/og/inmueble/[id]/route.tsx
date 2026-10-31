@@ -40,7 +40,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const { id } = await params;
   const inmueble = await pedirInmuebleParaLaVistaPrevia(id, ESPERA_DEL_INMUEBLE_MS);
-  if (!inmueble) return NextResponse.json({ error: 'no_encontrado' }, { status: 404 });
+  // Nico 31-10: «dejó de mostrar las imágenes de la ficha en WhatsApp». Un back lento (o caído) respondía aquí un 404
+  // en JSON y WhatsApp guardaba la vista previa SIN foto para ese enlace. Sin el inmueble a tiempo, la imagen de Leasefy:
+  // nunca una vista previa vacía. Corta en caché, para que la de verdad llegue en el próximo intento.
+  if (!inmueble) {
+    const generica = NextResponse.redirect(new URL('/opengraph-image', req.url), 307);
+    generica.headers.set('Cache-Control', 'public, max-age=60');
+    return generica;
+  }
 
   try {
     const inmobiliaria = await pedirInmobiliariaDeLaVistaPrevia(inmueble.agencyId);

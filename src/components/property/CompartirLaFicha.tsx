@@ -26,7 +26,19 @@ import { cn } from '@/lib/utils';
 
 /** El enlace público del inmueble, con el origen de donde se está. */
 export function enlaceDelInmueble(propertyId: string): string {
-  return typeof window === 'undefined' ? `/propiedades/${propertyId}` : `${window.location.origin}/propiedades/${propertyId}`;
+  return `${origenPublico()}/propiedades/${propertyId}`;
+}
+
+/**
+ * El dominio PÚBLICO de la ficha (Nico 31-10: «desde todo lado donde comparta la ficha siempre lleve la imagen»). Se
+ * armaba con el dominio desde donde se abrió el panel (www, la copia de AWS, una vista previa): ese enlace no siempre
+ * arma la vista previa con foto. En local se queda en local, para poder probar.
+ */
+export function origenPublico(): string {
+  const publico = (process.env.NEXT_PUBLIC_SITE_URL || 'https://leasefy.co').replace(/\/+$/, '');
+  if (typeof window === 'undefined') return publico;
+  const { hostname, origin } = window.location;
+  return hostname === 'localhost' || hostname === '127.0.0.1' ? origin : publico;
 }
 
 /** WhatsApp con el texto escrito; quien comparte elige el chat. */

@@ -29,7 +29,15 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   // SEO (24-10): la ficha existe sólo en español; /en/… muestra lo mismo → canonical a la de /es.
   const alternates = alternativasSoloEnEspanol(ruta);
   const inmueble = await pedirInmuebleParaLaVistaPrevia(id);
-  if (!inmueble) return { alternates };
+  // Sin el inmueble a tiempo, igual con imagen: la de la ficha (su ruta responde la de Leasefy si tampoco lo lee).
+  if (!inmueble) {
+    const imagen = `/api/og/inmueble/${id}`;
+    return {
+      alternates,
+      openGraph: { type: 'website', siteName: 'Leasefy', url: ruta, images: [{ url: imagen, width: 1200, height: 630, type: 'image/jpeg' }] },
+      twitter: { card: 'summary_large_image', images: [imagen] },
+    };
+  }
   return {
     ...metadataDeLaVistaPrevia(inmueble, { idioma, url: conIdioma(ruta, idioma) }),
     alternates,

@@ -578,6 +578,11 @@ export const landlordApi = {
   // Landlord Properties
   // --------------------------------------------------------------------------
 
+  /** ¿Leasefy le gestiona inmuebles a este propietario? (sello «Gestionado por Leasefy», 31-10-2026) */
+  async gestionDeLeasefy(): Promise<{ gestionado: boolean }> {
+    return apiClient.get<{ gestionado: boolean }>('/landlord/gestion-de-leasefy');
+  },
+
   /** Get landlord's properties with candidate counts */
   async getMyProperties(): Promise<{
     properties: LandlordProperty[];

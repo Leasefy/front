@@ -69,7 +69,8 @@ describe('PO-27 · ficha en la inmobiliaria y ningún contrato', () => {
 
   it('el menú corto del portal también lo lee (layout del propietario)', () => {
     const layout = readFileSync(join(process.cwd(), 'src/app/panel/(landlord)/layout.tsx'), 'utf8')
-    expect(layout).toMatch(/const deInmobiliaria = administrados\.cargando \|\| administrados\.doc !== null \|\| Boolean\(administrados\.fichaSinContratos\);/)
+    // 31-10-2026: envuelta por la cuenta «con Leasefy» (dos cuentas de propietario), la misma condición.
+    expect(layout).toMatch(/administrados\.cargando \|\| administrados\.doc !== null \|\| Boolean\(administrados\.fichaSinContratos\)/)
   })
 
   it('🔴 «Cambiar de cuenta»: quien arrienda Y tiene ficha de propietario sin contratos se queda en su portal', async () => {

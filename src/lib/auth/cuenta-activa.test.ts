@@ -157,3 +157,18 @@ describe('la última cuenta que usó', () => {
     expect(inicioDeLaPersona({ role: 'agency' }, null, { tipo: 'inquilino' })).toBe('/inquilino')
   })
 })
+
+describe('dos cuentas de propietario: con Leasefy y con una inmobiliaria (Nico 31-10)', () => {
+  const base = { rolDeRegistro: 'LANDLORD', inquilino: false, propietario: true, inmobiliarias: [] }
+  it('con las dos, el selector ofrece las dos y recuerda cuál abrió', () => {
+    const cuentas = { ...base, propietarioCon: { leasefy: true, inmobiliaria: true } }
+    const claves = opcionesDeCuenta(cuentas).map((o) => o.clave)
+    expect(claves).toEqual(['propietario:leasefy', 'propietario:inmobiliaria'])
+    expect(ultimaCuentaValida(cuentas, { tipo: 'propietario', con: 'leasefy' })).toEqual({ tipo: 'propietario', con: 'leasefy' })
+    expect(cuentaEnPantalla('/panel', cuentas, null)).toEqual({ tipo: 'propietario', con: 'inmobiliaria' })
+  })
+  it('con una sola (o un back anterior), una sola cuenta de propietario como siempre', () => {
+    expect(opcionesDeCuenta({ ...base, propietarioCon: { leasefy: true, inmobiliaria: false } }).map((o) => o.clave)).toEqual(['propietario'])
+    expect(opcionesDeCuenta(base).map((o) => o.clave)).toEqual(['propietario'])
+  })
+})

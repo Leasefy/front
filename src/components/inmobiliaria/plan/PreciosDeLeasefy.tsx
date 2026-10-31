@@ -63,8 +63,6 @@ export function preciosDeLeasefy(t: TarifasDeLeasefy): GrupoDePrecios[] {
     ],
   });
 
-  const recaudoWompi = tarifas.recaudo.wompi;
-  const giroWompi = tarifas.dispersion.wompi;
   grupos.push({
     id: 'plata',
     rotulo: 'Cobrar y pagar',
@@ -78,14 +76,8 @@ export function preciosDeLeasefy(t: TarifasDeLeasefy): GrupoDePrecios[] {
       {
         id: 'recaudo',
         que: 'Recaudo en línea',
-        detalle: `Cada arriendo que tus inquilinos pagan por Leasefy (PSE, tarjeta o Nequi)${recaudoWompi ? `, más lo que cobra Wompi: ${porcentaje(recaudoWompi.porcentajeBps)} + ${precioDelMes(recaudoWompi.fijo)} + IVA` : ''}.`,
-        precio: `${porcentaje(tarifas.recaudo.spreadBps)} por pago`,
-      },
-      {
-        id: 'giro',
-        que: 'Giro al propietario',
-        detalle: `Cada pago que Leasefy le hace al propietario${giroWompi ? `, más lo que cobra Wompi: ${precioDelMes(giroWompi.fijo)} + ${porcentaje(giroWompi.porcentajeBps)} + IVA` : ''}.`,
-        precio: `${precioDelMes(tarifas.dispersion.porPago)} por giro`,
+        detalle: 'Cada arriendo que tus inquilinos pagan por Leasefy (PSE, tarjeta o Nequi). Se descuenta del mismo pago.',
+        precio: `${precioDelMes(tarifas.recaudo.porPago)} + IVA por pago`,
       },
     ],
   });

@@ -5017,6 +5017,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/ai-hub/chat/programado/listo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Chat del panel — lo programado que quedó listo o salió solo
+         * @description Lo que el chat programó para quien llama y que el disparo dejó listo esperando su clic, más lo que salió solo en Automático en los últimos tres días. Sólo lo de esa persona en esa inmobiliaria; no ejecuta nada. Cualquier miembro de la agencia.
+         */
+        get: operations["getAiHubChatProgramadoListo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/ai-hub/chat/aprender/{turnoId}": {
         parameters: {
             query?: never;
@@ -9748,6 +9768,12 @@ export interface components {
                 [key: string]: string | number;
             };
         };
+        AiHubChatDescargaEnLaTarjeta: {
+            ruta: string;
+            nombre: string;
+            /** @enum {string} */
+            forma: "archivo" | "enlace";
+        };
         AiHubChatTarjetaResultado: {
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -9768,6 +9794,7 @@ export interface components {
                 etiqueta: string;
                 intencion: components["schemas"]["AiHubChatIntencionDelBoton"];
             } | null;
+            descarga?: components["schemas"]["AiHubChatDescargaEnLaTarjeta"];
         };
         AiHubChatTarjetaProgramada: {
             /**
@@ -13209,6 +13236,23 @@ export interface components {
         AiHubChatLoteError: {
             error: string;
             code?: string;
+        };
+        AiHubChatProgramadoListoResponse: {
+            listas: {
+                id: string;
+                que: string;
+                texto: string;
+                desde: string;
+            }[];
+            salieronSolas: {
+                id: string;
+                que: string;
+                texto: string;
+                en: string;
+            }[];
+        };
+        AiHubChatProgramadoListoError: {
+            error: string;
         };
         AiHubChatAprendizaje: {
             id: string;
@@ -17298,11 +17342,11 @@ export interface components {
         };
         PortalChatTarjeta: {
             /** @enum {string} */
-            accion: "radicar_pqrs" | "pedir_certificado" | "pagar_en_linea" | "bajar_extracto" | "bajar_certificado_de_ingresos" | "decidir_reparacion" | "decidir_sobrecosto" | "avisar_que_quedo" | "cambiar_cuenta" | "retirar_postulacion" | "reclamar_postulacion" | "pedir_visita" | "mover_visita" | "cancelar_visita" | "borrar_documento";
+            accion: "radicar_pqrs" | "pedir_certificado" | "pagar_en_linea" | "bajar_extracto" | "bajar_certificado_de_ingresos" | "bajar_documento" | "decidir_reparacion" | "decidir_sobrecosto" | "avisar_que_quedo" | "cambiar_cuenta" | "retirar_postulacion" | "reclamar_postulacion" | "pedir_visita" | "mover_visita" | "cancelar_visita" | "borrar_documento" | "pedir_renovacion" | "aceptar_renovacion" | "avisar_que_no_renuevo" | "retirar_aviso_de_no_renovar" | "responder_revision_del_canon" | "escoger_inquilino" | "ninguno_me_sirve" | "responder_terminacion" | "cancelar_reporte_de_pago" | "pausar_autopago" | "reactivar_autopago" | "cancelar_autopago" | "cobrar_autopago_ahora";
             titulo: string;
             detalle: string;
             /** @enum {string} */
-            boton: "Sí, hazlo" | "Descargar extracto" | "Abrir el formulario" | "Descargar certificado";
+            boton: "Sí, hazlo" | "Descargar extracto" | "Abrir el formulario" | "Descargar certificado" | "Descargar";
             datos: {
                 [key: string]: string;
             };
@@ -17310,7 +17354,7 @@ export interface components {
         } | null;
         PortalChatPedidoResponse: {
             /** @enum {string} */
-            pedido: "cuanto_debo" | "mis_giros" | "link_de_pago" | "certificado" | "certificado_de_ingresos" | "radicar_pqrs" | "ver_pqrs" | "extracto" | "reparaciones" | "ya_quedo" | "cambiar_cuenta" | "mi_contrato" | "proximo_pago" | "ajeno" | "no_entiendo" | "mi_postulacion" | "mis_postulaciones" | "que_me_pidieron" | "que_me_falta" | "mis_visitas" | "por_que_me_rechazaron" | "sigue_disponible" | "retirar_postulacion" | "reactivar_postulacion" | "reclamo_postulacion" | "pedir_visita" | "mover_visita" | "cancelar_visita" | "borrar_documento";
+            pedido: "cuanto_debo" | "mis_giros" | "link_de_pago" | "certificado" | "certificado_de_ingresos" | "radicar_pqrs" | "ver_pqrs" | "extracto" | "reparaciones" | "ya_quedo" | "cambiar_cuenta" | "mi_contrato" | "proximo_pago" | "ajeno" | "no_entiendo" | "mi_postulacion" | "mis_postulaciones" | "que_me_pidieron" | "que_me_falta" | "mis_visitas" | "por_que_me_rechazaron" | "sigue_disponible" | "retirar_postulacion" | "reactivar_postulacion" | "reclamo_postulacion" | "pedir_visita" | "mover_visita" | "cancelar_visita" | "borrar_documento" | "renovar" | "aceptar_renovacion" | "no_renovar" | "retirar_aviso" | "mis_recibos" | "pagos_reportados" | "documentos_del_arriendo" | "certificaciones" | "mis_facturas" | "mis_informes" | "reparaciones_descontadas" | "cuenta_de_giro" | "revision_del_canon" | "eleccion_de_inquilino" | "terminaciones" | "solicitud_dirigida" | "resumen_del_arriendo" | "tablero_del_propietario" | "cobro_que_no_es" | "pago_a_cuenta_equivocada" | "que_puedo_pagar" | "mis_solicitudes" | "cancelar_reporte_de_pago" | "autopago";
             texto: string;
             tarjeta: components["schemas"]["PortalChatTarjeta"];
             otrasTarjetas?: (components["schemas"]["PortalChatTarjeta"] & Record<string, never>)[];
@@ -26568,6 +26612,55 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AiHubChatLoteError"];
+                };
+            };
+        };
+    };
+    getAiHubChatProgramadoListo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Lo listo y lo que salió solo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatProgramadoListoResponse"];
+                };
+            };
+            /** @description Falta el bearer JWT o es inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatProgramadoListoError"];
+                };
+            };
+            /** @description agencyId distinto al del token / no es miembro */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatProgramadoListoError"];
+                };
+            };
+            /** @description Sin base */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatProgramadoListoError"];
                 };
             };
         };

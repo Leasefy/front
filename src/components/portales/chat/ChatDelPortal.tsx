@@ -37,6 +37,7 @@ import { FormularioCambioDeCuenta } from '@/components/landlord/portal/Formulari
 import { DescargaDelCertificado } from './DescargaDelCertificado';
 import { FotoDelDano } from './FotoDelDano';
 import { TarjetaDelChatDelPortal, type EstadoDeLaTarjetaDelPortal } from './TarjetaDelChatDelPortal';
+import { bajarElDocumentoDelPortal } from '@/lib/chat/descarga-del-portal';
 
 export type TurnoDelPortal =
   | { id: string; de: 'persona'; texto: string }
@@ -115,6 +116,19 @@ export function useChatDelPortal(portal: PortalDelChat) {
           cambiar(id, { resultado: 'Te llevo a la pasarela para pagar…' });
           irA(pago.url);
         } else cambiar(id, { estado: 'fallida', resultado: pago.texto });
+        return;
+      }
+      if (tarjeta.accion === 'bajar_documento') {
+        // Vuelta 4 (31-10): un recibo, una factura o una certificación, con la sesión de la persona.
+        try {
+          await bajarElDocumentoDelPortal(tarjeta.datos);
+          cambiar(id, { estado: 'hecha', resultado: 'Listo: el documento quedó en tus descargas.' });
+        } catch (err) {
+          cambiar(id, {
+            estado: 'fallida',
+            resultado: mensajeParaLaPersona(err, { porDefecto: 'No pude bajar el documento.', accion: 'bajar el documento' }),
+          });
+        }
         return;
       }
       if (tarjeta.accion === 'bajar_extracto') {

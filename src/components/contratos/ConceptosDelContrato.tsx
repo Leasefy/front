@@ -40,6 +40,7 @@ import { RadioCardGroup, RadioCard } from '@leasefy/cadence'
 import { toast } from '@/components/ui/toast'
 import { MesesDelConcepto, type MesElegido } from './MesesDelConcepto'
 import { mesCorto, sumanElTotal } from '@/lib/contratos/meses-del-concepto'
+import { cuandoEntraElConcepto, loDeUnaSolaVez } from '@/lib/contratos/cuando-entra-el-concepto'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -153,18 +154,14 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
         .reduce((s, c) => s + c.valorCop, 0),
     [conceptos],
   )
-  const deUnaSolaVez = useMemo(
-    () =>
-      (conceptos ?? [])
-        .filter((c) => !c.recurrente && !(c.planDeMeses && c.planDeMeses.length > 0))
-        .reduce((s, c) => s + c.valorCop, 0),
-    [conceptos],
-  )
-  // Portofino 22-10: los que van en meses elegidos.
+  // Juan 31-10: un plan de UN mes (la liquidación de servicios de entrada) es de
+  // una sola vez, y se dice por quién lo paga: al propietario sale de su giro.
+  const deUnaSolaVez = useMemo(() => loDeUnaSolaVez(conceptos ?? []), [conceptos])
+  // Portofino 22-10: los que van en meses elegidos (dos o más).
   const enMesesElegidos = useMemo(
     () =>
       (conceptos ?? [])
-        .filter((c) => c.planDeMeses && c.planDeMeses.length > 0)
+        .filter((c) => c.planDeMeses && c.planDeMeses.length > 1)
         .reduce((s, c) => s + c.valorCop, 0),
     [conceptos],
   )
@@ -317,14 +314,18 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
             />
           ))}
 
-          <div className="flex items-center justify-between border-t border-border pt-2 text-sm">
-            <span className="text-muted-foreground">
-              Se le cobra al inquilino cada mes
-            </span>
-            <span className="font-medium tabular-nums text-foreground">
-              {formatCurrency(alCobroDelInquilino)}
-            </span>
-          </div>
+          {/* Sin nada que se repita, «cada mes $0» hacía creer que lo de una
+              sola vez se cobraba cada mes (Juan, 31-10). */}
+          {alCobroDelInquilino > 0 ? (
+            <div className="flex items-center justify-between border-t border-border pt-2 text-sm">
+              <span className="text-muted-foreground">
+                Se le cobra al inquilino cada mes
+              </span>
+              <span className="font-medium tabular-nums text-foreground">
+                {formatCurrency(alCobroDelInquilino)}
+              </span>
+            </div>
+          ) : null}
 
           {noLosPagaElInquilino > 0 ? (
             // Lo que pone el propietario o la inmobiliaria NO entra en el cobro
@@ -341,11 +342,23 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
             </p>
           ) : null}
 
-          {deUnaSolaVez > 0 ? (
-            // Los de una sola vez no se repiten: decir sólo el total mensual
-            // haría creer que se cobran todos los meses.
+          {/* Los de una sola vez no se repiten: decir sólo el total mensual
+              haría creer que se cobran todos los meses. */}
+          {deUnaSolaVez.delInquilinoCop > 0 ? (
+            <p className="text-caption text-muted-foreground" data-testid="una-vez-inquilino">
+              Una sola vez al inquilino: {formatCurrency(deUnaSolaVez.delInquilinoCop)},
+              en una sola cuota. No se repite.
+            </p>
+          ) : null}
+          {deUnaSolaVez.delPropietarioCop > 0 ? (
+            <p className="text-caption text-muted-foreground" data-testid="una-vez-propietario">
+              Una sola vez al propietario: {formatCurrency(deUnaSolaVez.delPropietarioCop)},
+              descontados de un solo giro. No se repite.
+            </p>
+          ) : null}
+          {deUnaSolaVez.deOtrosCop > 0 ? (
             <p className="text-caption text-muted-foreground">
-              Hay {formatCurrency(deUnaSolaVez)} en conceptos de una sola vez,
+              Hay {formatCurrency(deUnaSolaVez.deOtrosCop)} en conceptos de una sola vez,
               que no se repiten.
             </p>
           ) : null}
@@ -576,11 +589,10 @@ function ConceptoEnLista({
             {/* Quién lo paga decide si entra en el cobro del inquilino.
                 Deducirlo del nombre es justo lo que hace que se cuele. */}
             · lo paga {QUIEN_PAGA[concepto.paga]}
-            {concepto.planDeMeses && concepto.planDeMeses.length > 0
-              ? ` · en ${concepto.planDeMeses.length === 1 ? mesCorto(concepto.planDeMeses[0].mes) : `${concepto.planDeMeses.length} meses`}`
-              : !concepto.recurrente
-                ? ' · una sola vez'
-                : ''}
+            {/* Juan 31-10: la liquidación de servicios de entrada (plan de un
+                mes) se leía como un cobro mensual. Ahora dice «una sola vez» y
+                de dónde sale. */}
+            {cuandoEntraElConcepto(concepto) ? ` · ${cuandoEntraElConcepto(concepto)}` : ''}
           </span>
         </button>
         <div className="flex items-center gap-2">

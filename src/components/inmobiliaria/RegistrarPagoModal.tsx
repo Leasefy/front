@@ -132,6 +132,7 @@ import {
   seOfreceElegirLaForma,
   type MesQueSeAdelanta,
 } from '@/lib/recibos/forma-del-adelanto';
+import { saldoAFavorEnElRecibo } from '@/lib/recibos/saldo-a-favor-del-contrato';
 import { nombreDelMes } from '@/lib/utils/mes';
 import { useMediosDePago } from '@/lib/hooks/use-medios-de-pago';
 import { finanzasApi } from '@/lib/api/finanzas.service';
@@ -504,6 +505,15 @@ export function RegistrarPagoModal({
   /** Lo que la inmobiliaria reclama HOY. Es el default del campo. */
   const vencido = cartera?.vencidoCop ?? 0;
   const futuro = cartera?.futuroCop ?? 0;
+  /*
+   * Juan 31-10: lo que el inquilino ya tiene a favor en su contrato (la factura
+   * de servicios de entrada que pagó él) se le descuenta solo el día de pago.
+   * Los atajos y el valor de arranque salen MENOS eso: cobrarle la cuota entera
+   * le cobraría dos veces esa plata.
+   */
+  const aFavor = React.useMemo(() => saldoAFavorEnElRecibo(cartera), [cartera]);
+  const vencidoACobrar = Math.max(0, vencido - aFavor.deLoVencidoCop);
+  const todoACobrar = Math.max(0, maximo - aFavor.deTodaLaDeudaCop);
   const sePuedeAdelantar = soloSePuedeAdelantar(cartera);
   const montoValido = Number.isFinite(monto) && monto > 0;
   /*
@@ -642,7 +652,8 @@ export function RegistrarPagoModal({
   const personaAtendida = React.useRef(-1);
   React.useEffect(() => {
     if (!cartera) return;
-    const vencidoDeLaCartera = cartera.vencidoCop ?? 0;
+    const descuento = saldoAFavorEnElRecibo(cartera);
+    const vencidoDeLaCartera = Math.max(0, (cartera.vencidoCop ?? 0) - descuento.deLoVencidoCop);
     if (personaAtendida.current !== cargaDeLaPersona) {
       personaAtendida.current = cargaDeLaPersona;
       origenDelMonto.current = vencidoDeLaCartera > 0 ? 'vencido' : 'manual';
@@ -666,7 +677,7 @@ export function RegistrarPagoModal({
     if (origenDelMonto.current === 'vencido') {
       setMonto(vencidoDeLaCartera > 0 ? vencidoDeLaCartera : NaN);
     } else if (origenDelMonto.current === 'todo') {
-      setMonto(cartera.total);
+      setMonto(Math.max(0, cartera.total - descuento.deTodaLaDeudaCop));
     }
   }, [cartera, cargaDeLaPersona, hoy]);
 
@@ -1115,7 +1126,7 @@ export function RegistrarPagoModal({
                   {/* Dos atajos, no uno: recibir lo vencido es la operación
                       normal; pagar toda la deuda es adelantar, y se elige. */}
                   <div className="flex items-center gap-3">
-                    {vencido > 0 && vencido !== maximo && (
+                    {vencidoACobrar > 0 && vencidoACobrar !== todoACobrar && (
                       <Button
                         type="button"
                         variant="link"
@@ -1124,7 +1135,7 @@ export function RegistrarPagoModal({
                         className="h-auto p-0 text-caption"
                         onClick={() => {
                           origenDelMonto.current = 'vencido';
-                          setMonto(vencido);
+                          setMonto(vencidoACobrar);
                         }}
                         data-testid="atajo-vencido"
                       >
@@ -1139,7 +1150,7 @@ export function RegistrarPagoModal({
                       className="h-auto p-0 text-caption"
                       onClick={() => {
                         origenDelMonto.current = 'todo';
-                        setMonto(maximo);
+                        setMonto(todoACobrar);
                       }}
                       data-testid="atajo-todo"
                     >

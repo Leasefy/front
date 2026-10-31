@@ -13321,7 +13321,10 @@
         "soloAdelanto": "{{nombre}} no tiene nada vencido, pero su contrato sí tiene deuda por delante. Lo que recibas hoy es un adelanto: baja las cuotas que todavía no vencen.",
         "capitalEInteres": "Capital {{capital}} · intereses {{intereses}}",
         "deLosCualesIntereses": "de los cuales {{monto}} son intereses de mora",
-        "interesPrimero": "Primero se pagan los intereses y después el capital (art. 1653 del Código Civil)."
+        "interesPrimero": "Primero se pagan los intereses y después el capital (art. 1653 del Código Civil).",
+        "aFavorLabel": "Ya tiene a su favor",
+        "aFavorAyuda": "Lo pagó él (por ejemplo, la factura de servicios públicos de entrada) y se le descuenta solo de sus cuotas el día de pago: de lo que debe, le quedan {{monto}} por pagar.",
+        "aFavorSinDeuda": "Lo pagó él (por ejemplo, la factura de servicios públicos de entrada) y se le descuenta solo de su próxima cuota el día de pago."
       },
       "plan": {
         "titulo": "A dónde va esta plata",

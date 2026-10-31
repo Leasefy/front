@@ -426,6 +426,12 @@ cero atenuadas o plegadas («+ 4 etapas sin casos»). Tocar una etapa filtra la 
 - Se valida en el campo antes de enviar, con los MISMOS topes y frases que el DTO del back.
 - Un campo apagado dice por qué; lo verificado lleva su chulo verde y de dónde salió.
 - El botón dice el resultado («Guardar el contrato», no «Enviar»). Un formulario a medias no se pierde sin avisar.
+- **Texto largo con formato (la descripción del inmueble, 31-10-2026, Nico: «lo de bold… agregar emojis»)**:
+  `EditorDeDescripcion` (front `components/property`) = el mismo `Textarea` con una barra de íconos fantasma (negrilla,
+  cursiva, viñetas, numerada, emojis, «Ver cómo queda»). Se guarda con las marcas de WhatsApp y se pinta con
+  `DescripcionConFormato`: la negrilla de la persona va en `font-medium text-fg`, nunca `font-bold`. Los emojis del
+  selector son CONTENIDO de la persona (viven en `lib/inmuebles/emojis-de-la-descripcion.ts`), no adorno de la
+  interfaz: la regla de §16 sigue igual.
 
 ### 12.7 Carga, vacío y error
 

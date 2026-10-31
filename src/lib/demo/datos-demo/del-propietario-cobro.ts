@@ -10,6 +10,7 @@
  */
 import type { BackendLease, BackendPayment } from '@/lib/api/leases.types';
 import type { EstadoDeCuenta, FilaDelEstadoDeCuenta } from '@/lib/types/estado-de-cuenta';
+import { mesSiguiente } from './del-propietario-giros';
 import type { LecturaDeLaDemo } from './index';
 
 const CANON = 2_350_000;
@@ -19,7 +20,8 @@ const LEASE = 'demo-ls-1';
 
 /**
  * Marzo a noviembre de 2026. Laura pagó hasta octubre (julio, con unos días de atraso) y noviembre está por vencer.
- * Al propietario se le giró hasta septiembre: el de octubre va en camino, como en la demo de Giros.
+ * Al propietario se le gira el 8 del mes siguiente (como en la demo de Giros): hasta septiembre ya se le giró; el de
+ * octubre va en camino (8 de noviembre) y no está atrasado.
  */
 const MESES = ['2026-03', '2026-04', '2026-05', '2026-06', '2026-07', '2026-08', '2026-09', '2026-10', '2026-11'];
 const PAGADO_EL: Readonly<Record<string, string>> = { '2026-07': '2026-07-09' };
@@ -83,7 +85,8 @@ function fila(mes: string): FilaDelEstadoDeCuenta {
   return {
     concepto: `Arriendo de ${NOMBRE_DEL_MES[Number(m) - 1]} de ${anio}`,
     estado: pendiente ? 'PENDIENTE' : 'CANCELADA',
-    fechaDePago: pendiente ? null : `${mes}-08`,
+    // Del lado del propietario la fila vence el día de su giro: el 8 del mes siguiente.
+    fechaDePago: pendiente ? null : `${mesSiguiente(mes)}-08`,
     valorBruto: CANON,
     iva: 0,
     retencion: 0,
@@ -95,7 +98,7 @@ function fila(mes: string): FilaDelEstadoDeCuenta {
     reteIvaComision: 0,
     reteIcaComision: 0,
     valorNeto: NETO,
-    fechaVencimiento: `${mes}-05`,
+    fechaVencimiento: `${mesSiguiente(mes)}-08`,
     documentoDePago: pendiente ? null : { numero: `GIR-${mes.replace('-', '')}-0142`, tipo: 'GIRO', descripcion: 'Giro a Bancolombia •••• 4821' },
     parcial: false,
     periodoDesde: `${mes}-01`,

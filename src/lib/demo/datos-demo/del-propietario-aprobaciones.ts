@@ -136,15 +136,24 @@ function historial(camino: string): PaginaDelHistorialDeAprobaciones {
   return { filas: HISTORIAL.slice((pagina - 1) * porPagina, pagina * porPagina), total: HISTORIAL.length, pagina, porPagina };
 }
 
+const ESTADO_DE_LA_SOLICITUD: Record<AprobacionEnElPortal['estado'], string> = {
+  PENDIENTE: 'QUOTED',
+  APROBADA: 'MAINT_COMPLETED',
+  EMERGENCIA: 'MAINT_COMPLETED',
+  RECHAZADA: 'MAINT_CANCELLED',
+  ANULADA: 'MAINT_CANCELLED',
+};
+
 function detalle(camino: string): DetalleDeLaReparacionEnElPortal | null {
   const a = [...PENDIENTES, ...HISTORIAL].find((x) => camino.includes(`/${x.id}/`));
   if (!a) return null;
   return {
     ...a,
-    reparacion: { ...a.reparacion, tipo: 'Plomería', prioridad: a.prioridad ?? null, estado: a.estado === 'PENDIENTE' ? 'Por aprobar' : 'Terminada', reportadaAt: a.pedidaAt, fotos: [] },
+    // El estado de la solicitud, como lo manda el back (`DetalleDeLaReparacion` lo lee con esos nombres).
+    reparacion: { ...a.reparacion, tipo: null, prioridad: a.prioridad ?? null, estado: ESTADO_DE_LA_SOLICITUD[a.estado], reportadaAt: a.pedidaAt, fotos: [] },
     cotizacion: a.cotizacion ? { ...a.cotizacion, valorCop: a.valorCop } : null,
     aCargoDe: { quien: 'PROPIETARIO', propietarioPct: 100, inquilinoPct: null, motivo: 'Es un daño del inmueble, no del uso.' },
-    trabajo: { terminadoAt: a.estado === 'PENDIENTE' ? null : a.decididaAt, notas: null, fotos: [], garantiaHasta: null },
+    trabajo: { terminadoAt: ESTADO_DE_LA_SOLICITUD[a.estado] === 'MAINT_COMPLETED' ? a.decididaAt : null, notas: null, fotos: [], garantiaHasta: null },
     sobrecosto: null,
   };
 }

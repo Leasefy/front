@@ -7,6 +7,7 @@
  */
 import type { CertificadoDelPropietario, MisCertificados } from '@/lib/api/tesoreria.types';
 import type { CertificacionDelMandatario, FacturaDeLaComision } from '@/lib/api/portal-del-propietario.service';
+import { mesSiguiente } from './del-propietario-giros';
 import type { LecturaDeLaDemo } from './index';
 
 const INMUEBLE = 'Cra 43A # 18 Sur 135, apto 702';
@@ -47,7 +48,7 @@ function facturas(): FacturaDeLaComision[] {
     mes,
     inmueble: INMUEBLE,
     totalCop: 235_000,
-    emitidaEl: `${mes}-08T15:00:00.000Z`,
+    emitidaEl: `${mesSiguiente(mes)}-08T15:00:00.000Z`,
   }));
 }
 

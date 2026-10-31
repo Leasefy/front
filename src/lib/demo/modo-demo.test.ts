@@ -15,6 +15,8 @@ import { apiClient } from '@/lib/api/client';
 import type { TableroDeServicios } from '@/lib/api/servicios-publicos.service';
 import { entrarAlModoDemo, estaEnModoDemo, salirDelModoDemo } from './modo-demo-estado';
 import { hayDatosDeEjemplo, hayDatosDeEjemploDelPropietario, lecturaDeLaDemo } from './datos-demo';
+import { asiSeVe } from '@/components/venta/FranjaDeLaDemo';
+import { QUE_ES_CADA_SECCION_DEL_PROPIETARIO } from '@/lib/venta/propietario-gratis';
 
 const pedir = vi.fn(async () => new Response(JSON.stringify({ delBack: true }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
 
@@ -181,17 +183,30 @@ describe('las demás secciones del propietario independiente (Nico 30-10: «cada
 
     const giros = (lecturaDeLaDemo('/portal/propietario/giros') as { giros: Array<{ mes: string; estado: string; valorCop: number }> }).giros;
     const estado = lecturaDeLaDemo('/portal/estado-de-cuenta') as {
-      contratos: Array<{ secciones: { arriendos: Array<{ fechaVencimiento: string; estado: string; valorNeto: number }> } }>;
+      contratos: Array<{ secciones: { arriendos: Array<{ periodoDesde?: string; fechaVencimiento: string; estado: string; valorNeto: number }> } }>;
       porGirar: { porGirarCop: number };
     };
     const filas = estado.contratos[0]!.secciones.arriendos;
     for (const g of giros.filter((x) => x.mes >= '2026-03')) {
-      const fila = filas.find((f) => f.fechaVencimiento.startsWith(g.mes))!;
+      const fila = filas.find((f) => f.periodoDesde!.startsWith(g.mes))!;
       expect(fila.valorNeto).toBe(g.valorCop);
       // Lo que va en camino en Giros sigue por girar en el estado de cuenta.
       expect(fila.estado).toBe(g.estado === 'EN_CAMINO' ? 'PENDIENTE' : 'CANCELADA');
     }
     expect(estado.porGirar.porGirarCop).toBe(giros.find((g) => g.estado === 'EN_CAMINO')!.valorCop);
+    // 🔴 Lo que va en camino no está atrasado (la fila decía «atrasado» con «Al día» arriba): vence después de hoy.
+    const enCamino = filas.find((f) => f.estado === 'PENDIENTE')!;
+    expect(enCamino.fechaVencimiento > '2026-10-30').toBe(true);
+
+    // Cada giro es el ingreso del mes menos la comisión y la retención del certificado de Informes.
+    for (const g of giros) {
+      const anio = g.mes.slice(0, 4);
+      const { meses } = lecturaDeLaDemo(`/portal/propietario/certificado-de-ingresos?anio=${anio}`) as {
+        meses: Array<{ mes: string; ingresoBrutoCop: number; comisionCop: number; retenidoCop: number }>;
+      };
+      const m = meses.find((x) => x.mes === g.mes)!;
+      expect(m.ingresoBrutoCop - m.comisionCop - m.retenidoCop).toBe(g.valorCop);
+    }
 
     const informe = lecturaDeLaDemo('/portal/propietario/certificado-de-ingresos?anio=2025') as { retencionesQueLePracticaronCop: number; ingresoBrutoCop: number };
     const { certificados } = lecturaDeLaDemo('/portal/certificados-de-retencion') as { certificados: Array<{ anio: number; baseCop: number; totalRetenidoCop: number }> };
@@ -228,5 +243,14 @@ describe('las demás secciones del propietario independiente (Nico 30-10: «cada
       message: 'En la demo no se descargan documentos: son datos de ejemplo.',
     });
     expect(pedir).not.toHaveBeenCalled();
+  });
+});
+
+describe('la franja de la demo', () => {
+  it('el verbo concuerda con lo que nombra (decía «Así se ven la cobranza»)', () => {
+    expect(asiSeVe('la cobranza')).toBe('Así se ve la cobranza con Leasefy.');
+    expect(asiSeVe('tus giros')).toBe('Así se ven tus giros con Leasefy.');
+    expect(asiSeVe(QUE_ES_CADA_SECCION_DEL_PROPIETARIO.cobro!)).toBe('Así se ve el cobro de tu arriendo con Leasefy.');
+    expect(asiSeVe(null)).toBe('Así se ve con Leasefy.');
   });
 });

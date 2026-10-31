@@ -202,13 +202,16 @@ const DEL_PROPIETARIO: Record<string, DemoDelModulo> = {
     titulo: 'El arriendo te llega solo',
     promesa: 'Cobramos el arriendo cada mes y si se atrasa lo perseguimos por ti.',
     puntos: ['Recordatorios al inquilino', 'Cobranza por WhatsApp y llamada', 'Tu plata a tu cuenta'],
-    capturas: [cap('cob-whatsapp', 'Conversación de cobranza por WhatsApp'), cap('erp-recaudo', 'Recaudo del mes')],
+    capturas: [cap('demo-propietario-cobro', 'Tu arriendo y tu estado de cuenta con datos de ejemplo'), cap('cob-whatsapp', 'Conversación de cobranza por WhatsApp')],
+    video: video('propietario-cobro', 'Recorrido por tu arriendo con datos de ejemplo: lo que paga el inquilino mes a mes y tu estado de cuenta con lo girado y lo que va en camino'),
   },
   estudio: {
     titulo: 'Sabes a quién le arriendas',
     promesa: 'Estudiamos al inquilino: identidad, capacidad de pago y listas restrictivas.',
-    puntos: ['Estudio en minutos', 'Puntaje claro', 'Seguro de arrendamiento'],
-    capturas: [cap('inq-detalle', 'Detalle del estudio de un inquilino'), cap('aseg-resumen', 'Cotización con aseguradoras')],
+    // 30-10: «Puntaje claro» salió: el propietario nunca ve un puntaje (F-07), y el video muestra la pantalla.
+    puntos: ['Estudio en minutos', 'De qué vive y cuánto gana', 'Tú escoges a quién'],
+    capturas: [cap('demo-propietario-estudio', 'Los candidatos de tu inmueble con datos de ejemplo'), cap('inq-detalle', 'Detalle del estudio de un inquilino')],
+    video: video('propietario-estudio', 'Recorrido por los candidatos de tu inmueble con datos de ejemplo: la lista corta, de qué vive cada uno y a quién escogiste antes'),
   },
   // Ronda 30 (revisora r27): cada parte cerrada dice lo suyo; antes Inicio, Certificados, Informes y
   // Solicitudes repetían la general y Giros, Aprobaciones y Revisar el canon, la del cobro.
@@ -223,31 +226,36 @@ const DEL_PROPIETARIO: Record<string, DemoDelModulo> = {
     titulo: 'Las reparaciones, con tu visto bueno',
     promesa: 'Te mostramos cada reparación a tu cargo y nada se te descuenta sin tu aprobación.',
     puntos: ['Aprueba o rechaza en un clic', 'Hazla tú si no es urgente', 'Sabes cuánto y por qué'],
-    capturas: [TABLERO],
+    capturas: [cap('demo-propietario-aprobaciones', 'Las reparaciones por aprobar con datos de ejemplo')],
+    video: video('propietario-aprobaciones', 'Recorrido por las reparaciones con datos de ejemplo: las que esperan tu aprobación, la que haces tú y el historial con su detalle'),
   },
   'revisar-canon': {
     titulo: 'El canon justo para tu inmueble',
     promesa: 'Sabes cuánto te cuesta tenerlo desocupado y qué canon pide el mercado, para decidir a tiempo.',
     puntos: ['Avalúo con comparables reales', 'Lo que cuesta cada mes desocupado', 'Tú decides si lo cambias'],
-    capturas: [cap('ava-lista', 'Avalúos con comparables')],
+    capturas: [cap('demo-propietario-revisar-canon', 'La revisión de tu canon con datos de ejemplo'), cap('ava-lista', 'Avalúos con comparables')],
+    video: video('propietario-revisar-canon', 'Recorrido por la revisión del canon con datos de ejemplo: lo que te ha costado el inmueble desocupado y lo que cuesta el canon que escribes'),
   },
   informes: {
     titulo: 'Tu inmueble en cifras',
     promesa: 'Tu certificado anual de ingresos y el historial de reparaciones, siempre a la mano.',
     puntos: ['Certificado anual de ingresos', 'Historial de reparaciones', 'Listo para tu contador'],
-    capturas: [TABLERO],
+    capturas: [cap('demo-propietario-informes', 'Tus informes con datos de ejemplo')],
+    video: video('propietario-informes', 'Recorrido por tus informes con datos de ejemplo: el certificado de ingresos de cada año y el historial de reparaciones'),
   },
   certificados: {
     titulo: 'Tu declaración de renta, sin buscar papeles',
     promesa: 'Lo que los inquilinos te retuvieron en el año, en un certificado listo para declarar.',
     puntos: ['Retenciones del año', 'Certificados y facturas', 'Descárgalos cuando quieras'],
-    capturas: [cap('erp-recaudo', 'Recaudo del mes')],
+    capturas: [cap('demo-propietario-certificados', 'Tus certificados con datos de ejemplo')],
+    video: video('propietario-certificados', 'Recorrido por tus certificados con datos de ejemplo: la retención del año, la certificación del mandatario y las facturas de la comisión'),
   },
   solicitudes: {
     titulo: 'Tus solicitudes, respondidas a tiempo',
     promesa: 'Lo que pides queda con número, plazo y respuesta por escrito.',
     puntos: ['Cada solicitud con su plazo', 'Sabes en qué va', 'Todo queda por escrito'],
-    capturas: [TABLERO],
+    capturas: [cap('demo-propietario-solicitudes', 'Tus solicitudes con datos de ejemplo')],
+    video: video('propietario-solicitudes', 'Recorrido por tus solicitudes con datos de ejemplo: las abiertas primero y el detalle de una con su respuesta'),
   },
 };
 

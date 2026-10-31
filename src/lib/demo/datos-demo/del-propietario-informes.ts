@@ -1,8 +1,9 @@
 /**
  * El propietario independiente → Informes con datos de ejemplo (el modo demo; Nico 30-10-2026: «ver cómo quedaría
- * pintada cada sección»). El certificado de ingresos del apartamento de las demás demos (Cra 43A): en 2025 lo tenía
- * una empresa por $2.200.000, que le retenía el 3,5 % (el certificado de esa retención está en la demo de Certificados);
- * en 2026 está con Laura Restrepo desde marzo, por $2.350.000. Comisión del 10 %, como
+ * pintada cada sección»). El certificado de ingresos del apartamento de las demás demos (Cra 43A): hasta febrero de
+ * 2026 lo tenía una empresa por $2.200.000, que le retenía el 3,5 % (el certificado de la retención de 2025 está en la
+ * demo de Certificados); desde marzo está con Laura Restrepo, por $2.350.000. Noviembre y diciembre de 2026 no se han
+ * causado. Comisión del 10 %, como
  * en Giros. Las reparaciones son las del historial de Aprobaciones. Cifras INVENTADAS.
  *
  * 🔴 `/portal/propietario/informes` es también la pregunta del portal «¿tiene ficha con una inmobiliaria?»
@@ -19,19 +20,19 @@ import type { LecturaDeLaDemo } from './index';
 const INMUEBLE = 'Cra 43A # 18 Sur 135, apto 702';
 /** La comisión del 10 %, en pesos enteros (`canon / 10`: `canon * 0.1` deja una cola de flotante). */
 const comisionDe = (canon: number) => canon / 10;
-/** La retención en la fuente del 3,5 % que le practicaba la empresa que arrendaba en 2025. */
-const retencionDe = (anio: number, canon: number) => (anio === 2025 ? (canon * 35) / 1000 : 0);
+/** La retención en la fuente del 3,5 % que le practicaba la empresa (la que pagaba $2.200.000); Laura no retiene. */
+const retencionDe = (canon: number) => (canon === 2_200_000 ? (canon * 35) / 1000 : 0);
 
 /** El canon de cada mes de un año (0 = desocupado). */
 const CANON_POR_ANIO: Readonly<Record<number, readonly number[]>> = {
   2025: Array.from({ length: 12 }, () => 2_200_000),
-  2026: [0, 0, 2_350_000, 2_350_000, 2_350_000, 2_350_000, 2_350_000, 2_350_000, 2_350_000, 2_350_000, 0, 0],
+  2026: [2_200_000, 2_200_000, 2_350_000, 2_350_000, 2_350_000, 2_350_000, 2_350_000, 2_350_000, 2_350_000, 2_350_000, 0, 0],
 };
 
 function certificado(anio: number): CertificadoDeIngresos {
   const canones = CANON_POR_ANIO[anio] ?? CANON_POR_ANIO[2025]!;
   const meses: MesDelCertificado[] = canones.flatMap((canon, i) =>
-    canon > 0 ? [{ mes: `${anio}-${String(i + 1).padStart(2, '0')}`, ingresoBrutoCop: canon, ivaCop: 0, comisionCop: comisionDe(canon), retenidoCop: retencionDe(anio, canon) }] : [],
+    canon > 0 ? [{ mes: `${anio}-${String(i + 1).padStart(2, '0')}`, ingresoBrutoCop: canon, ivaCop: 0, comisionCop: comisionDe(canon), retenidoCop: retencionDe(canon) }] : [],
   );
   const ingreso = meses.reduce((s, m) => s + m.ingresoBrutoCop, 0);
   const comision = meses.reduce((s, m) => s + m.comisionCop, 0);

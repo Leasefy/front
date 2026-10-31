@@ -54,7 +54,7 @@ export function HeroeDePara({
   return (
     <section
       data-testid="heroe-de-para"
-      className="relative overflow-hidden bg-[#FBFAF8] pb-[clamp(130px,15vw,210px)] pt-[clamp(108px,10vw,150px)] text-[#121110]"
+      className="relative overflow-hidden bg-bg pb-[clamp(130px,15vw,210px)] pt-[clamp(108px,10vw,150px)] text-fg"
     >
       <CorrienteDeVoltaje
         fondo="papel"
@@ -72,13 +72,13 @@ export function HeroeDePara({
             </motion.div>
             <motion.h1
               {...sube(0.08)}
-              className="mt-6 font-heading text-[clamp(42px,5.6vw,84px)] font-[340] leading-[0.98] tracking-[-0.045em] text-[#121110]"
+              className="mt-6 font-heading text-[clamp(42px,5.6vw,84px)] font-[340] leading-[0.98] tracking-[-0.045em] text-fg"
             >
               {titulo}
             </motion.h1>
             <motion.p
               {...sube(0.16)}
-              className="mt-6 max-w-[560px] text-[clamp(17px,1.35vw,20px)] leading-[1.55] text-[#5B5751]"
+              className="mt-6 max-w-[560px] text-[clamp(17px,1.35vw,20px)] leading-[1.55] text-fg-muted"
             >
               {entrada}
             </motion.p>

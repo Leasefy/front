@@ -22,7 +22,7 @@ export const RUTA_DE_LAS_NOTIFICACIONES = '/panel/inmobiliaria/notificaciones';
 function Cuenta({ n }: { n: number }) {
   if (n <= 0) return null;
   return (
-    <span className="ml-1.5 rounded-full bg-[#1A40FF] px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-white tabular-nums">
+    <span className="ml-1.5 rounded-full bg-primary px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-white tabular-nums">
       {n > 999 ? '999+' : n}
     </span>
   );
@@ -144,7 +144,7 @@ export function CampanaDeLaInmobiliaria({
             onCerrar();
             router.push(RUTA_DE_LAS_NOTIFICACIONES);
           }}
-          className="text-[13px] font-medium text-[#1A40FF] transition-colors hover:text-[#1A40FF] dark:text-[#5570FF]"
+          className="text-[13px] font-medium text-primary transition-colors hover:text-primary"
         >
           Ver todas
         </button>

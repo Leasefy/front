@@ -117,7 +117,7 @@ export default function PaginaDelColega({ params }: { params: Promise<{ codigo: 
             </p>
             <div className="mt-9 flex flex-col items-center gap-4 sm:flex-row">
               <Button
-                className="h-[52px] rounded-full bg-white px-8 text-[16px] text-[#0a0f2c] shadow-[0_14px_40px_rgba(0,0,0,0.25)] hover:bg-white/90"
+                className="h-[52px] rounded-full bg-white px-8 text-[16px] text-ink shadow-[0_14px_40px_rgba(0,0,0,0.25)] hover:bg-white/90"
                 onClick={empezar}
                 isLoading={yendo}
                 data-testid="empezar-con-el-colega"

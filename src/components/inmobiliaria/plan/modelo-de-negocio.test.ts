@@ -65,7 +65,7 @@ describe('la cuenta del mes (Nico, 30-10-2026: «cobramos por inmueble gestionad
       ['usuarios', 60_000],
       ['preguntas', 0],
     ])
-    expect(r[0]!.que).toBe('300 inmuebles gestionados')
+    expect(r[0]!.que).toBe('300 inmuebles activos')
     expect(sinEspacioDuro(r[0]!.detalle!)).toBe('$ 2.100 cada uno al mes')
     expect(sinEspacioDuro(r[1]!.detalle!)).toBe('Tienes 5 y el plan trae 2; $ 20.000 cada uno al mes')
   })

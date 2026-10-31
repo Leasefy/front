@@ -40,9 +40,9 @@ export function enlaces(raiz: Element): string[] {
   );
 }
 
-/** Cuántos botones azules (la acción principal) hay dentro de un bloque. */
+/** Cuántos botones azules (la acción principal, `bg-primary` desde el 31-10-2026) hay dentro de un bloque. */
 export function botonesAzules(raiz: Element): number {
   return Array.from(raiz.querySelectorAll('a[class]')).filter((a) =>
-    (a.getAttribute('class') ?? '').includes('bg-[#1A40FF]'),
+    /(?:^|\s)bg-primary(?:\s|$)/.test(a.getAttribute('class') ?? ''),
   ).length;
 }

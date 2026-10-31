@@ -120,6 +120,13 @@ La rama de trabajo cambia según el encargo: antes de tocar, mira cuál es (en l
 El ámbar de la identidad para puntos e ilustración es `#D9911C` (lo usa la landing); el texto de aviso es `#8C600E`
 porque necesita contraste.
 
+**La noche del glow up (31-10-2026, Nico: «no me vayas a cambiar el glow up»):** las secciones oscuras FIJAS de la
+landing, el marketplace («Publica tu inmueble») y las páginas por público usan `bg-noche` (`#07080C`), `bg-noche-tarjeta`
+(`#101116`) y encima `text-noche-fg` · `-fg-muted` · `-fg-subtle` · `text-noche-primary` · `text-noche-success` ·
+`bg-noche-voltaje`: los mismos valores que tenían en hex, ya como tokens. No cambian con el tema. Sobre la medianoche de
+marca (`bg-ink`) van los `ink-*`. Pasar colores a tokens NUNCA cambia cómo se ve una pantalla aprobada: se compara
+antes/después con capturas.
+
 Degradados: el único **de color** es el de la medianoche,
 `linear-gradient(150deg, var(--ink) 58%, var(--ink-2) 135%)`. Fuera de ese, sólo degradados **funcionales y
 neutros**: el velo que hace legible un texto sobre una foto o un video, el desvanecido de un borde (`mask-image`), el
@@ -610,6 +617,13 @@ cards) · calificación (no score) · pasar a jurídico (no escalar, triage) · 
 «20 de octubre de 2026» · fecha en tabla «20 oct 2026» · distancia «en 4 meses», «vence hoy» · hora «4:00 p. m.» ·
 porcentaje «72,4 %» · miles «1.893 contratos» · sólo la inicial en mayúscula · comillas «», raya —, N.º · sin punto en
 botones ni títulos · todo en COP, nunca dólares · nunca un id interno, UUID o slug a la vista.
+
+**Precios de Leasefy en otra moneda (Nico, 31-10-2026: «dejar claro que esto se cobra en pesos colombianos, o sea que
+lo puedan ver en varias monedas»):** la ÚNICA excepción al «todo en COP», y sólo en los precios de Leasefy («Tu plan»,
+/pricing). `SelectorDeMoneda` (`components/precios/MonedaDeReferencia.tsx`, `SegmentedControl` COP · USD · EUR · MXN ·
+CLP) siempre con la frase «Se cobra en pesos colombianos (COP)» y, en otra moneda, la tasa del día y su fuente. La cifra
+grande queda en COP (lo que se cobra) con la referencia debajo; las demás cifras van en la moneda elegida con «≈» y el
+código («≈ 158 USD»). Sin tasa del back, sólo pesos. La plata de las inmobiliarias (canon, recaudo, cartera) nunca.
 
 **Los agentes:** Ori habla en primera persona y dice qué revisó; lo que decide la persona se deja a la persona (el
 agente propone, no da por hecho); nunca «✨ IA».

@@ -238,6 +238,21 @@ const config: Config = {
   			// `nest*`, `brand-ink/paper/night`) eran del admin viejo y se fueron con
   			// él: el admin ahora habla Cadence como el resto de la plataforma.
   			brand: '#1A40FF',
+  			// La NOCHE del glow up (31-10-2026, «lleva todo a colores de Cadence 2.0» sin cambiar el glow up): las
+  			// secciones oscuras FIJAS de la landing, el marketplace y las páginas por público, con los mismos valores
+  			// que tenían en hex. Sobre la medianoche de marca (`bg-ink`) van los `ink-*` de Cadence.
+  			noche: {
+  				DEFAULT: 'var(--noche)',
+  				tarjeta: 'var(--noche-tarjeta)',
+  				voltaje: 'var(--noche-voltaje)',
+  				fg: 'var(--noche-fg)',
+  				'fg-muted': 'var(--noche-fg-muted)',
+  				'fg-subtle': 'var(--noche-fg-subtle)',
+  				primary: 'var(--noche-primary)',
+  				success: 'var(--noche-success)',
+  			},
+  			// El verde de WhatsApp: SÓLO su logo (nunca un botón ni un estado).
+  			whatsapp: 'var(--whatsapp)',
   			/* ── New design system scales ── */
   			indigo: {
   				50: 'hsl(var(--indigo-50))',

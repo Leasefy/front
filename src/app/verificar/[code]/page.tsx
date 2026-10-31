@@ -60,8 +60,8 @@ const NIVELES: Record<string, { texto: string; color: string; fondo: string }> =
   A: { texto: 'Riesgo bajo', color: 'text-success', fondo: 'bg-success-soft' },
   B: {
     texto: 'Riesgo medio-bajo',
-    color: 'text-[#1A40FF]',
-    fondo: 'bg-[#EEF1FF]',
+    color: 'text-primary',
+    fondo: 'bg-primary-soft',
   },
   C: { texto: 'Riesgo medio', color: 'text-warning', fondo: 'bg-warning-soft' },
   D: { texto: 'Riesgo alto', color: 'text-danger', fondo: 'bg-danger-soft' },
@@ -110,7 +110,7 @@ export default function VerificarPage() {
         <div className="overflow-hidden rounded-[22px] border border-border bg-surface">
           {estado === 'preguntando' ? (
             <div className="flex flex-col items-center gap-4 p-10">
-              <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#1A40FF]/30 border-t-transparent" />
+              <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary/30 border-t-transparent" />
               <p className="text-sm text-muted-foreground">Verificando el código…</p>
             </div>
           ) : estado === 'no-se-pudo' ? (

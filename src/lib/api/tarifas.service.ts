@@ -38,4 +38,6 @@ export interface TarifasDeLeasefy {
 
 export const tarifasApi = {
   ver: () => apiClient.get<TarifasDeLeasefy>('/config/tarifas'),
+  /** Cuánto vale un peso en USD, EUR, MXN y CLP, para VER los precios en otra moneda (31-10-2026). Se cobra en COP. */
+  tasasDeCambio: () => apiClient.get<unknown>('/config/tasas-de-cambio'),
 };

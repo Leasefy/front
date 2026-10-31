@@ -83,7 +83,7 @@ export function comoSeVe(d: PilotoActivoResponse): { titulo: string; severidad: 
 }
 
 /** Lo que dice la confirmación de prenderlo: qué va a pasar, en palabras. */
-function QueVaAPasar({ d }: { d: PilotoActivoResponse }) {
+export function QueVaAPasar({ d }: { d: PilotoActivoResponse }) {
   const hasta = d.prueba && !d.prueba.terminada ? d.prueba.hasta : d.pruebaHastaSiSeActivaHoy
   const enAutomatico = d.enAutomatico.map((a) => a.nombre)
   return (
@@ -113,6 +113,21 @@ function QueVaAPasar({ d }: { d: PilotoActivoResponse }) {
           enlace para arreglarlo.
         </p>
       )}
+      <p className="text-fg-muted">Para que quede a tu nombre, te pedimos el código de tu aplicación de autenticación.</p>
+    </div>
+  )
+}
+
+/** Lo que dice la confirmación de contratarlo: cuánto cuesta y desde cuándo se cobra. */
+export function QueVaAPasarAlContratar({ d, porInmueble = 900 }: { d: PilotoActivoResponse; porInmueble?: number }) {
+  return (
+    <div className="space-y-3" data-testid="piloto-contratar-que-va-a-pasar">
+      <p>
+        Cuesta <span className="font-medium">{formatCurrency(porInmueble)} más por inmueble al mes</span>, más IVA, y se suma a tu
+        cobro de Leasefy desde el próximo mes.
+        {d.prueba && !d.prueba.terminada ? ` Lo que queda de tu prueba (hasta el ${fecha(d.prueba.hasta)}) no se cobra.` : ''}
+      </p>
+      <p className="text-fg-muted">Lo apagas cuando quieras desde el Piloto automático y lo que elegiste en cada agente queda guardado.</p>
       <p className="text-fg-muted">Para que quede a tu nombre, te pedimos el código de tu aplicación de autenticación.</p>
     </div>
   )
@@ -276,17 +291,7 @@ export function PilotoActivacion() {
         pilotoActivo
         titulo="¿Contratar el Piloto automático?"
         descripcion="Deja de vencer: sigue trabajando a tu nombre en tu inmobiliaria."
-        explicacion={
-          <div className="space-y-3" data-testid="piloto-contratar-que-va-a-pasar">
-            <p>
-              Cuesta <span className="font-medium">{formatCurrency(900)} más por inmueble al mes</span>, más IVA, y se suma a tu cobro
-              de Leasefy desde el próximo mes.
-              {data.prueba && !data.prueba.terminada ? ` Lo que queda de tu prueba (hasta el ${fecha(data.prueba.hasta)}) no se cobra.` : ''}
-            </p>
-            <p className="text-fg-muted">Lo apagas cuando quieras desde esta misma página y lo que elegiste en cada agente queda guardado.</p>
-            <p className="text-fg-muted">Para que quede a tu nombre, te pedimos el código de tu aplicación de autenticación.</p>
-          </div>
-        }
+        explicacion={<QueVaAPasarAlContratar d={data} />}
         textoSi="Sí, contratarlo"
         textoVerificar="Verificar y contratar"
         onConfirmar={contratarlo}

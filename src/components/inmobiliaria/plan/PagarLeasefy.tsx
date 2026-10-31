@@ -4,12 +4,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Buildings, CheckCircle, LockSimpleOpen } from '@phosphor-icons/react';
-import { enterTransition, Ilustracion, motionSpring, usePrefersReducedMotion, type NombreIlustracion } from '@leasefy/cadence';
+import { enterTransition, Ilustracion, motionSpring, Presence, usePrefersReducedMotion, type NombreIlustracion } from '@leasefy/cadence';
 
 import { BeneficiosEn3D, ChipDelAliado, type BeneficioEn3D } from '@/components/conversion/EscenaDeMarca';
 import { cn } from '@/lib/utils';
 
 import { BackButton } from '@/components/ui/back-button';
+import { Sheet, SheetBody, SheetContent, SheetDescription, SheetHeader } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -25,7 +26,9 @@ import { shouldResumeReactivation } from '@/app/panel/inmobiliaria/upgrade/resum
 import { enlaceDeWhatsApp } from '@/lib/venta/whatsapp-de-leasefy';
 import { TarjetaDeRefiereYGana } from '@/components/refiere-y-gana/RefiereYGana';
 import { RecargasDePreguntas } from './RecargasDePreguntas';
+import { ConMonedaDeReferencia, SelectorDeMoneda, useMonedaDeReferencia } from '@/components/precios/MonedaDeReferencia';
 import { CuentaDelPlan } from './CuentaDelPlan';
+import { PilotoEnTuPlan } from './PilotoEnTuPlan';
 import { PreciosDeLeasefy } from './PreciosDeLeasefy';
 
 /** Lo que se abre al pagar: lo que la cuenta gratis ve en demo. */
@@ -57,6 +60,27 @@ const fecha = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'long', 
  * cobro) y pagar con Wompi (tarjeta, PSE o Nequi). Al pagar se abre todo. Antes (05-10) decía «Habla con Leasefy».
  */
 export function PagarLeasefy() {
+  // Los precios se pueden VER en otra moneda; se cobra siempre en COP (Nico, 31-10-2026).
+  return (
+    <ConMonedaDeReferencia>
+      <TuPlanDeLeasefy />
+    </ConMonedaDeReferencia>
+  );
+}
+
+/** El precio del mes en la moneda de referencia que eligió la persona («≈ 165 USD al mes»); en COP, nada. */
+function PrecioEnOtraMoneda({ monto }: { monto: number }) {
+  const { moneda, formato } = useMonedaDeReferencia();
+  return (
+    <Presence show={moneda !== 'COP'}>
+      <p className="mt-1 font-mono text-body-sm tabular-nums text-fg-muted" data-testid="precio-en-otra-moneda">
+        {formato(monto)} al mes
+      </p>
+    </Presence>
+  );
+}
+
+function TuPlanDeLeasefy() {
   const router = useRouter();
   const reducido = usePrefersReducedMotion();
   const { user, agency, refreshAgency } = useAuth();
@@ -68,6 +92,8 @@ export function PagarLeasefy() {
   // Las tarifas (`GET /config/tarifas`) van aparte: si fallan, se puede pagar igual y su sección dice qué pasó.
   const [tarifas, setTarifas] = useState<TarifasDeLeasefy | null>(null);
   const [errorDeTarifas, setErrorDeTarifas] = useState<unknown>(null);
+  // El detalle del plan, en un cajón (Nico, 31-10-2026: «demasiado texto»).
+  const [detalleAbierto, setDetalleAbierto] = useState(false);
 
   const cargar = useCallback(async () => {
     setError(null);
@@ -133,19 +159,20 @@ export function PagarLeasefy() {
       <EncabezadoDePantalla
         seccion="Tu cuenta"
         titulo="Tu plan de Leasefy"
-        descripcion="Cuánto te sale Leasefy completo con tus inmuebles, qué incluye y lo que se cobra aparte."
+        descripcion="Lo que pagas al mes. El detalle, lo que se cobra aparte y el piloto automático, en «Ver el detalle»."
       />
 
       <EstadoDelPlan estado={estado} prueba={prueba} suspendida={suspendida} />
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-        <motion.section
-          initial={reducido ? { opacity: 0 } : { opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={enterTransition(reducido)}
-          className="relative overflow-hidden rounded-lg border border-primary/25 bg-surface p-6 sm:p-8"
-          data-testid="leasefy-completo"
-        >
+      {/* Nico, 31-10-2026: «hay demasiado texto, debería más directamente la card del cobro y ya si quiere ampliar
+          información le abrimos un drawer con todo». */}
+      <motion.section
+        initial={reducido ? { opacity: 0 } : { opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={enterTransition(reducido)}
+        className="relative max-w-3xl overflow-hidden rounded-lg border border-primary/25 bg-surface p-6 sm:p-8"
+        data-testid="leasefy-completo"
+      >
           {/* Nico, 28-10: «ese círculo dentro de esa card está horrible». En su lugar, la insignia del plan en 3D. */}
           <motion.span
             aria-hidden="true"
@@ -163,7 +190,7 @@ export function PagarLeasefy() {
           <div className="relative">
             <p className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.08em] text-primary">
               <LockSimpleOpen size={14} weight="bold" aria-hidden="true" />
-              Leasefy completo
+              Tu cobro del mes
             </p>
             {cotizacion ? (
               <div className="mt-4 sm:pr-32">
@@ -171,22 +198,20 @@ export function PagarLeasefy() {
                   <span className="text-[44px] font-[420] leading-none tracking-[-0.03em] text-fg tabular-nums" data-testid="precio-del-mes">
                     {precioDelMes(cotizacion.monto)}
                   </span>
-                  <span className="text-[15px] text-fg-muted">al mes más IVA</span>
+                  <span className="text-[15px] text-fg-muted">al mes más IVA, en pesos</span>
                 </p>
+                <PrecioEnOtraMoneda monto={cotizacion.monto} />
                 <p className="mt-2 text-sm text-fg-muted">
                   {!cotizacion.porInmueble
                     ? `Plan ${cotizacion.nombre}.`
                     : cotizacion.inmuebles > 0
-                      ? `Con ${cotizacion.inmuebles === 1 ? 'tu inmueble gestionado' : `tus ${cotizacion.inmuebles.toLocaleString('es-CO')} inmuebles gestionados`} y ${cotizacion.usuarios === 1 ? '1 usuario' : `${cotizacion.usuarios.toLocaleString('es-CO')} usuarios`}. Se cobra por inmueble gestionado.`
+                      ? `${cotizacion.inmuebles === 1 ? '1 inmueble activo' : `${cotizacion.inmuebles.toLocaleString('es-CO')} inmuebles activos`} · ${cotizacion.usuarios === 1 ? '1 usuario' : `${cotizacion.usuarios.toLocaleString('es-CO')} usuarios`}`
                       : 'El mínimo del plan, mientras empiezas a gestionar inmuebles.'}
                 </p>
               </div>
             ) : (
               <p className="mt-4 text-sm text-fg-muted">Escríbenos y te decimos cuánto te sale con tus inmuebles.</p>
             )}
-            {cotizacion ? <CuentaDelPlan cotizacion={cotizacion} tarifas={tarifas?.tarifas ?? null} className="mt-5" /> : null}
-            <p className="mt-6 font-mono text-[11px] uppercase tracking-[0.08em] text-fg-subtle">Se abre todo</p>
-            <BeneficiosEn3D items={LO_QUE_SE_ABRE} className="mt-3" />
             <div className="mt-8 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center">
               {yaTieneTodo ? (
                 <p className="inline-flex items-center gap-2 text-sm font-medium text-success" data-testid="ya-tienes-todo">
@@ -202,45 +227,63 @@ export function PagarLeasefy() {
                   {cotizacion ? 'El plan lo paga el administrador de tu inmobiliaria.' : null}
                 </p>
               )}
-              {!yaTieneTodo && (
-                <Button asChild variant="secondary" className="h-12 rounded-full px-6 text-[15px]">
-                  <a href={whatsapp} target="_blank" rel="noreferrer noopener">
-                    Hablar con Leasefy
-                  </a>
-                </Button>
-              )}
+              <Button variant="secondary" className="h-12 rounded-full px-6 text-[15px]" onClick={() => setDetalleAbierto(true)} data-testid="ver-el-detalle">
+                Ver el detalle
+              </Button>
             </div>
-            {!yaTieneTodo && cotizacion && (
-              <p className="mt-3 text-caption text-fg-subtle">Tarjeta, PSE o Nequi por Wompi. Se abre al instante y se renueva cada mes; cancelas cuando quieras.</p>
-            )}
           </div>
-        </motion.section>
-
-        <section className="rounded-lg border border-border bg-surface p-6 sm:p-8" data-testid="lo-gratis">
-          <p className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.08em] text-fg-muted">
-            <Buildings size={14} weight="bold" aria-hidden="true" />
-            Gratis, siempre
-          </p>
-          <h2 className="mt-3 text-[18px] font-medium text-fg">Marketplace y Arrendamientos</h2>
-          <p className="mt-1 text-sm text-fg-muted">Esto es tuyo pagues o no, y nada de lo que crees se pierde.</p>
-          <ul className="mt-5 space-y-2.5">
-            {[...LO_GRATIS, ...loGratisConNumero(tarifas)].map((x) => (
-              <li key={x} className="flex items-center gap-2.5 text-sm text-fg">
-                <CheckCircle size={18} weight="fill" className="shrink-0 text-fg-subtle" aria-hidden="true" />
-                {x}
-              </li>
-            ))}
-          </ul>
-        </section>
-      </div>
-
-      {/* Nico, 30-10-2026: «no veo que realmente hayas sumado todo lo que se hizo en el documento de modelo de negocio». */}
-      <PreciosDeLeasefy tarifas={tarifas} error={errorDeTarifas} onReintentar={cargarTarifas} />
-
-      <RecargasDePreguntas />
+      </motion.section>
 
       {/* 28-10-2026 (Nico): Refiere y gana también en «Tu plan». */}
       <TarjetaDeRefiereYGana ruta="/panel/inmobiliaria/refiere-y-gana" />
+
+      <Sheet open={detalleAbierto} onOpenChange={setDetalleAbierto}>
+        <SheetContent side="right" size="lg" data-testid="detalle-del-plan">
+          <SheetHeader title="Tu plan, en detalle">
+            <SheetDescription className="sr-only">De dónde sale el cobro del mes, lo que incluye y lo que se cobra aparte.</SheetDescription>
+          </SheetHeader>
+          <SheetBody className="space-y-8 py-6">
+            <SelectorDeMoneda />
+            {cotizacion ? (
+              <section className="space-y-3" data-testid="detalle-la-cuenta">
+                <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-fg-muted">De dónde sale</p>
+                <CuentaDelPlan cotizacion={cotizacion} tarifas={tarifas?.tarifas ?? null} />
+              </section>
+            ) : null}
+            {/* Nico, 31-10-2026: «no veo por qué no sumaste lo del piloto automático de poder comprar». */}
+            {cotizacion ? <PilotoEnTuPlan cotizacion={cotizacion} tarifas={tarifas?.tarifas ?? null} onCambio={() => void cargar()} /> : null}
+            <section className="space-y-3">
+              <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-fg-muted">Se abre todo</p>
+              <BeneficiosEn3D items={LO_QUE_SE_ABRE} />
+            </section>
+            <section className="space-y-3" data-testid="lo-gratis">
+              <p className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.08em] text-fg-muted">
+                <Buildings size={14} weight="bold" aria-hidden="true" />
+                Gratis, siempre
+              </p>
+              <p className="text-sm text-fg-muted">Marketplace y Arrendamientos son tuyos pagues o no, y nada de lo que crees se pierde.</p>
+              <ul className="space-y-2.5">
+                {[...LO_GRATIS, ...loGratisConNumero(tarifas)].map((x) => (
+                  <li key={x} className="flex items-center gap-2.5 text-sm text-fg">
+                    <CheckCircle size={18} weight="fill" className="shrink-0 text-fg-subtle" aria-hidden="true" />
+                    {x}
+                  </li>
+                ))}
+              </ul>
+            </section>
+            {/* Nico, 30-10-2026: «no veo que realmente hayas sumado todo lo que se hizo en el documento de modelo de negocio». */}
+            <PreciosDeLeasefy tarifas={tarifas} error={errorDeTarifas} onReintentar={cargarTarifas} unaColumna />
+            <RecargasDePreguntas />
+            {!yaTieneTodo ? (
+              <Button asChild variant="ghost" className="h-11 rounded-full px-5">
+                <a href={whatsapp} target="_blank" rel="noreferrer noopener">
+                  Hablar con Leasefy
+                </a>
+              </Button>
+            ) : null}
+          </SheetBody>
+        </SheetContent>
+      </Sheet>
 
       <AgencyCheckoutOverlay
         planName={cotizacion?.nombre ?? 'Leasefy'}

@@ -299,7 +299,7 @@ export function ChatDeLaInmobiliaria({
                             className="inline-flex items-center gap-1.5 text-[14px] font-medium text-primary hover:underline"
                             data-testid="chat-escribir-por-whatsapp"
                           >
-                            <WhatsappLogo className="h-4 w-4 text-[#25D366]" weight="fill" aria-hidden />
+                            <WhatsappLogo className="h-4 w-4 text-whatsapp" weight="fill" aria-hidden />
                             Escríbele a {inmobiliaria.nombre} por WhatsApp
                           </a>
                         )}

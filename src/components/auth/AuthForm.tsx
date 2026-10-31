@@ -245,7 +245,7 @@ function useUltimoTexto(texto: string | null): string | null {
 }
 
 /** El enlace de texto azul de esta pantalla («Crear cuenta», «Inicia sesión»…). */
-const ENLACE = 'font-medium text-[#1A40FF] hover:underline underline-offset-2';
+const ENLACE = 'font-medium text-primary hover:underline underline-offset-2';
 
 /**
  * «¿Quisiste decir nico@gmail.com?», debajo del campo de correo, cuando el
@@ -276,7 +276,7 @@ function SugerenciaDeCorreo({
     <Presence show={visible} distance="xs" initial={false}>
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px]" data-testid="sugerencia-de-correo">
       <button type="button" onClick={() => onUsar(sugerencia)} className="text-fg-muted transition-colors hover:text-fg">
-        ¿Quisiste decir <span className="font-medium text-[#1A40FF]">{sugerencia}</span>?
+        ¿Quisiste decir <span className="font-medium text-primary">{sugerencia}</span>?
       </button>
       {onAceptar && (
         <button
@@ -1377,7 +1377,7 @@ export function AuthForm({
                   trae un rol), el enlace lleva al publicador del marketplace; quien viene de una postulación o de un
                   enlace con rol sigue creando su cuenta aquí mismo. */}
               {!alCrearCuenta && !returnUrl && !rolDelEnlace ? (
-                <Link href="/publica" className="font-medium text-[#1A40FF] hover:underline underline-offset-2" data-testid="ingreso-publicar-gratis">
+                <Link href="/publica" className="font-medium text-primary hover:underline underline-offset-2" data-testid="ingreso-publicar-gratis">
                   Publicar gratis
                 </Link>
               ) : (
@@ -1388,7 +1388,7 @@ export function AuthForm({
                       ? alCrearCuenta(loginForm.getValues('email')?.trim() ?? '')
                       : handleModeSwitch('register')
                   }
-                  className="font-medium text-[#1A40FF] hover:underline underline-offset-2"
+                  className="font-medium text-primary hover:underline underline-offset-2"
                 >
                   Crear cuenta
                 </button>
@@ -1489,7 +1489,7 @@ export function AuthForm({
               <button
                 type="button"
                 onClick={() => handleModeSwitch('login')}
-                className="font-medium text-[#1A40FF] hover:underline underline-offset-2"
+                className="font-medium text-primary hover:underline underline-offset-2"
               >
                 Inicia sesión
               </button>
@@ -1681,7 +1681,7 @@ export function AuthForm({
               <button
                 type="button"
                 onClick={() => handleModeSwitch('forgot-password')}
-                className="font-medium text-[#1A40FF] hover:underline underline-offset-2"
+                className="font-medium text-primary hover:underline underline-offset-2"
               >
                 Reenviar enlace
               </button>

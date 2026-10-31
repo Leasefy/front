@@ -37,9 +37,9 @@ export default function BrandPage() {
         <h2 className="mt-12 mb-4 font-heading text-[15px] font-medium text-foreground">Símbolo</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Panel label="Tile · sobre claro"><LeasefyMark variant="tile" size={64} /></Panel>
-          <Panel label="Bare · azul" className="bg-white"><LeasefyMark variant="bare" size={84} className="text-[#1A40FF]" /></Panel>
-          <Panel label="Bare · blanco" className="bg-[#1A40FF]"><LeasefyMark variant="bare" size={84} className="text-white" /></Panel>
-          <Panel label="Bare · sobre navy" className="bg-[#14130f]"><LeasefyMark variant="bare" size={84} className="text-white" /></Panel>
+          <Panel label="Bare · azul" className="bg-white"><LeasefyMark variant="bare" size={84} className="text-primary" /></Panel>
+          <Panel label="Bare · blanco" className="bg-primary"><LeasefyMark variant="bare" size={84} className="text-white" /></Panel>
+          <Panel label="Bare · sobre navy" className="bg-fg"><LeasefyMark variant="bare" size={84} className="text-white" /></Panel>
         </div>
 
         {/* Lockups */}
@@ -47,7 +47,7 @@ export default function BrandPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Panel label="Horizontal · auto"><LeasefyLogo orientation="horizontal" size={34} tone="auto" /></Panel>
           <Panel label="Brand · sobre claro"><LeasefyLogo orientation="horizontal" size={34} tone="brand" /></Panel>
-          <Panel label="White · sobre azul" className="bg-[#1A40FF]"><LeasefyLogo orientation="stacked" size={40} tone="white" /></Panel>
+          <Panel label="White · sobre azul" className="bg-primary"><LeasefyLogo orientation="stacked" size={40} tone="white" /></Panel>
         </div>
 
         {/* Motivo — pinstripe field */}
@@ -57,23 +57,23 @@ export default function BrandPage() {
           del campo — nunca como barras de altura variable.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Panel label="Arch · sobre navy (hero)" className="bg-[#14130f] p-0">
+          <Panel label="Arch · sobre navy (hero)" className="bg-fg p-0">
             <BrandMotif tone="on-navy" shape="arch" />
           </Panel>
-          <Panel label="Valley · sobre azul (señalética)" className="bg-[#1A40FF] p-0">
+          <Panel label="Valley · sobre azul (señalética)" className="bg-primary p-0">
             <BrandMotif tone="on-blue" shape="valley" />
           </Panel>
-          <Panel label="Rings · sobre navy (póster)" className="bg-[#14130f] p-0">
+          <Panel label="Rings · sobre navy (póster)" className="bg-fg p-0">
             <BrandMotif tone="on-navy" shape="rings" />
-            <LeasefyMark variant="bare" size={56} className="relative text-[#14130f]" />
+            <LeasefyMark variant="bare" size={56} className="relative text-fg" />
           </Panel>
           <Panel label="Dome · hairline sobre claro (brochure)" className="bg-white p-0">
             <BrandMotif tone="on-light" shape="dome" />
           </Panel>
-          <Panel label="Field · sobre azul" className="bg-[#1A40FF] p-0">
+          <Panel label="Field · sobre azul" className="bg-primary p-0">
             <BrandMotif tone="on-blue" shape="field" />
           </Panel>
-          <Panel label="Contour · hairline (badge)" className="bg-[#14130f] p-0">
+          <Panel label="Contour · hairline (badge)" className="bg-fg p-0">
             <div className="absolute inset-x-0 top-[30%] h-[44%] text-white/25">
               <BrandContour />
             </div>
@@ -85,7 +85,7 @@ export default function BrandPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Hero panel — exhibition-wall grammar */}
           <div className="rounded-xl border border-border overflow-hidden">
-            <div className="relative h-72 bg-[#14130f] overflow-hidden">
+            <div className="relative h-72 bg-fg overflow-hidden">
               <div className="absolute inset-y-0 -right-[6%] w-[64%]">
                 <BrandMotif tone="on-navy" shape="arch" fade="left" />
               </div>
@@ -95,7 +95,7 @@ export default function BrandPage() {
                   <p className="font-heading text-[22px] font-medium leading-[1.15] tracking-[-0.02em] text-white">
                     Arriendo moderno,
                     <br />
-                    <span className="text-[#4E6BFF]">sin esfuerzo.</span>
+                    <span className="text-primary">sin esfuerzo.</span>
                   </p>
                   <p className="mt-2 text-[12px] text-white/55 max-w-[240px]">
                     Tecnología para inmobiliarias y propietarios modernos.
@@ -111,7 +111,7 @@ export default function BrandPage() {
 
           {/* Badge / KPI card — contour grammar */}
           <div className="rounded-xl border border-border overflow-hidden">
-            <div className="relative h-72 bg-[#f8f8f8] flex items-center justify-center">
+            <div className="relative h-72 bg-surface-muted flex items-center justify-center">
               <div
                 className="relative w-64 rounded-xl p-5 overflow-hidden"
                 style={{ background: 'linear-gradient(150deg, #14130f 58%, #2a2824 135%)', boxShadow: '0 10px 30px -6px rgba(26,64,255,0.30)' }}
@@ -138,13 +138,13 @@ export default function BrandPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Panel label="Correcto · sentence case">
             <div className="flex items-center gap-3">
-              <span className="inline-flex items-center gap-2 h-10 px-5 rounded-xl bg-[#1A40FF] text-white text-sm font-medium">Iniciar sesión ↗</span>
+              <span className="inline-flex items-center gap-2 h-10 px-5 rounded-xl bg-primary text-white text-sm font-medium">Iniciar sesión ↗</span>
               <span className="inline-flex items-center h-10 px-5 rounded-xl border border-border text-sm font-medium text-foreground">Crear cuenta</span>
             </div>
           </Panel>
           <Panel label="Incorrecto · mono uppercase">
             <div className="flex items-center gap-3 opacity-60">
-              <span className="inline-flex items-center gap-2 h-10 px-5 rounded-xl bg-[#1A40FF] text-white text-[12px] font-mono uppercase tracking-wide line-through decoration-white/70">Iniciar sesión</span>
+              <span className="inline-flex items-center gap-2 h-10 px-5 rounded-xl bg-primary text-white text-[12px] font-mono uppercase tracking-wide line-through decoration-white/70">Iniciar sesión</span>
               <span className="text-[18px]">✕</span>
             </div>
           </Panel>

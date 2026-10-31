@@ -1851,6 +1851,20 @@ select:-webkit-autofill:active {
   --ink-fg-muted: rgba(246, 245, 242, 0.66);
   --ink-fg-subtle: rgba(246, 245, 242, 0.46);
   --ink-border: rgba(246, 245, 242, 0.12);
+  /* la NOCHE del glow up (landing, marketplace, páginas por público): el negro
+     fijo de sus secciones oscuras, su tarjeta y lo que va encima, con los MISMOS
+     valores que tenían en hex (Nico, 31-10-2026: «no me vayas a cambiar el glow
+     up»). Fijos: no cambian con el tema. */
+  --noche: #07080c;
+  --noche-tarjeta: #101116;
+  --noche-voltaje: #4d6bff;
+  --noche-fg: #f3f1ed;
+  --noche-fg-muted: #b9bcd0;
+  --noche-fg-subtle: #8e93b0;
+  --noche-primary: #8fa2ff;
+  --noche-success: #7fd3a0;
+  /* el verde de WhatsApp: sólo su logo */
+  --whatsapp: #25d366;
   /* chispas — SÓLO ilustración (esferas, fotos en estrías), nunca UI */
   --chispa-lila: #9d8cff;
   --chispa-ambar: #ff7a3d;

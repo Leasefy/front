@@ -273,7 +273,7 @@ export function BotonWhatsapp({ numero: n, nombre }: { numero: string; nombre: s
       className="inline-flex h-10 items-center gap-1.5 rounded-full border border-border bg-surface px-4 text-[14px] font-medium text-fg transition-colors duration-base hover:border-border-strong active:scale-[0.97]"
       data-testid="whatsapp-de-la-inmobiliaria"
     >
-      <WhatsappLogo className="h-4 w-4 text-[#25D366]" weight="fill" aria-hidden />
+      <WhatsappLogo className="h-4 w-4 text-whatsapp" weight="fill" aria-hidden />
       Escribir
     </a>
   );

@@ -68,7 +68,7 @@ export const AuthInput = React.forwardRef<HTMLInputElement, AuthInputProps>(
               // vuelve blanco con el azul de la marca y un halo suave.
               'h-12 w-full rounded-lg border bg-surface-muted/70 px-4 text-base md:text-[14px] text-fg',
               'transition-[background-color,border-color,box-shadow] duration-fast ease-standard placeholder:text-fg-placeholder',
-              'focus:outline-none focus:bg-surface focus:border-[#1A40FF] focus:shadow-[0_0_0_4px_rgba(26,64,255,0.10)]',
+              'focus:outline-none focus:bg-surface focus:border-primary focus:shadow-[0_0_0_4px_rgba(26,64,255,0.10)]',
               'disabled:cursor-not-allowed disabled:opacity-50',
               isPassword && 'pr-11',
               error

@@ -746,7 +746,7 @@ export function PlanHeader({
                   >
                     <Lightning className="w-5 h-5 stroke-[1.5px]" />
                     {isBaseTier && (
-                      <span className="absolute top-1 right-1 w-2 h-2 bg-[#1A40FF] rounded-full" />
+                      <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
                     )}
                   </button>
                 </PopoverTrigger>
@@ -1046,7 +1046,7 @@ export function PlanHeader({
                         <span className="inline-flex items-center">
                           {locale === 'es' ? 'Todas' : 'All'}
                           {activeNotifs.total > 0 && (
-                            <span className="ml-1.5 px-1.5 py-0.5 bg-[#1A40FF] text-white uppercase tracking-wide font-mono text-[10px] rounded-full">
+                            <span className="ml-1.5 px-1.5 py-0.5 bg-primary text-white uppercase tracking-wide font-mono text-[10px] rounded-full">
                               {activeNotifs.total}
                             </span>
                           )}
@@ -1059,7 +1059,7 @@ export function PlanHeader({
                         <span className="inline-flex items-center">
                           {locale === 'es' ? 'Sin leer' : 'Unread'}
                           {unreadCount > 0 && (
-                            <span className="ml-1.5 px-1.5 py-0.5 bg-[#1A40FF] text-white uppercase tracking-wide font-mono text-[10px] rounded-full">
+                            <span className="ml-1.5 px-1.5 py-0.5 bg-primary text-white uppercase tracking-wide font-mono text-[10px] rounded-full">
                               {unreadCount}
                             </span>
                           )}
@@ -1179,7 +1179,7 @@ export function PlanHeader({
                     setNotificationsOpen(false);
                     router.push(isLandlord ? '/panel/notificaciones' : '/inquilino/notificaciones');
                   }}
-                  className="w-full text-center text-[13px] font-medium text-[#1A40FF] dark:text-[#5570FF] hover:text-[#1A40FF] dark:hover:text-[#1A40FF] transition-colors"
+                  className="w-full text-center text-[13px] font-medium text-primary hover:text-primary transition-colors"
                 >
                   {t('header.viewAll')}
                 </button>

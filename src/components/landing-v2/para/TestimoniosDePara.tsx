@@ -50,8 +50,8 @@ export function TestimoniosDePara({
   };
 
   const flecha = cn(
-    'inline-flex h-12 w-12 items-center justify-center rounded-full bg-white text-[#121110] ring-1 ring-[#E7E3DC] transition-colors duration-fast hover:bg-[#E7E3DC]',
-    'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[#1A40FF]',
+    'inline-flex h-12 w-12 items-center justify-center rounded-full bg-surface text-fg ring-1 ring-border transition-colors duration-fast hover:bg-surface-muted',
+    'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-primary',
     ESQUINA,
   );
 
@@ -60,7 +60,7 @@ export function TestimoniosDePara({
       <div className={ANCHO}>
         <Ceja>{ceja}</Ceja>
         <div className="mt-5 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-          <h2 className="max-w-[860px] font-heading text-[clamp(34px,4.4vw,64px)] font-[360] leading-[1.03] tracking-[-0.04em] text-[#121110]">
+          <h2 className="max-w-[860px] font-heading text-[clamp(34px,4.4vw,64px)] font-[360] leading-[1.03] tracking-[-0.04em] text-fg">
             {titulo}
           </h2>
           <div className="flex flex-none items-center gap-3">
@@ -77,13 +77,13 @@ export function TestimoniosDePara({
           <div className="grid items-start gap-[clamp(28px,5vw,80px)] md:grid-cols-[.8fr_1.2fr]">
             <FotoQueSeRevela src={t.image} alt={t.author} proporcion={1} paso={7} rotulo={t.author} />
             <blockquote className="m-0 flex h-full flex-col">
-              <p className="font-heading text-[clamp(24px,2.7vw,40px)] font-[340] leading-[1.24] tracking-[-0.03em] text-[#121110]">
+              <p className="font-heading text-[clamp(24px,2.7vw,40px)] font-[340] leading-[1.24] tracking-[-0.03em] text-fg">
                 «{t.quote}»
               </p>
               <footer className="mt-8 flex items-center gap-3">
                 {avatar ? avatar(t) : null}
-                <span className="font-mono text-caption uppercase tracking-[0.06em] text-[#706B64]">
-                  <span className="text-[#121110]">{t.author}</span> · {t.role}
+                <span className="font-mono text-caption uppercase tracking-[0.06em] text-fg-subtle">
+                  <span className="text-fg">{t.author}</span> · {t.role}
                 </span>
               </footer>
             </blockquote>
@@ -91,7 +91,7 @@ export function TestimoniosDePara({
         </CrossFade>
 
         <div className="mt-10 flex items-center gap-4" role="group" aria-label="Testimonios">
-          <span className="font-mono text-caption tabular-nums text-[#706B64]">
+          <span className="font-mono text-caption tabular-nums text-fg-subtle">
             {String(i + 1).padStart(2, '0')} / {String(n).padStart(2, '0')}
           </span>
           <div className="flex items-center gap-1.5">
@@ -108,7 +108,7 @@ export function TestimoniosDePara({
                   aria-hidden="true"
                   className={cn(
                     'block h-2 w-2 rounded-[2px] transition-colors duration-base',
-                    k === i ? 'bg-[#1A40FF]' : 'bg-[#D6D1C8]',
+                    k === i ? 'bg-primary' : 'bg-border',
                   )}
                 />
               </button>

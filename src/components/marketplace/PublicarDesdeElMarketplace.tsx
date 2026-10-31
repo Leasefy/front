@@ -37,12 +37,12 @@ const SIN_PERMISO_PARA_PUBLICAR: AgencyMemberRole[] = ['CONTADOR', 'VIEWER'];
 // medianoche (la única acción azul de la página es buscar); el otro, contorno claro.
 const boton =
   'inline-flex h-[46px] items-center justify-center gap-[9px] whitespace-nowrap rounded-[16px] px-[22px] text-[15.5px] font-medium tracking-[-0.005em] transition-colors duration-fast active:scale-[0.97]';
-const blanco = `${boton} bg-white text-[#0A0F2C] hover:bg-[#E9EDFF]`;
-const contorno = `${boton} border border-white/[0.22] bg-transparent text-[#F3F1ED] hover:border-white/50`;
+const blanco = `${boton} bg-white text-ink hover:bg-primary-soft`;
+const contorno = `${boton} border border-white/[0.22] bg-transparent text-noche-fg hover:border-white/50`;
 const oferta = 'flex flex-col items-start p-[clamp(28px,4vw,52px)]';
 const tituloDeOferta =
   'mt-3.5 max-w-[440px] text-[clamp(25px,2.4vw,34px)] font-[360] leading-[1.1] tracking-[-0.03em] [text-wrap:balance]';
-const textoDeOferta = 'mt-3 max-w-[470px] text-[15.5px] leading-[1.55] text-[#B9BCD0]';
+const textoDeOferta = 'mt-3 max-w-[470px] text-[15.5px] leading-[1.55] text-noche-fg-muted';
 
 /**
  * A dónde lleva «Publicar inmueble» según quién mira (el botón de la barra y
@@ -109,8 +109,8 @@ function ObjetoQueFlota({ nombre, desfase = 0 }: { nombre: 'casa' | 'edificio'; 
 /** El sobretítulo en mono de cada oferta, con su cuadrito de voltaje. */
 function Ceja({ children }: { children: ReactNode }) {
   return (
-    <p className="inline-flex items-center gap-2.5 font-mono text-[12px] uppercase leading-[1.3] tracking-[0.08em] text-[#8E93B0]">
-      <i className="inline-block h-2 w-2 flex-none rounded-[2px] bg-[#4D6BFF]" aria-hidden />
+    <p className="inline-flex items-center gap-2.5 font-mono text-[12px] uppercase leading-[1.3] tracking-[0.08em] text-noche-fg-subtle">
+      <i className="inline-block h-2 w-2 flex-none rounded-[2px] bg-noche-voltaje" aria-hidden />
       {children}
     </p>
   );
@@ -130,7 +130,7 @@ export function PublicarDesdeElMarketplace() {
   // Antes, dos tarjetas blancas con borde. Mismas rutas, mismos casos y mismos data-testid.
   return (
     <section
-      className="relative mx-[clamp(16px,2.6vw,32px)] mt-[72px] overflow-hidden rounded-[32px] bg-[#07080C] text-[#F3F1ED] ring-1 ring-white/[0.09]"
+      className="relative mx-[clamp(16px,2.6vw,32px)] mt-[72px] overflow-hidden rounded-[32px] bg-noche text-noche-fg ring-1 ring-white/[0.09]"
       aria-label="Publicar"
       data-testid="publicar-desde-el-marketplace"
     >
@@ -149,10 +149,10 @@ export function PublicarDesdeElMarketplace() {
                   Publícalo gratis. Te sugerimos el canon con el avalúo de Leasefy y el contrato se firma en línea.
                 </p>
                 <p
-                  className="mt-4 flex max-w-[470px] items-start gap-2 rounded-[14px] bg-white/[0.06] px-3.5 py-3 text-[13.5px] text-[#D9DBE7]"
+                  className="mt-4 flex max-w-[470px] items-start gap-2 rounded-[14px] bg-white/[0.06] px-3.5 py-3 text-[13.5px] text-noche-fg"
                   data-testid="publicar-cuenta-de-inquilino"
                 >
-                  <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#8E93B0]" aria-hidden />
+                  <Info className="mt-0.5 h-4 w-4 shrink-0 text-noche-fg-subtle" aria-hidden />
                   Tu cuenta es de inquilino. Publican las cuentas de propietario y de inmobiliaria: entra con una de ellas
                   para publicar.
                 </p>
@@ -201,7 +201,7 @@ export function PublicarDesdeElMarketplace() {
                 </Link>
               </>
             ) : esDeLaInmobiliaria ? (
-              <p className="text-[13.5px] text-[#B9BCD0]" data-testid="publicar-sin-permiso">
+              <p className="text-[13.5px] text-noche-fg-muted" data-testid="publicar-sin-permiso">
                 Tu rol en la inmobiliaria no publica inmuebles. Pídeselo a quien administra tu cuenta.
               </p>
             ) : (
@@ -213,7 +213,7 @@ export function PublicarDesdeElMarketplace() {
                 {!conSesion && (
                   <Link
                     href={`/auth?returnUrl=${encodeURIComponent('/publica')}`}
-                    className="inline-flex items-center gap-[7px] text-[15.5px] font-medium text-[#AFC0FF] underline-offset-4 hover:underline"
+                    className="inline-flex items-center gap-[7px] text-[15.5px] font-medium text-noche-primary underline-offset-4 hover:underline"
                     data-testid="ya-tengo-cuenta"
                   >
                     Ya tengo cuenta: publicar

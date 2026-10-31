@@ -89,6 +89,7 @@ import { ApiError } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
 import { ASPA_DE_CIERRE } from "@/components/ui/aspa-de-cierre";
 import { useI18n } from "@/lib/i18n";
+import { CuantoTeSale } from "./CuantoTeSale";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/lib/hooks/usePermissions";
 import { useLenis } from "@/components/providers/SmoothScroll";
@@ -1148,6 +1149,8 @@ export function PanelDeMigracion({
               {t("migracion.muro.subtitulo")}
             </p>
           </div>
+          {/* Nico, 31-10-2026: con los inmuebles que trae ya se sabe cuánto le saldrá Leasefy. */}
+          <CuantoTeSale pasos={pasos} />
           <BarraDePasos
             pasos={pasos}
             seleccionado={indice}

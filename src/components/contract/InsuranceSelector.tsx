@@ -134,14 +134,14 @@ export function InsuranceSelector({
               {/* Popular/Best Value Badge */}
               {policy.recommended && (
                 <div className="absolute top-0 right-0">
-                  <div className="bg-gradient-to-r from-primary to-primary text-white text-caption font-medium px-3 py-1 rounded-bl-md">
+                  <div className="bg-primary text-white text-caption font-medium px-3 py-1 rounded-bl-md">
                     Popular
                   </div>
                 </div>
               )}
               {isPremium && (
                 <div className="absolute top-0 right-0">
-                  <div className="bg-gradient-to-r from-success to-success text-white text-caption font-medium px-3 py-1 rounded-bl-md flex items-center gap-1">
+                  <div className="bg-success text-white text-caption font-medium px-3 py-1 rounded-bl-md flex items-center gap-1">
                     <Sparkle className="w-3 h-3" />
                     Mejor valor
                   </div>

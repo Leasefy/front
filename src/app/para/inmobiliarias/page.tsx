@@ -52,21 +52,21 @@ function PiezaDelHeroe() {
     <div className="space-y-3">
       <Tarjeta className="p-5 shadow-[0_50px_90px_-40px_rgba(18,17,16,.35),0_22px_40px_-22px_rgba(18,17,16,.18)]">
         <div className="flex items-center gap-3">
-          <span className={cn('grid h-10 w-10 place-items-center rounded-[12px] bg-[#0A0F2C] font-mono text-caption text-white', ESQUINA)}>
+          <span className={cn('grid h-10 w-10 place-items-center rounded-[12px] bg-ink font-mono text-caption text-white', ESQUINA)}>
             IB
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-[15px] font-[450] text-[#121110]">Inmobiliaria Bogotá</p>
-            <p className="text-caption text-[#706B64]">Plan Flex</p>
+            <p className="text-[15px] font-[450] text-fg">Inmobiliaria Bogotá</p>
+            <p className="text-caption text-fg-subtle">Plan Flex</p>
           </div>
-          <CheckCircle className="h-5 w-5 text-[#2B7549]" aria-hidden="true" />
+          <CheckCircle className="h-5 w-5 text-success" aria-hidden="true" />
         </div>
-        <div className="mt-4 rounded-[16px] bg-[#F3F1ED] p-4">
+        <div className="mt-4 rounded-[16px] bg-surface-muted p-4">
           <div className="flex items-center justify-between text-caption">
-            <span className="text-[#5B5751]">Candidatos este mes</span>
-            <span className="font-mono text-[#2B7549]">+28%</span>
+            <span className="text-fg-muted">Candidatos este mes</span>
+            <span className="font-mono text-success">+28%</span>
           </div>
-          <p className="mt-1 font-mono text-[30px] font-normal leading-none tracking-[-0.03em] text-[#121110]">347</p>
+          <p className="mt-1 font-mono text-[30px] font-normal leading-none tracking-[-0.03em] text-fg">347</p>
         </div>
         <dl className="mt-3 grid grid-cols-3 gap-2 text-center">
           {[
@@ -74,9 +74,9 @@ function PiezaDelHeroe() {
             { v: '12', l: 'Agentes' },
             { v: '89%', l: 'Ocupación' },
           ].map((s) => (
-            <div key={s.l} className="rounded-[12px] bg-[#FBFAF8] px-1 py-2.5 ring-1 ring-[#ECE8E1]">
-              <dd className="font-mono text-[18px] text-[#121110]">{s.v}</dd>
-              <dt className="text-caption text-[#706B64]">{s.l}</dt>
+            <div key={s.l} className="rounded-[12px] bg-bg px-1 py-2.5 ring-1 ring-border">
+              <dd className="font-mono text-[18px] text-fg">{s.v}</dd>
+              <dt className="text-caption text-fg-subtle">{s.l}</dt>
             </div>
           ))}
         </dl>
@@ -84,8 +84,8 @@ function PiezaDelHeroe() {
       <Tarjeta className="flex items-center gap-3 px-4 py-3">
         <Punto />
         <div className="min-w-0">
-          <p className="text-caption font-medium text-[#121110]">Scoring completado</p>
-          <p className="font-mono text-caption text-[#706B64]">Score: 87/100 · Bajo riesgo</p>
+          <p className="text-caption font-medium text-fg">Scoring completado</p>
+          <p className="font-mono text-caption text-fg-subtle">Score: 87/100 · Bajo riesgo</p>
         </div>
       </Tarjeta>
     </div>
@@ -112,14 +112,14 @@ function TarjetaDeNoche({
     <Appear inView distance="md" duration="slow" delay={delay} className={className}>
       <Tarjeta enNoche className="flex h-full flex-col gap-6 p-6 sm:flex-row sm:p-7">
         <div className="min-w-0 flex-1">
-          <h3 className="text-[22px] font-[420] leading-tight tracking-[-0.02em] text-[#F3F1ED]">{titulo}</h3>
-          <p className="mt-2 text-[15px] leading-[1.5] text-[#B9BCD0]">{texto}</p>
+          <h3 className="text-[22px] font-[420] leading-tight tracking-[-0.02em] text-noche-fg">{titulo}</h3>
+          <p className="mt-2 text-[15px] leading-[1.5] text-noche-fg-muted">{texto}</p>
           {chips ? (
             <ul className="mt-5 flex flex-wrap gap-2">
               {chips.map((c) => (
                 <li
                   key={c}
-                  className={cn('inline-flex h-8 items-center gap-2 rounded-[10px] bg-white/[0.06] px-3 font-mono text-caption uppercase tracking-[0.06em] text-[#B9BCD0]', ESQUINA)}
+                  className={cn('inline-flex h-8 items-center gap-2 rounded-[10px] bg-white/[0.06] px-3 font-mono text-caption uppercase tracking-[0.06em] text-noche-fg-muted', ESQUINA)}
                 >
                   <Punto enNoche className="h-1.5 w-1.5" />
                   {c}
@@ -137,7 +137,7 @@ function TarjetaDeNoche({
 export default function InmobiliariasPage() {
   return (
     <LandingChrome>
-      <main className="overflow-hidden bg-[#FBFAF8]">
+      <main className="overflow-hidden bg-bg">
         <HeroeDePara
           ceja="Solución empresarial para inmobiliarias"
           titulo={
@@ -148,7 +148,7 @@ export default function InmobiliariasPage() {
           entrada={
             <>
               CRM de candidatos, scoring con IA, contratos digitales y API completa.
-              <span className="text-[#121110]"> Todo integrado.</span>
+              <span className="text-fg"> Todo integrado.</span>
             </>
           }
           principal={{ href: '/auth', texto: 'Empezar prueba gratis' }}
@@ -182,8 +182,8 @@ export default function InmobiliariasPage() {
               {problemasConFoto.map((p, i) => (
                 <Appear key={p.titulo} inView distance="md" duration="slow" delay={i * 0.08}>
                   <FotoQueSeRevela src={p.foto} alt={p.alt} proporcion={4 / 3} rotulo={`PROBLEMA ${String(i + 1).padStart(2, '0')}`} />
-                  <h3 className="mt-5 text-[24px] font-[420] leading-tight tracking-[-0.02em] text-[#121110]">{p.titulo}</h3>
-                  <p className="mt-2 text-[15px] leading-[1.5] text-[#5B5751]">{p.texto}</p>
+                  <h3 className="mt-5 text-[24px] font-[420] leading-tight tracking-[-0.02em] text-fg">{p.titulo}</h3>
+                  <p className="mt-2 text-[15px] leading-[1.5] text-fg-muted">{p.texto}</p>
                 </Appear>
               ))}
             </div>
@@ -194,19 +194,19 @@ export default function InmobiliariasPage() {
                   <div>
                     <Rotulo tono="neutro">PROBLEMA 04</Rotulo>
                     <h3 className="mt-4 text-[24px] font-[420] leading-tight tracking-[-0.02em]">Sin integración</h3>
-                    <p className="mt-2 text-[15px] leading-[1.5] text-[#5B5751]">
+                    <p className="mt-2 text-[15px] leading-[1.5] text-fg-muted">
                       Tu ERP, CRM y sistemas de contabilidad no se hablan entre sí. Doble digitación y errores constantes.
                     </p>
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-1.5" aria-hidden="true">
                       {['ERP', 'CRM', 'CONT'].map((s) => (
-                        <span key={s} className={cn('grid h-9 w-12 place-items-center rounded-[10px] bg-[#F3F1ED] font-mono text-caption text-[#5B5751]', ESQUINA)}>
+                        <span key={s} className={cn('grid h-9 w-12 place-items-center rounded-[10px] bg-surface-muted font-mono text-caption text-fg-muted', ESQUINA)}>
                           {s}
                         </span>
                       ))}
                     </div>
-                    <span className="text-caption text-[#5B5751]">3 sistemas desconectados</span>
+                    <span className="text-caption text-fg-muted">3 sistemas desconectados</span>
                   </div>
                 </Tarjeta>
               </Appear>
@@ -215,19 +215,19 @@ export default function InmobiliariasPage() {
                   <div>
                     <Rotulo tono="neutro">PROBLEMA 05</Rotulo>
                     <h3 className="mt-4 text-[24px] font-[420] leading-tight tracking-[-0.02em]">Escalabilidad limitada</h3>
-                    <p className="mt-2 text-[15px] leading-[1.5] text-[#5B5751]">
+                    <p className="mt-2 text-[15px] leading-[1.5] text-fg-muted">
                       Cada 50 inmuebles nuevos, necesitas contratar más personal. Tu operación no escala eficientemente.
                     </p>
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="flex-none">
-                      <p className="font-mono text-[30px] leading-none text-[#121110]">50</p>
-                      <p className="mt-1 text-caption text-[#706B64]">inmuebles por persona</p>
+                      <p className="font-mono text-[30px] leading-none text-fg">50</p>
+                      <p className="mt-1 text-caption text-fg-subtle">inmuebles por persona</p>
                     </div>
                     <HiloDePuntos className="min-w-[40px] flex-1" />
                     <div className="flex-none text-right">
-                      <p className="font-mono text-[30px] leading-none text-[#1A40FF]">200+</p>
-                      <p className="mt-1 text-caption text-[#706B64]">con automatización</p>
+                      <p className="font-mono text-[30px] leading-none text-primary">200+</p>
+                      <p className="mt-1 text-caption text-fg-subtle">con automatización</p>
                     </div>
                   </div>
                 </Tarjeta>
@@ -267,20 +267,20 @@ export default function InmobiliariasPage() {
               >
                 <div className="rounded-[16px] bg-white/[0.04] p-4 ring-1 ring-white/[0.08]">
                   <div className="flex items-center justify-between text-caption">
-                    <span className="text-[#8E93B0]">Candidatos</span>
-                    <span className="font-mono text-[#7FD3A0]">+12%</span>
+                    <span className="text-noche-fg-subtle">Candidatos</span>
+                    <span className="font-mono text-noche-success">+12%</span>
                   </div>
-                  <p className="mt-1 font-mono text-[28px] leading-none text-[#F3F1ED]">247</p>
+                  <p className="mt-1 font-mono text-[28px] leading-none text-noche-fg">247</p>
                   <ul className="mt-3 space-y-2 border-t border-white/[0.08] pt-3">
                     {[
-                      { name: 'María L.', status: 'Aprobado', color: 'bg-[#2B7549]' },
-                      { name: 'Nicolás R.', status: 'En revisión', color: 'bg-[#D9911C]' },
-                      { name: 'Ana M.', status: 'Nuevo', color: 'bg-[#4D6BFF]' },
+                      { name: 'María L.', status: 'Aprobado', color: 'bg-success' },
+                      { name: 'Nicolás R.', status: 'En revisión', color: 'bg-warning' },
+                      { name: 'Ana M.', status: 'Nuevo', color: 'bg-noche-voltaje' },
                     ].map((item) => (
                       <li key={item.name} className="flex items-center gap-2 text-caption">
                         <i aria-hidden="true" className={cn('h-1.5 w-1.5 rounded-[2px]', item.color)} />
-                        <span className="flex-1 text-[#F3F1ED]">{item.name}</span>
-                        <span className="text-[#8E93B0]">{item.status}</span>
+                        <span className="flex-1 text-noche-fg">{item.name}</span>
+                        <span className="text-noche-fg-subtle">{item.status}</span>
                       </li>
                     ))}
                   </ul>
@@ -298,8 +298,8 @@ export default function InmobiliariasPage() {
                     <path d="M 10 55 A 40 40 0 0 1 90 55" fill="none" stroke="rgba(255,255,255,.1)" strokeWidth="8" strokeLinecap="round" />
                     <path d="M 10 55 A 40 40 0 0 1 90 55" fill="none" stroke="#4D6BFF" strokeWidth="8" strokeLinecap="round" strokeDasharray="126" strokeDashoffset="16" />
                   </svg>
-                  <span className="-mt-3 font-mono text-[26px] leading-none text-[#F3F1ED]">87</span>
-                  <span className="mt-2 text-caption text-[#7FD3A0]">Bajo riesgo</span>
+                  <span className="-mt-3 font-mono text-[26px] leading-none text-noche-fg">87</span>
+                  <span className="mt-2 text-caption text-noche-success">Bajo riesgo</span>
                 </div>
               </TarjetaDeNoche>
 
@@ -312,12 +312,12 @@ export default function InmobiliariasPage() {
                 <div aria-hidden="true" className="mx-auto grid w-[132px] grid-cols-3 gap-1.5">
                   {[92, 88, 96, 75, 90, 85, 78, 94, 82].map((occ, i) => (
                     <div key={i} className="flex aspect-square flex-col justify-end rounded-[6px] bg-white/[0.06] p-1">
-                      <div className={cn('w-full rounded-[3px]', occ > 85 ? 'bg-[#4D6BFF]' : 'bg-[#4D6BFF]/50')} style={{ height: `${occ * 0.6}%` }} />
+                      <div className={cn('w-full rounded-[3px]', occ > 85 ? 'bg-noche-voltaje' : 'bg-noche-voltaje/50')} style={{ height: `${occ * 0.6}%` }} />
                     </div>
                   ))}
                 </div>
-                <p className="mt-3 text-center text-caption text-[#8E93B0]">
-                  <span className="font-mono text-[#F3F1ED]">91%</span> ocupación
+                <p className="mt-3 text-center text-caption text-noche-fg-subtle">
+                  <span className="font-mono text-noche-fg">91%</span> ocupación
                 </p>
               </TarjetaDeNoche>
 
@@ -328,19 +328,19 @@ export default function InmobiliariasPage() {
                 texto="Integra con tu ERP existente. Webhooks en tiempo real."
                 chips={['REST API', 'Webhooks', 'SDK', 'Sandbox']}
               >
-                <div className="overflow-hidden rounded-[14px] bg-[#0B0C12] ring-1 ring-white/[0.08]">
+                <div className="overflow-hidden rounded-[14px] bg-noche-tarjeta ring-1 ring-white/[0.08]">
                   <div className="flex items-center gap-1.5 border-b border-white/[0.08] px-3 py-2">
                     <Punto enNoche className="h-1.5 w-1.5" />
-                    <span className="font-mono text-caption text-[#8E93B0]">terminal</span>
+                    <span className="font-mono text-caption text-noche-fg-subtle">terminal</span>
                   </div>
-                  <pre className="m-0 whitespace-pre p-3 font-mono text-caption leading-relaxed text-[#B9BCD0]">
-                    <span className="text-[#7FD3A0]">GET</span>
+                  <pre className="m-0 whitespace-pre p-3 font-mono text-caption leading-relaxed text-noche-fg-muted">
+                    <span className="text-noche-success">GET</span>
                     {' /candidates\n{\n  "id": '}
-                    <span className="text-[#8FA2FF]">1247</span>
+                    <span className="text-noche-primary">1247</span>
                     {',\n  "score": '}
-                    <span className="text-[#8FA2FF]">87</span>
+                    <span className="text-noche-primary">87</span>
                     {',\n  "risk": '}
-                    <span className="text-[#7FD3A0]">&quot;low&quot;</span>
+                    <span className="text-noche-success">&quot;low&quot;</span>
                     {'\n}'}
                   </pre>
                 </div>
@@ -360,9 +360,9 @@ export default function InmobiliariasPage() {
                       <div className="h-1 w-full rounded bg-white/20" />
                       <div className="h-1 w-1/2 rounded bg-white/20" />
                     </div>
-                    <CheckCircle className="absolute bottom-2 right-2 h-4 w-4 text-[#8FA2FF]" />
+                    <CheckCircle className="absolute bottom-2 right-2 h-4 w-4 text-noche-primary" />
                   </div>
-                  <span className="mt-2 text-caption text-[#8E93B0]">Firmado</span>
+                  <span className="mt-2 text-caption text-noche-fg-subtle">Firmado</span>
                 </div>
               </TarjetaDeNoche>
 
@@ -373,8 +373,8 @@ export default function InmobiliariasPage() {
                 texto="Protección completa contra impagos. Cobertura desde el primer día."
               >
                 <div className="flex flex-col items-center">
-                  <p className="font-mono text-[34px] leading-none text-[#F3F1ED]">100%</p>
-                  <span className="mt-2 text-caption text-[#8E93B0]">cubierto</span>
+                  <p className="font-mono text-[34px] leading-none text-noche-fg">100%</p>
+                  <span className="mt-2 text-caption text-noche-fg-subtle">cubierto</span>
                 </div>
               </TarjetaDeNoche>
             </div>
@@ -383,7 +383,7 @@ export default function InmobiliariasPage() {
 
         {/* Ronda 30: fuera los testimonios: eran inventados (nombres, cifras y fotos de banco). Vuelven cuando haya reales. */}
 
-        <div className="[&>section]:!bg-[#FBFAF8]">
+        <div className="[&>section]:!bg-bg">
           <FAQSection />
         </div>
         <CierreDePara semilla={7} />

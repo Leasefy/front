@@ -146,7 +146,7 @@ function TarjetaDeGaleria({
             className="object-cover transition-transform duration-[700ms] ease-enter group-hover:scale-[1.04]"
           />
           {video && (
-            <span className="absolute left-3 top-3 z-[2] inline-flex h-6 items-center gap-1.5 rounded-sm bg-white px-[9px] font-mono text-[11px] uppercase tracking-[0.08em] text-[#121110]">
+            <span className="absolute left-3 top-3 z-[2] inline-flex h-6 items-center gap-1.5 rounded-sm bg-white px-[9px] font-mono text-[11px] uppercase tracking-[0.08em] text-ink">
               <Play className="h-3 w-3" weight="fill" aria-hidden />
               {NOMBRE_DE_LA_RED[video.red]}
             </span>
@@ -162,15 +162,15 @@ function TarjetaDeGaleria({
             aria-label={guardado ? 'Quitar de guardados' : 'Guardar'}
             className={cn(
               'absolute right-3 top-3 z-[3] inline-flex h-[38px] w-[38px] items-center justify-center rounded-full bg-white transition-[color,transform] duration-fast active:scale-[0.94]',
-              guardado ? 'text-primary' : 'text-[#121110]',
+              guardado ? 'text-primary' : 'text-ink',
             )}
           >
             <Heart className="h-[18px] w-[18px]" weight={guardado ? 'fill' : 'regular'} aria-hidden />
           </button>
-          <span className="pointer-events-none absolute bottom-3 left-3 z-[2] inline-flex h-9 items-center gap-[5px] rounded-[12px] bg-white px-3 font-mono text-[17px] leading-none tracking-[-0.01em] tabular-nums text-[#121110]">
+          <span className="pointer-events-none absolute bottom-3 left-3 z-[2] inline-flex h-9 items-center gap-[5px] rounded-[12px] bg-white px-3 font-mono text-[17px] leading-none tracking-[-0.01em] tabular-nums text-ink">
             {precio != null ? (venta ? millones(precio) : formatCurrency(precio)) : 'Por confirmar'}
             {!venta && precio != null && (
-              <span className="font-sans text-[13px] tracking-normal text-[#706B64]">al mes</span>
+              <span className="font-sans text-[13px] tracking-normal text-ink/60">al mes</span>
             )}
           </span>
         </div>

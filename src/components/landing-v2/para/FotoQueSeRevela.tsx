@@ -70,7 +70,7 @@ export function FotoQueSeRevela({
     <figure
       ref={caja}
       data-revelada={ver ? 'si' : undefined}
-      className={cn('group/foto relative m-0 overflow-hidden rounded-[28px] bg-[#E7E3DC]', ESQUINA, className)}
+      className={cn('group/foto relative m-0 overflow-hidden rounded-[28px] bg-border', ESQUINA, className)}
     >
       {revelar ? (
         // eslint-disable-next-line @next/next/no-img-element -- va debajo del lienzo, del mismo origen que él
@@ -98,7 +98,7 @@ export function FotoQueSeRevela({
       {rotulo ? (
         <figcaption
           className={cn(
-            'absolute bottom-3.5 left-3.5 z-[2] inline-flex h-[30px] max-w-[calc(100%-28px)] items-center overflow-hidden whitespace-nowrap rounded-[10px] bg-white px-3 font-mono text-caption tracking-[0.06em] text-[#121110]',
+            'absolute bottom-3.5 left-3.5 z-[2] inline-flex h-[30px] max-w-[calc(100%-28px)] items-center overflow-hidden whitespace-nowrap rounded-[10px] bg-white px-3 font-mono text-caption tracking-[0.06em] text-ink',
             ESQUINA,
           )}
         >

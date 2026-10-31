@@ -13754,6 +13754,8 @@
       "pasoDe": "Step {{n}} of {{total}}",
       "ahora": "Now",
       "progresoDe": "{{n}} of {{total}} done",
+      "cuantoTeSale": "With the {{n}} properties you're bringing, Leasefy would cost you up to {{total}} a month plus VAT: each active property is billed ({{porInmueble}} each; drafts are not).",
+      "cuantoTeSaleMinimo": "With the {{n}} properties you're bringing you pay the minimum: {{minimo}} a month plus VAT ({{porInmueble}} per active property).",
       "todoListo": {
         "eyebrow": "All set",
         "titulo": "Your operation is in",

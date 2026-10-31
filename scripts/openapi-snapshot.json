@@ -33023,7 +33023,8 @@
               "pausar_autopago",
               "reactivar_autopago",
               "cancelar_autopago",
-              "cobrar_autopago_ahora"
+              "cobrar_autopago_ahora",
+              "cambiar_mis_datos"
             ]
           },
           "titulo": {
@@ -33124,6 +33125,7 @@
               "como_va_mi_inmueble",
               "documentos_firmados_del_propietario",
               "mis_datos",
+              "cambiar_mis_datos",
               "mis_solicitudes",
               "cancelar_reporte_de_pago",
               "autopago"

@@ -326,6 +326,7 @@ function CandidatosContent() {
   const { abrir, pedirAccion, cajon } = useDecisionDeCandidato({
     hermanos: candidates,
     onCambio: fetchData,
+    canonDelInmueble: property?.monthlyRent ?? null,
   });
 
   /**

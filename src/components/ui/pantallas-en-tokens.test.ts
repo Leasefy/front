@@ -285,8 +285,6 @@ const COLOR_CRUDO_JUSTIFICADO: Record<string, string> = {
     '`bg-success` del paso completado.',
   'components/inmobiliaria/ActaEntregaForm.tsx':
     '`text-white` sobre el relleno `bg-success` del círculo de paso completado.',
-  'components/inmobiliaria/CandidateDrawer.tsx':
-    '`text-white` sobre relleno `bg-success`.',
   'app/panel/inmobiliaria/documentos/page.tsx':
     'El `bg-white` es el del `<iframe>` de vista previa: no es una superficie del ' +
     'panel, es PAPEL. El `srcDoc` trae la plantilla con tinta oscura y sin fondo ' +

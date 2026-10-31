@@ -49,7 +49,10 @@ export interface DecisionDeCandidato<C extends LandlordCandidate> {
 export function useDecisionDeCandidato<C extends LandlordCandidate>({
   hermanos,
   onCambio,
+  canonDelInmueble,
 }: {
+  /** El canon del inmueble: el buró del cajón dice si le cabe en su tope (31-10-2026). */
+  canonDelInmueble?: number | null;
   /**
    * Los demás postulantes **del mismo inmueble**.
    *
@@ -136,6 +139,7 @@ export function useDecisionDeCandidato<C extends LandlordCandidate>({
         }}
         onReevaluated={onCambio}
         puedeDecidir={puedeDecidir}
+        canonDelInmueble={canonDelInmueble}
       />
 
       {eligiendo && (

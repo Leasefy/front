@@ -106,6 +106,19 @@ afterEach(() => {
   contenedor.remove()
 })
 
+/** El detalle vive en un cajón (Nico, 31-10-2026: «demasiado texto»): se abre con «Ver el detalle» y sale en un portal. */
+async function abrirElDetalle(): Promise<HTMLElement> {
+  const boton = contenedor.querySelector<HTMLButtonElement>('[data-testid="ver-el-detalle"]')
+  expect(boton).not.toBeNull()
+  await act(async () => {
+    boton!.click()
+  })
+  await act(async () => {})
+  const cajon = document.querySelector<HTMLElement>('[data-testid="detalle-del-plan"]')
+  expect(cajon).not.toBeNull()
+  return cajon!
+}
+
 describe('PagarLeasefy con la suscripción suspendida', () => {
   it.each(['SUSPENDED', 'CANCELLED'] as const)('%s + cliente: ofrece pagar y no dice que ya tiene todo', async (estado) => {
     estadoSuscripcion = estado
@@ -113,7 +126,8 @@ describe('PagarLeasefy con la suscripción suspendida', () => {
     expect(contenedor.querySelector('[data-testid="pagar-el-plan"]')).not.toBeNull()
     expect(contenedor.querySelector('[data-testid="ya-tienes-todo"]')).toBeNull()
     expect(contenedor.textContent).not.toContain('Tienes Leasefy completo')
-    expect(contenedor.textContent).toContain('Hablar con Leasefy')
+    expect(contenedor.textContent).not.toContain('Hablar con Leasefy')
+    expect((await abrirElDetalle()).textContent).toContain('Hablar con Leasefy')
     expect(contenedor.querySelector('[data-testid="estado-del-plan"]')?.textContent).toMatch(/suspendid|pendiente/i)
   })
 
@@ -131,13 +145,17 @@ describe('PagarLeasefy: todo el modelo de negocio (Nico, 30-10-2026)', () => {
     estadoSuscripcion = 'SUSPENDED'
     tarifasFallan = false
     await montar()
-    const texto = (contenedor.textContent ?? '').replace(/\u00a0/g, ' ')
-    expect(contenedor.querySelector('[data-testid="cuenta-plan"]')?.textContent).toContain('El mínimo del plan')
-    expect(contenedor.querySelector('[data-testid="cuenta-preguntas"]')?.textContent).toContain('50 preguntas al chat cada mes')
+    // En la página, sólo la tarjeta del cobro; el resto, en el cajón.
+    expect(contenedor.querySelector('[data-testid="precio-del-mes"]')).not.toBeNull()
+    expect(contenedor.querySelector('[data-testid="precios-de-leasefy"]')).toBeNull()
+    const cajon = await abrirElDetalle()
+    const texto = (cajon.textContent ?? '').replace(/\u00a0/g, ' ')
+    expect(cajon.querySelector('[data-testid="cuenta-plan"]')?.textContent).toContain('El mínimo del plan')
+    expect(cajon.querySelector('[data-testid="cuenta-preguntas"]')?.textContent).toContain('50 preguntas al chat cada mes')
     expect(texto).toContain('El chat, con 5 preguntas gratis para probarlo')
     expect(texto).toContain('3 firmas electrónicas gratis para empezar')
-    expect(contenedor.querySelector('[data-testid="precio-mori"]')?.textContent).toContain('8 % de lo recuperado')
-    expect(contenedor.querySelector('[data-testid="precio-implementacion"]')).not.toBeNull()
+    expect(cajon.querySelector('[data-testid="precio-mori"]')?.textContent).toContain('8 % de lo recuperado')
+    expect(cajon.querySelector('[data-testid="precio-implementacion"]')).not.toBeNull()
   })
 
   it('si las tarifas no cargan, se puede pagar igual y la sección dice qué pasó', async () => {
@@ -145,8 +163,9 @@ describe('PagarLeasefy: todo el modelo de negocio (Nico, 30-10-2026)', () => {
     tarifasFallan = true
     await montar()
     expect(contenedor.querySelector('[data-testid="pagar-el-plan"]')).not.toBeNull()
-    expect(contenedor.querySelector('[data-testid="precios-de-leasefy"]')?.textContent).toContain('No pudimos cargar')
-    expect(contenedor.querySelector('[data-testid="precios-de-leasefy"]')?.textContent).toContain('Intentar de nuevo')
+    const cajon = await abrirElDetalle()
+    expect(cajon.querySelector('[data-testid="precios-de-leasefy"]')?.textContent).toContain('No pudimos cargar')
+    expect(cajon.querySelector('[data-testid="precios-de-leasefy"]')?.textContent).toContain('Intentar de nuevo')
     tarifasFallan = false
   })
 })

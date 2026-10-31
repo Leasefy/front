@@ -89,8 +89,8 @@ export function PilotoEnTuPlan({
       data-testid="piloto-en-tu-plan"
       data-compra={compra ?? 'ninguna'}
     >
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-        <div className="min-w-0 max-w-xl">
+      <div className="flex flex-col gap-5">
+        <div className="min-w-0">
           <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-fg-muted">Súmale</p>
           <h2 className="mt-3 text-h3 text-fg">Piloto automático</h2>
           <p className="mt-1 text-sm text-fg-muted">
@@ -105,7 +105,7 @@ export function PilotoEnTuPlan({
           ) : null}
         </div>
 
-        <div className="shrink-0 lg:text-right">
+        <div>
           <p className="text-body text-fg" data-testid="piloto-precio">
             <span className="font-mono tabular-nums">{formato(porInmueble)}</span> más por inmueble al mes
           </p>
@@ -119,7 +119,7 @@ export function PilotoEnTuPlan({
             <p className="mt-1 text-caption text-fg-muted">Suma por cada inmueble activo que gestiones.</p>
           )}
 
-          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
             {compra === 'contratar' ? (
               <Button variant="secondary" className="h-11 rounded-full px-6" isLoading={cambiando} onClick={() => setAbierto('contratar')} data-testid="piloto-contratar">
                 Contratar el Piloto

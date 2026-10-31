@@ -8,9 +8,8 @@ import { Acento, ANCHO, BotonDePara, Ceja, Punto } from './piezas';
 /**
  * El cierre de las páginas por público, con la identidad nueva: papel, el
  * título liviano enorme, UN botón azul y la corriente de píxeles abajo (como el
- * contacto de la landing). Mismos textos, cifras y destinos que tenía
- * `CTASection` (la foto negra con velos y tarjetas de vidrio), que sigue en
- * /pricing.
+ * contacto de la landing). Reemplazó a `CTASection` (la foto negra con velos y
+ * tarjetas de vidrio), que se borró el 31-10-2026 (Nico: «eso es viejo»).
  */
 export function CierreDePara({ semilla = 11 }: { semilla?: number }) {
   return (

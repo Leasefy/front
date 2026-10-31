@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { LandingChrome } from "@/components/landing-v2/LandingChrome";
 import { LandingFooterV2 } from '@/components/landing-v2/LandingFooterV2';
-import { CTASection } from '@/components/home/CTASection';
 import { Shield, Lightning, Headphones, CheckCircle, Check, House, Briefcase, Calculator, Buildings, UserCheck, ArrowRight, Circle } from '@phosphor-icons/react';
 import { AnimatePresence, motion, useInView } from 'framer-motion';
 import {
@@ -1267,8 +1266,6 @@ export default function PricingPage() {
       {/* FAQ section - Accordion style matching home */}
       <PricingFAQSection />
 
-      {/* CTA section - reusable component matching home */}
-      <CTASection />
       </main>
       <LandingFooterV2 />
     </LandingChrome>

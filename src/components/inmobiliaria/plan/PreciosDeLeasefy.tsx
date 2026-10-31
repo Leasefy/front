@@ -146,11 +146,14 @@ export function PreciosDeLeasefy({
   error,
   onReintentar,
   className,
+  unaColumna = false,
 }: {
   tarifas: TarifasDeLeasefy | null;
   error: unknown;
   onReintentar: () => void;
   className?: string;
+  /** En un cajón no caben dos columnas: todo en una. */
+  unaColumna?: boolean;
 }) {
   const { formato } = useMonedaDeReferencia();
   const grupos = tarifas ? preciosDeLeasefy(tarifas, formato) : [];
@@ -176,12 +179,12 @@ export function PreciosDeLeasefy({
           <FalloDeCarga error={error} queEs="los precios de Leasefy" onReintentar={onReintentar} />
         </div>
       ) : !tarifas ? (
-        <div className="mt-6 grid gap-6 lg:grid-cols-2" aria-busy="true">
+        <div className={cn('mt-6 grid gap-6', !unaColumna && 'lg:grid-cols-2')} aria-busy="true">
           <div className="h-64 animate-pulse rounded-lg bg-surface-muted" />
           <div className="h-64 animate-pulse rounded-lg bg-surface-muted" />
         </div>
       ) : (
-        <div className="mt-6 grid gap-x-10 gap-y-6 lg:grid-cols-2">
+        <div className={cn('mt-6 grid gap-x-10 gap-y-6', !unaColumna && 'lg:grid-cols-2')}>
           {columnas.map((col, i) => (
             <div key={i} className="space-y-6">
               {col.map((g) => (

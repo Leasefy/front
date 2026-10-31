@@ -88,8 +88,11 @@ function Candidato({
         </p>
         <p className="text-caption text-fg-muted">{c.estudio}</p>
       </div>
+      {/* Una sola acción en voltaje por pantalla (DESIGN.md §1, Nico 31-10): escoger entre candidatos son acciones del
+          mismo peso, así que van todas en tinta. */}
       <Button
         size="sm"
+        variant="ink"
         hideArrow
         onClick={onEscoger}
         disabled={enviando}

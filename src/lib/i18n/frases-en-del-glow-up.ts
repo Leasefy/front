@@ -1044,4 +1044,18 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   'Autoriza el giro suelto': 'Authorize the single payout',
   // components/inmobiliaria/NuevoLeadDialog.tsx (31-10-2026)
   '(opcional: si llegó por uno, sus características ayudan a buscarle otros)': '(optional: if they came for one, its features help find others)',
+  // components/firmas/PorFirmarPorTi.tsx (31-10-2026)
+  'Firmaste 1 documento': 'You signed 1 document',
+  'Firmaste {n} documentos': 'You signed {n} documents',
+  'No se pudo firmar.': "Couldn't sign.",
+  'firmar los documentos': 'sign the documents',
+  'Por firmar por ti': 'Waiting for your signature',
+  'Tienes 1 documento esperando tu firma': 'You have 1 document waiting for your signature',
+  'Tienes {n} documentos esperando tu firma': 'You have {n} documents waiting for your signature',
+  'Firmar 1 documento': 'Sign 1 document',
+  'Firmar {n} documentos': 'Sign {n} documents',
+  'Pide verificar tu identidad: fírmalo desde su enlace': 'It asks to verify your identity: sign it from its link',
+  'Una sola firma para todos los que elegiste. Cada documento queda con su constancia.': 'One signature for everything you picked. Each document keeps its own record.',
+  'Leí los documentos que voy a firmar y acepto firmarlos electrónicamente.': "I read the documents I'm signing and agree to sign them electronically.",
+  'Primero dibuja tu firma y marca que los leíste.': 'First draw your signature and check that you read them.',
 }

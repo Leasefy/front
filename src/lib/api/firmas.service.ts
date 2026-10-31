@@ -189,6 +189,18 @@ export function firmasApi(donde: DondeFirma) {
   const base = donde === 'inmobiliaria' ? '/inmobiliaria/firmas' : '/propietario/firmas';
   return {
     vista: () => apiClient.get<VistaDeFirmas>(base),
+    /** 31-10-2026: lo que espera MI firma (sólo la inmobiliaria). */
+    porFirmarYo: () =>
+      apiClient.get<{ documentos: Array<{ documentoId: string; firmanteId: string; titulo: string; pideVerificacion: boolean }> }>(
+        `${base}/por-firmar-yo`,
+      ),
+    /** Varios con UNA firma; pide el código de la aplicación (403 SEGUNDO_FACTOR_RECIENTE sin él). */
+    firmarEnBloque: (firmanteIds: string[], signatureData: string) =>
+      apiClient.post<{ firmados: string[]; noSePudo: Array<{ firmanteId: string; motivo: string }> }>(`${base}/firmar-en-bloque`, {
+        firmanteIds,
+        signatureData,
+        acceptedTerms: true,
+      }),
     detalle: (id: string) => apiClient.get<DetalleDelDocumento>(`${base}/${id}`),
     crear(archivo: File, datos: DatosDelDocumentoNuevo): Promise<DetalleDelDocumento> {
       const f = new FormData();

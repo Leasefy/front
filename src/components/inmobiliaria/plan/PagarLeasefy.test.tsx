@@ -71,8 +71,11 @@ vi.mock('@/lib/api/tarifas.service', () => ({
               firmas: { porDocumento: 3900, firmantesPorDocumento: 5, gratisAlCrearLaCuenta: 3, paquetes: [{ firmas: 10, precio: 29000 }], duranMeses: 12 },
             },
           }),
+    tasasDeCambio: () => Promise.resolve({ disponible: false }),
   },
 }))
+// El Piloto en «Tu plan» habla con el micro: se prueba aparte (piloto-y-renovacion.test.ts).
+vi.mock('./PilotoEnTuPlan', () => ({ PilotoEnTuPlan: () => null }))
 vi.mock('@/components/inmobiliaria/AgencyCheckoutOverlay', () => ({ AgencyCheckoutOverlay: () => null }))
 vi.mock('@/components/inmobiliaria/plan/RecargasDePreguntas', () => ({ RecargasDePreguntas: () => null }))
 vi.mock('./RecargasDePreguntas', () => ({ RecargasDePreguntas: () => null }))

@@ -133,6 +133,8 @@ vi.mock('@/lib/hooks/use-migracion-con-deuda', () => ({
 
 // El veredicto tiene sus propias pruebas (y `muro-reglas.test.ts` prueba sus
 // números). Acá interesa CUÁNDO lo monta el muro y qué ofrece el pie.
+// Cuánto le saldría Leasefy (31-10-2026) lee las tarifas del back: aquí no hay back.
+vi.mock('./CuantoTeSale', () => ({ CuantoTeSale: () => null }))
 vi.mock('./VeredictoDeMigracion', () => ({
   VeredictoDeMigracion: ({ deuda }: { deuda: { contratos: number } }) => (
     <div data-testid="muro-veredicto" data-contratos={deuda.contratos} />

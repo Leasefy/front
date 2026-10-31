@@ -13789,6 +13789,8 @@
       "pasoDe": "Paso {{n}} de {{total}}",
       "ahora": "Ahora",
       "progresoDe": "{{n}} de {{total}} listos",
+      "cuantoTeSale": "Con los {{n}} inmuebles que traes, Leasefy te saldría hasta {{total}} al mes más IVA: se cobra cada inmueble activo ({{porInmueble}} cada uno; los borradores no).",
+      "cuantoTeSaleMinimo": "Con los {{n}} inmuebles que traes pagas el mínimo: {{minimo}} al mes más IVA ({{porInmueble}} por cada inmueble activo).",
       "todoListo": {
         "eyebrow": "Todo listo",
         "titulo": "Tu operación ya está adentro",

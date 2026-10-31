@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Buildings, CheckCircle, LockSimpleOpen } from '@phosphor-icons/react';
-import { enterTransition, Ilustracion, motionSpring, usePrefersReducedMotion, type NombreIlustracion } from '@leasefy/cadence';
+import { enterTransition, Ilustracion, motionSpring, Presence, usePrefersReducedMotion, type NombreIlustracion } from '@leasefy/cadence';
 
 import { BeneficiosEn3D, ChipDelAliado, type BeneficioEn3D } from '@/components/conversion/EscenaDeMarca';
 import { cn } from '@/lib/utils';
@@ -25,7 +25,9 @@ import { shouldResumeReactivation } from '@/app/panel/inmobiliaria/upgrade/resum
 import { enlaceDeWhatsApp } from '@/lib/venta/whatsapp-de-leasefy';
 import { TarjetaDeRefiereYGana } from '@/components/refiere-y-gana/RefiereYGana';
 import { RecargasDePreguntas } from './RecargasDePreguntas';
+import { ConMonedaDeReferencia, SelectorDeMoneda, useMonedaDeReferencia } from '@/components/precios/MonedaDeReferencia';
 import { CuentaDelPlan } from './CuentaDelPlan';
+import { PilotoEnTuPlan } from './PilotoEnTuPlan';
 import { PreciosDeLeasefy } from './PreciosDeLeasefy';
 
 /** Lo que se abre al pagar: lo que la cuenta gratis ve en demo. */
@@ -57,6 +59,27 @@ const fecha = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'long', 
  * cobro) y pagar con Wompi (tarjeta, PSE o Nequi). Al pagar se abre todo. Antes (05-10) decía «Habla con Leasefy».
  */
 export function PagarLeasefy() {
+  // Los precios se pueden VER en otra moneda; se cobra siempre en COP (Nico, 31-10-2026).
+  return (
+    <ConMonedaDeReferencia>
+      <TuPlanDeLeasefy />
+    </ConMonedaDeReferencia>
+  );
+}
+
+/** El precio del mes en la moneda de referencia que eligió la persona («≈ 165 USD al mes»); en COP, nada. */
+function PrecioEnOtraMoneda({ monto }: { monto: number }) {
+  const { moneda, formato } = useMonedaDeReferencia();
+  return (
+    <Presence show={moneda !== 'COP'}>
+      <p className="mt-1 font-mono text-body-sm tabular-nums text-fg-muted" data-testid="precio-en-otra-moneda">
+        {formato(monto)} al mes
+      </p>
+    </Presence>
+  );
+}
+
+function TuPlanDeLeasefy() {
   const router = useRouter();
   const reducido = usePrefersReducedMotion();
   const { user, agency, refreshAgency } = useAuth();
@@ -134,6 +157,7 @@ export function PagarLeasefy() {
         seccion="Tu cuenta"
         titulo="Tu plan de Leasefy"
         descripcion="Cuánto te sale Leasefy completo con tus inmuebles, qué incluye y lo que se cobra aparte."
+        acciones={<SelectorDeMoneda apilado />}
       />
 
       <EstadoDelPlan estado={estado} prueba={prueba} suspendida={suspendida} />
@@ -173,11 +197,12 @@ export function PagarLeasefy() {
                   </span>
                   <span className="text-[15px] text-fg-muted">al mes más IVA</span>
                 </p>
+                <PrecioEnOtraMoneda monto={cotizacion.monto} />
                 <p className="mt-2 text-sm text-fg-muted">
                   {!cotizacion.porInmueble
                     ? `Plan ${cotizacion.nombre}.`
                     : cotizacion.inmuebles > 0
-                      ? `Con ${cotizacion.inmuebles === 1 ? 'tu inmueble gestionado' : `tus ${cotizacion.inmuebles.toLocaleString('es-CO')} inmuebles gestionados`} y ${cotizacion.usuarios === 1 ? '1 usuario' : `${cotizacion.usuarios.toLocaleString('es-CO')} usuarios`}. Se cobra por inmueble gestionado.`
+                      ? `Con ${cotizacion.inmuebles === 1 ? 'tu inmueble activo' : `tus ${cotizacion.inmuebles.toLocaleString('es-CO')} inmuebles activos`} y ${cotizacion.usuarios === 1 ? '1 usuario' : `${cotizacion.usuarios.toLocaleString('es-CO')} usuarios`}. Se cobra por inmueble activo.`
                       : 'El mínimo del plan, mientras empiezas a gestionar inmuebles.'}
                 </p>
               </div>
@@ -233,6 +258,9 @@ export function PagarLeasefy() {
           </ul>
         </section>
       </div>
+
+      {/* Nico, 31-10-2026: «no veo por qué no sumaste lo del piloto automático de poder comprar». */}
+      {cotizacion ? <PilotoEnTuPlan cotizacion={cotizacion} tarifas={tarifas?.tarifas ?? null} onCambio={() => void cargar()} /> : null}
 
       {/* Nico, 30-10-2026: «no veo que realmente hayas sumado todo lo que se hizo en el documento de modelo de negocio». */}
       <PreciosDeLeasefy tarifas={tarifas} error={errorDeTarifas} onReintentar={cargarTarifas} />

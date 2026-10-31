@@ -38,6 +38,11 @@ export interface CotizacionDelPlan {
    * los usuarios de más y el piloto automático contratado. `null` (o ausente, back anterior) con el precio fijo.
    */
   desglose?: DesgloseDelPlan | null;
+  /**
+   * Lo que el periodo en curso va sumando para la próxima renovación (back 31-10-2026, «activo un día = mes cobrado»):
+   * inmuebles activos después de que empezó el periodo sin estarlo ese día. `null` o ausente: nada (o back anterior).
+   */
+  porSumarEnLaRenovacion?: { inmuebles: number; valor: number; desde: string } | null;
 }
 
 export interface DesgloseDelPlan {

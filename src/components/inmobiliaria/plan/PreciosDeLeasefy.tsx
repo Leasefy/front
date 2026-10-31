@@ -3,8 +3,10 @@
 import { Stagger, StaggerItem } from '@leasefy/cadence';
 
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { useMonedaDeReferencia } from '@/components/precios/MonedaDeReferencia';
 import { precioDelMes } from '@/lib/conversion/acceso';
 import type { TarifasDeLeasefy } from '@/lib/api/tarifas.service';
+import type { FormatoDePlata } from '@/lib/precios/moneda-de-referencia';
 import { cn } from '@/lib/utils';
 
 const numero = (n: number) => n.toLocaleString('es-CO');
@@ -27,9 +29,10 @@ export interface GrupoDePrecios {
 /**
  * Lo que se cobra aparte del plan, sólo si se usa (MODELO-DE-NEGOCIO.md §0 y §3; Nico, 30-10-2026: «NECESITO QUE
  * REVISES MUY BIEN ESTO DEL MODELO DE NEGOCIO PORQUE ES LO QUE VAMOS A COBRAR»). Todo sale de `GET /config/tarifas`:
- * el front no escribe un precio a mano. Puro: se prueba solo.
+ * el front no escribe un precio a mano. Puro: se prueba solo. `plata` escribe cada cifra (en COP, o la referencia en otra
+ * moneda que eligió la persona: se cobra siempre en COP, Nico 31-10-2026).
  */
-export function preciosDeLeasefy(t: TarifasDeLeasefy): GrupoDePrecios[] {
+export function preciosDeLeasefy(t: TarifasDeLeasefy, plata: FormatoDePlata = precioDelMes): GrupoDePrecios[] {
   const { tarifas } = t;
   const grupos: GrupoDePrecios[] = [];
 
@@ -42,15 +45,15 @@ export function preciosDeLeasefy(t: TarifasDeLeasefy): GrupoDePrecios[] {
         id: 'usuario-adicional',
         que: 'Usuario adicional',
         detalle: `Una persona más con acceso, aparte de los ${numero(tarifas.plan.usuariosIncluidos)} que trae el plan. No trae preguntas al chat.`,
-        precio: `${precioDelMes(tarifas.plan.usuarioAdicional)} al mes`,
+        precio: `${plata(tarifas.plan.usuarioAdicional)} al mes`,
       },
       ...(recargas.length > 0
         ? [
             {
               id: 'recargas',
               que: 'Recargas de preguntas al chat',
-              detalle: `${recargas.map((r) => `${numero(r.preguntas)} por ${precioDelMes(r.precio)}`).join(' · ')}. Se suman a las del plan y duran ${numero(tarifas.recargaDuraMeses)} meses.`,
-              precio: `Desde ${precioDelMes(recargas[0]!.precio)}`,
+              detalle: `${recargas.map((r) => `${numero(r.preguntas)} por ${plata(r.precio)}`).join(' · ')}. Se suman a las del plan y duran ${numero(tarifas.recargaDuraMeses)} meses.`,
+              precio: `Desde ${plata(recargas[0]!.precio)}`,
             },
           ]
         : []),
@@ -58,7 +61,7 @@ export function preciosDeLeasefy(t: TarifasDeLeasefy): GrupoDePrecios[] {
         id: 'piloto',
         que: 'Piloto automático',
         detalle: `Los agentes hacen solos su trabajo, con el director que arma el plan del día. Pruébalo ${numero(tarifas.pilotoAutomatico.pruebaDias)} días gratis; al terminar vuelve a Copiloto y no se apaga nada.`,
-        precio: `+ ${precioDelMes(tarifas.pilotoAutomatico.porInmueble)} por inmueble al mes`,
+        precio: `+ ${plata(tarifas.pilotoAutomatico.porInmueble)} por inmueble al mes`,
       },
     ],
   });
@@ -77,7 +80,7 @@ export function preciosDeLeasefy(t: TarifasDeLeasefy): GrupoDePrecios[] {
         id: 'recaudo',
         que: 'Recaudo en línea',
         detalle: 'Cada arriendo que tus inquilinos pagan por Leasefy (PSE, tarjeta o Nequi). Se descuenta del mismo pago.',
-        precio: `${precioDelMes(tarifas.recaudo.porPago)} + IVA por pago`,
+        precio: `${plata(tarifas.recaudo.porPago)} + IVA por pago`,
       },
     ],
   });
@@ -88,8 +91,8 @@ export function preciosDeLeasefy(t: TarifasDeLeasefy): GrupoDePrecios[] {
     documentos.push({
       id: 'firmas',
       que: 'Firmas electrónicas',
-      detalle: `Cualquier documento, hasta ${numero(f.firmantesPorDocumento)} firmantes. En paquetes: ${f.paquetes.map((p) => `${numero(p.firmas)} por ${precioDelMes(p.precio)}`).join(' · ')}. Tu cuenta trae ${numero(f.gratisAlCrearLaCuenta)} gratis.`,
-      precio: `${precioDelMes(f.porDocumento)} por documento`,
+      detalle: `Cualquier documento, hasta ${numero(f.firmantesPorDocumento)} firmantes. En paquetes: ${f.paquetes.map((p) => `${numero(p.firmas)} por ${plata(p.precio)}`).join(' · ')}. Tu cuenta trae ${numero(f.gratisAlCrearLaCuenta)} gratis.`,
+      precio: `${plata(f.porDocumento)} por documento`,
     });
   }
   if (tarifas.facturacionElectronica) {
@@ -98,8 +101,8 @@ export function preciosDeLeasefy(t: TarifasDeLeasefy): GrupoDePrecios[] {
     documentos.push({
       id: 'facturacion',
       que: 'Facturación electrónica',
-      detalle: `Cada factura, nota o documento soporte que va a la DIAN. Paquetes: ${paquetes.map((p) => `${numero(p.documentos)} por ${precioDelMes(p.precio)}`).join(' · ')}; duran ${numero(fe.duranMeses)} meses.`,
-      precio: paquetes[0] ? `Desde ${precioDelMes(paquetes[0].precio)}` : '',
+      detalle: `Cada factura, nota o documento soporte que va a la DIAN. Paquetes: ${paquetes.map((p) => `${numero(p.documentos)} por ${plata(p.precio)}`).join(' · ')}; duran ${numero(fe.duranMeses)} meses.`,
+      precio: paquetes[0] ? `Desde ${plata(paquetes[0].precio)}` : '',
     });
   }
   if (documentos.length > 0) grupos.push({ id: 'documentos', rotulo: 'Documentos', precios: documentos });
@@ -109,7 +112,7 @@ export function preciosDeLeasefy(t: TarifasDeLeasefy): GrupoDePrecios[] {
       id: 'avaluo',
       que: 'Avalúo',
       detalle: 'La estimación comercial de valor de un inmueble, con su informe, para fijar el canon al captarlo.',
-      precio: `${precioDelMes(tarifas.avaluo.precioConIva)} con IVA`,
+      precio: `${plata(tarifas.avaluo.precioConIva)} con IVA`,
     },
   ];
   if (tarifas.estudioDelInquilino) {
@@ -117,7 +120,7 @@ export function preciosDeLeasefy(t: TarifasDeLeasefy): GrupoDePrecios[] {
       id: 'estudio',
       que: 'Estudio del inquilino',
       detalle: 'Lee sus documentos y dice hasta qué canon le arriendan.',
-      precio: t.estudioDelInquilinoGratis === false ? `${precioDelMes(tarifas.estudioDelInquilino.precio)} cada uno` : 'Gratis por ahora',
+      precio: t.estudioDelInquilinoGratis === false ? `${plata(tarifas.estudioDelInquilino.precio)} cada uno` : 'Gratis por ahora',
     });
   }
   grupos.push({ id: 'captar', rotulo: 'Captar y arrendar', precios: captar });
@@ -130,7 +133,7 @@ export function preciosDeLeasefy(t: TarifasDeLeasefy): GrupoDePrecios[] {
         id: 'implementacion',
         que: 'Implementación con Leasefy',
         detalle: 'Migramos tus datos y capacitamos a tu equipo. Si la haces tú con las herramientas del panel, es gratis.',
-        precio: precioDelMes(tarifas.implementacion.conLeasefy),
+        precio: plata(tarifas.implementacion.conLeasefy),
       },
     ],
   });
@@ -149,7 +152,8 @@ export function PreciosDeLeasefy({
   onReintentar: () => void;
   className?: string;
 }) {
-  const grupos = tarifas ? preciosDeLeasefy(tarifas) : [];
+  const { formato } = useMonedaDeReferencia();
+  const grupos = tarifas ? preciosDeLeasefy(tarifas, formato) : [];
   // Dos columnas en escritorio, con los grupos repartidos por cuántas filas tienen (sin huecos).
   const mitad = Math.ceil(grupos.reduce((s, g) => s + g.precios.length, 0) / 2);
   const columnas: GrupoDePrecios[][] = [[], []];

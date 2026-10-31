@@ -732,8 +732,9 @@ export const PIPELINE_STAGES: { stage: PipelineStage; labelEs: string; labelEn: 
   { stage: 'lead', labelEs: 'Interesado', labelEn: 'Lead', color: _STAGE_NEUTRAL },
   { stage: 'visit_scheduled', labelEs: 'Visita programada', labelEn: 'Visit sched.', color: _STAGE_INFO },
   { stage: 'visit_done', labelEs: 'Visita hecha', labelEn: 'Visit done', color: _STAGE_NEUTRAL },
-  { stage: 'application', labelEs: 'Postulación', labelEn: 'Application', color: _STAGE_NEUTRAL },
-  { stage: 'evaluation', labelEs: 'Evaluación', labelEn: 'Evaluation', color: _STAGE_INFO },
+  // Juan 31-10-2026: una sola etapa en el tablero (`lib/pipeline/etapas-del-tablero.ts`); la base guarda las dos.
+  { stage: 'application', labelEs: 'Postulación y evaluación', labelEn: 'Application & review', color: _STAGE_NEUTRAL },
+  { stage: 'evaluation', labelEs: 'Postulación y evaluación', labelEn: 'Application & review', color: _STAGE_NEUTRAL },
   { stage: 'approved', labelEs: 'Aprobado', labelEn: 'Approved', color: _STAGE_SUCCESS },
   { stage: 'contract', labelEs: 'Contrato', labelEn: 'Contract', color: _STAGE_INFO },
   { stage: 'handover', labelEs: 'Entrega', labelEn: 'Handover', color: _STAGE_INFO },

@@ -8,6 +8,7 @@ import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { useCuentaConLeasefy } from '@/components/landlord/SelloGestionadoPorLeasefy';
 import { PanelEnPausa, esElPanelEnPausa } from '@/components/portales/PanelEnPausa';
 import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import Link from 'next/link';
@@ -221,6 +222,9 @@ function InicioSinContratos({ inmobiliaria }: { inmobiliaria: string }) {
 
 export default function PanelPage() {
   const administrados = useContratosAdministrados();
+  // Las dos cuentas de propietario (31-10-2026): en la de Leasefy, el panel propio aunque una inmobiliaria gestione otros.
+  const cuentaConLeasefy = useCuentaConLeasefy();
+  if (cuentaConLeasefy) return <PanelDelPropietarioIndependiente />;
   if (administrados.cargando) {
     // Glow up 22-10: el esqueleto con la forma del inicio (encabezado, la cifra, los contratos) en vez de una
     // caja centrada que no se parecía a lo que llega.

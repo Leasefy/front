@@ -4,6 +4,18 @@ import { useEffect, useState } from 'react';
 
 import { LeasefySymbol } from '@/components/brand/LeasefySymbol';
 import { landlordApi } from '@/lib/api/landlord.service';
+import { useAuth } from '@/lib/auth';
+import { leerCuentaGuardada, tieneDosCuentasDePropietario } from '@/lib/auth/cuenta-activa';
+
+/**
+ * ¿Está en su cuenta de propietario «con Leasefy»? (Nico, 31-10-2026: con inmuebles de Leasefy y de una inmobiliaria son
+ * dos cuentas en «Cambiar de cuenta»). Entonces se ve el panel propio con el sello, aunque una inmobiliaria también le
+ * gestione otros.
+ */
+export function useCuentaConLeasefy(): boolean {
+  const { user, cuentas } = useAuth();
+  return tieneDosCuentasDePropietario(cuentas) && leerCuentaGuardada(user?.id)?.con === 'leasefy';
+}
 
 /**
  * ¿Leasefy le gestiona inmuebles a este propietario? (Nico, 31-10-2026). Sólo se pregunta para el propietario

@@ -22,6 +22,14 @@
 
 export type TipoDeCuenta = 'inquilino' | 'propietario' | 'inmobiliaria'
 
+/** Quién le gestiona los inmuebles al propietario en esa cuenta. */
+export type CuentaDePropietario = 'leasefy' | 'inmobiliaria'
+
+/** ¿Tiene las dos cuentas de propietario (Leasefy e inmobiliaria)? */
+export function tieneDosCuentasDePropietario(cuentas: CuentasDeLaPersona | null | undefined): boolean {
+  return Boolean(cuentas?.propietario && cuentas.propietarioCon?.leasefy && cuentas.propietarioCon.inmobiliaria)
+}
+
 /** Una inmobiliaria en la que la persona trabaja (membresía activa). */
 export interface InmobiliariaDeLaPersona {
   id: string
@@ -37,13 +45,19 @@ export interface CuentasDeLaPersona {
   rolDeRegistro: string
   inquilino: boolean
   propietario: boolean
+  /**
+   * Nico, 31-10-2026: con inmuebles que gestiona LEASEFY y otros que gestiona una inmobiliaria, son DOS cuentas de
+   * propietario. Ausente (back anterior) = una sola.
+   */
+  propietarioCon?: { leasefy: boolean; inmobiliaria: boolean }
   /** De la más vieja a la más nueva. */
   inmobiliarias: InmobiliariaDeLaPersona[]
 }
 
 export type CuentaElegida =
   | { tipo: 'inquilino' }
-  | { tipo: 'propietario' }
+  /** `con`: cuál de las dos cuentas de propietario (sólo cuando tiene las dos; ver `propietarioCon`). */
+  | { tipo: 'propietario'; con?: CuentaDePropietario }
   /** `inmobiliariaId: null` = la cuenta de inmobiliaria que todavía crea la suya. */
   | { tipo: 'inmobiliaria'; inmobiliariaId: string | null }
 
@@ -114,7 +128,9 @@ export function leerCuentasDeLaPersona(crudo: unknown): CuentasDeLaPersona | nul
 }
 
 export function claveDeLaCuenta(cuenta: CuentaElegida): string {
-  return cuenta.tipo === 'inmobiliaria' ? `inmobiliaria:${cuenta.inmobiliariaId ?? ''}` : cuenta.tipo
+  if (cuenta.tipo === 'inmobiliaria') return `inmobiliaria:${cuenta.inmobiliariaId ?? ''}`
+  if (cuenta.tipo === 'propietario' && cuenta.con) return `propietario:${cuenta.con}`
+  return cuenta.tipo
 }
 
 /**
@@ -159,7 +175,21 @@ export function opcionesDeCuenta(
       detalle: es ? 'Arriendo, pagos y contratos' : 'Rental, payments and contracts',
     })
   }
-  if (cuentas.propietario) {
+  if (tieneDosCuentasDePropietario(cuentas)) {
+    for (const con of ['leasefy', 'inmobiliaria'] as const) {
+      const cuenta: CuentaElegida = { tipo: 'propietario', con }
+      opciones.push({
+        clave: claveDeLaCuenta(cuenta),
+        cuenta,
+        tipo: 'propietario',
+        titulo: con === 'leasefy' ? (es ? 'Propietario · con Leasefy' : 'Owner · with Leasefy') : es ? 'Propietario · con tu inmobiliaria' : 'Owner · with your agency',
+        detalle:
+          con === 'leasefy'
+            ? es ? 'Los inmuebles que gestiona Leasefy' : 'The properties Leasefy manages'
+            : es ? 'Lo que te gira y te informa tu inmobiliaria' : 'What your agency pays and reports',
+      })
+    }
+  } else if (cuentas.propietario) {
     opciones.push({
       clave: 'propietario',
       cuenta: { tipo: 'propietario' },
@@ -224,9 +254,10 @@ export function cuentaEnPantalla(
   if (!cuentas) return null
   const portal = portalDeLaRuta(pathname)
   if (portal && tieneElPapelDeLaRuta(pathname, cuentas)) {
-    return portal === 'inmobiliaria'
-      ? { tipo: 'inmobiliaria', inmobiliariaId: inmobiliariaQueAbre(cuentas, guardada) }
-      : { tipo: portal }
+    if (portal === 'inmobiliaria') return { tipo: 'inmobiliaria', inmobiliariaId: inmobiliariaQueAbre(cuentas, guardada) }
+    if (portal === 'propietario' && tieneDosCuentasDePropietario(cuentas))
+      return { tipo: 'propietario', con: guardada?.con ?? 'inmobiliaria' }
+    return { tipo: portal }
   }
   return ultimaCuentaValida(cuentas, guardada)
 }
@@ -240,7 +271,9 @@ export function ultimaCuentaValida(
   const cuenta: CuentaElegida =
     guardada.tipo === 'inmobiliaria'
       ? { tipo: 'inmobiliaria', inmobiliariaId: inmobiliariaQueAbre(cuentas, guardada) }
-      : { tipo: guardada.tipo }
+      : guardada.tipo === 'propietario' && tieneDosCuentasDePropietario(cuentas)
+        ? { tipo: 'propietario', con: guardada.con ?? 'inmobiliaria' }
+        : { tipo: guardada.tipo }
   return laTiene(cuentas, cuenta) ? cuenta : null
 }
 
@@ -288,6 +321,8 @@ export interface GuardadoDeLaCuenta {
   tipo: TipoDeCuenta
   /** La última inmobiliaria que abrió (aunque ahora esté en otra cuenta). */
   inmobiliariaId?: string | null
+  /** Cuál de las dos cuentas de propietario abrió por última vez (31-10-2026). */
+  con?: CuentaDePropietario
 }
 
 interface Guardado extends GuardadoDeLaCuenta {
@@ -306,6 +341,7 @@ export function leerCuentaGuardada(userId: string | null | undefined): GuardadoD
     return {
       tipo: g.tipo,
       inmobiliariaId: typeof g.inmobiliariaId === 'string' ? g.inmobiliariaId : null,
+      ...(g.con === 'leasefy' || g.con === 'inmobiliaria' ? { con: g.con } : {}),
     }
   } catch {
     return null
@@ -324,6 +360,7 @@ export function guardarCuenta(userId: string, cuenta: CuentaElegida): void {
       userId,
       tipo: cuenta.tipo,
       inmobiliariaId: cuenta.tipo === 'inmobiliaria' ? cuenta.inmobiliariaId : antes?.inmobiliariaId ?? null,
+      ...(cuenta.tipo === 'propietario' && cuenta.con ? { con: cuenta.con } : antes?.con ? { con: antes.con } : {}),
     }
     const nuevo = JSON.stringify(g)
     if (window.localStorage.getItem(CLAVE_GUARDADA) === nuevo) return

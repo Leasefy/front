@@ -863,3 +863,12 @@ describe('DeudaDelMesPanel — la deuda del mes, no los cobros', () => {
     expect(boton.parentElement?.getAttribute('title')).toContain('permiso')
   })
 })
+
+describe('buscar por cédula (Nico 31-10: «en pagos debería dejar buscar por cédula»)', () => {
+  it('encuentra la cédula escrita con o sin puntos', () => {
+    const filas = [fila({ cuotaId: 'c1', documento: '1193449009' }), fila({ cuotaId: 'c2', documento: '70814637' })]
+    expect(filtrarCuotas(filas, '1193449009', 'MES').map((f) => f.cuotaId)).toEqual(['c1'])
+    expect(filtrarCuotas(filas, '1.193.449.009', 'MES').map((f) => f.cuotaId)).toEqual(['c1'])
+    expect(filtrarCuotas(filas, '70 814 637', 'MES').map((f) => f.cuotaId)).toEqual(['c2'])
+  })
+})

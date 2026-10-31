@@ -13286,7 +13286,10 @@
         "soloAdelanto": "{{nombre}} has nothing past due, but the contract does carry debt ahead. Anything you receive today is an advance: it pays down instalments that have not fallen due yet.",
         "capitalEInteres": "Principal {{capital}} · interest {{intereses}}",
         "deLosCualesIntereses": "of which {{monto}} is late interest",
-        "interesPrimero": "Interest is paid first, then the principal (art. 1653 of the Civil Code)."
+        "interesPrimero": "Interest is paid first, then the principal (art. 1653 of the Civil Code).",
+        "aFavorLabel": "Already in their favour",
+        "aFavorAyuda": "They paid it (for example, the move-in utility bill) and it comes off their instalments on each due date: of what they owe, {{monto}} is left to pay.",
+        "aFavorSinDeuda": "They paid it (for example, the move-in utility bill) and it comes off their next instalment on its due date."
       },
       "plan": {
         "titulo": "Where this money goes",

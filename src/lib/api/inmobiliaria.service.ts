@@ -1650,6 +1650,24 @@ export const dispersionesApi = {
   },
 
   /**
+   * Cancelar VARIAS liquidaciones en borrador en una sola petición: corre en el
+   * centro de procesos (202 `{ procesoId }`). Nico, 31-10-2026: cancelar las 506
+   * de a una dejaba «Leasefy no está respondiendo» (la puerta frenaba las 506).
+   */
+  async descartarEnElCentro(dispersionIds: string[]): Promise<{ procesoId: string }> {
+    return apiClient.post(`${BASE}/dispersiones/descartar/en-el-centro`, { dispersionIds });
+  },
+
+  /**
+   * Los giros aprobados SUELTOS (todavía sin girar) vuelven a estar listos para
+   * el lote, en el centro de procesos. Nico, 31-10-2026: «aprobé 488 de 506»:
+   * aprobarlos uno por uno los sacaba del lote.
+   */
+  async devolverAlLoteEnElCentro(dispersionIds: string[]): Promise<{ procesoId: string }> {
+    return apiClient.post(`${BASE}/dispersiones/devolver-al-lote/en-el-centro`, { dispersionIds });
+  },
+
+  /**
    * Segundo par de ojos: anota la referencia del giro que YA se hizo.
    *
    * El back expone PUT, no PATCH (con PATCH la llamada moría en 404) y exige

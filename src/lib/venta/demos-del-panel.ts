@@ -42,30 +42,35 @@ const DE_LA_INMOBILIARIA: Record<string, DemoDelModulo> = {
     promesa: 'La mora se persigue sola: avisos, llamadas y WhatsApp a cada inquilino, con acuerdos de pago.',
     puntos: ['Recordatorios antes de que venza', 'Llamadas y WhatsApp que negocian', 'Acuerdos de pago con link de pago'],
     capturas: [cap('cob-resumen', 'Resumen de la cobranza del mes'), cap('cob-cartera', 'Cartera por edades'), cap('cob-whatsapp', 'Conversación de cobranza por WhatsApp')],
+    video: video('cobranza', 'Recorrido por la cobranza con datos de ejemplo: la mora, lo que te toca decidir, la cartera por etapa y cómo la está logrando el agente'),
   },
   conciliacion: {
     titulo: 'El banco cuadrado, sin Excel',
     promesa: 'Cada pago del extracto se cruza con su inquilino y su recibo.',
     puntos: ['Sube el extracto y se concilia solo', 'Lo dudoso te lo propone', 'Cierre del mes firmado'],
     capturas: [cap('conc-resumen', 'Resumen de la conciliación'), cap('conc-movimientos', 'Movimientos del banco conciliados')],
+    video: video('conciliacion', 'Recorrido por la conciliación con datos de ejemplo: lo que falta por conciliar, los casos por tipo y lo que hizo el agente'),
   },
   avaluos: {
     titulo: 'Avalúos en minutos',
     promesa: 'El canon y el precio correctos para cada inmueble, con comparables reales.',
     puntos: ['Canon sugerido por zona', 'Comparables del mercado', 'Informe para el propietario'],
     capturas: [cap('ava-lista', 'Lista de avalúos')],
+    video: video('avaluos', 'Recorrido por los avalúos con datos de ejemplo: los listos para entregar y la lista por estado con su certificado'),
   },
   asegurabilidad: {
     titulo: 'Contratos protegidos',
     promesa: 'Cotiza el seguro de arrendamiento con varias aseguradoras a la vez.',
     puntos: ['Cotización en minutos', 'Varias aseguradoras', 'Todo atado al contrato'],
     capturas: [cap('aseg-resumen', 'Cotización con aseguradoras')],
+    video: video('asegurabilidad', 'Recorrido por el seguro de arrendamiento con datos de ejemplo: las últimas cotizaciones y cómo responde cada aseguradora'),
   },
   matching: {
     titulo: 'El inquilino correcto, el mismo día',
     promesa: 'A cada interesado le ofrecemos los inmuebles que de verdad le sirven.',
     puntos: ['Cruce automático interesado-inmueble', 'Opciones el mismo día', 'Menos tiempo vacante'],
     capturas: [cap('match-ofrecer', 'Qué ofrecerle a cada interesado')],
+    video: video('matching', 'Recorrido por Afinidad con datos de ejemplo: los interesados por etapa y lo último que hizo el agente'),
   },
   estudio: {
     titulo: 'Estudio del inquilino en minutos',
@@ -78,6 +83,7 @@ const DE_LA_INMOBILIARIA: Record<string, DemoDelModulo> = {
     promesa: 'Te avisa qué inquilinos y propietarios están por irse, a tiempo.',
     puntos: ['Riesgo de cada contrato', 'Renovaciones a tiempo', 'Acciones sugeridas'],
     capturas: [cap('ret-tablero', 'Tablero de retención')],
+    video: video('retencion', 'Recorrido por la retención con datos de ejemplo: quién se puede ir, por qué y qué ofrecerle'),
   },
   contratos: {
     // Nico, 27-10-2026: «aquí es "Administra tus contratos de arrendamiento"».
@@ -149,6 +155,7 @@ const DE_LA_INMOBILIARIA: Record<string, DemoDelModulo> = {
     promesa: 'Consulta a inquilinos y propietarios en listas restrictivas antes de firmar.',
     puntos: ['Consulta en listas', 'Soporte para tu SARLAFT', 'Queda en la ficha de cada persona'],
     capturas: [cap('inq-detalle', 'Ficha de la persona con su consulta')],
+    video: video('listas-restrictivas', 'Recorrido por las listas restrictivas con datos de ejemplo: los terceros consultados, el que espera revisión y las listas cargadas'),
   },
   pagos: {
     titulo: 'Recaudo y giros a propietarios',
@@ -156,6 +163,28 @@ const DE_LA_INMOBILIARIA: Record<string, DemoDelModulo> = {
     puntos: ['Recaudo por referencia', 'Giros con su liquidación', 'Extracto para cada propietario'],
     capturas: [cap('demo-pagos', 'Pagos con datos de ejemplo'), cap('erp-dispersiones', 'Giros a propietarios')],
     video: video('pagos', 'Recorrido por Pagos con datos de ejemplo: la deuda del mes, cuota por cuota, por vencer, en plazo, en cartera y pagada'),
+  },
+  // Nico 30-10-2026 («la sección de demo de propietario no vi ningún video»): antes caía en la de Pagos (la deuda del mes).
+  propietarios: {
+    titulo: 'Tus propietarios, al día y bien girados',
+    promesa: 'Cada propietario con sus inmuebles, lo que recibe al mes y su giro: sabes a quién se le debe y desde cuándo.',
+    puntos: ['Los giros atrasados primero', 'Lo que recibe cada uno, ya descontado', 'Su ficha con inmuebles y cuenta'],
+    capturas: [cap('demo-propietarios', 'Propietarios con datos de ejemplo'), cap('erp-dispersiones', 'Giros a propietarios')],
+    video: video('propietarios', 'Recorrido por Propietarios con datos de ejemplo: los giros atrasados, la lista completa y la ficha de un propietario'),
+  },
+  'agente-de-pagos': {
+    titulo: 'Los pagos que se cobran y se recuperan solos',
+    promesa: 'El enlace de pago de cada cuota por WhatsApp, los pagos que fallan recuperados y cada giro revisado.',
+    puntos: ['Enlace de pago por cuota', 'Recupera los pagos que fallan', 'Sabes cuánto entró por enlace'],
+    capturas: [cap('demo-agente-de-pagos', 'El agente de pagos con datos de ejemplo')],
+    video: video('agente-de-pagos', 'Recorrido por el agente de pagos con datos de ejemplo: lo pagado por enlace y el enlace de cada cuota, por estado'),
+  },
+  'desempeno-ia': {
+    titulo: 'Lo que hace cada agente, en cifras',
+    promesa: 'La actividad de cada agente de IA con sus propias cifras: casos, recaudo, conciliación y cotizaciones.',
+    puntos: ['Una tarjeta por agente', 'Cifras de su propia actividad', 'Ninguna es una estimación'],
+    capturas: [cap('demo-desempeno-ia', 'El desempeño de los agentes con datos de ejemplo')],
+    video: video('desempeno-ia', 'Recorrido por el desempeño de los agentes con datos de ejemplo: cobranza, pagos, conciliación, afinidad, seguros y estudio'),
   },
 };
 
@@ -168,12 +197,9 @@ const GENERAL: DemoDelModulo = {
 
 /** Claves del panel que comparten demo. */
 const ALIAS: Record<string, string> = {
-  'agente-de-pagos': 'pagos',
   juridico: 'cobranza',
   inquilinos: 'estudio',
-  propietarios: 'pagos',
   proveedores: 'mantenimientos',
-  'desempeno-ia': 'reportes',
   'calidad-publicaciones': 'matching',
 };
 
@@ -188,19 +214,23 @@ const DEL_PROPIETARIO: Record<string, DemoDelModulo> = {
     titulo: 'Tu contrato en regla, firmado en línea',
     promesa: 'Contrato legal, firma electrónica y renovación con el IPC, sin papeles.',
     puntos: ['Contrato con la ley 820', 'Firma con código al celular', 'Renovación a tiempo'],
-    capturas: [cap('erp-renovaciones', 'Renovaciones de contratos')],
+    capturas: [cap('demo-propietario-contratos', 'Tus contratos con datos de ejemplo'), cap('erp-renovaciones', 'Renovaciones de contratos')],
+    video: video('propietario-contratos', 'Recorrido por tus contratos con datos de ejemplo: los activos, el que espera al inquilino y el detalle con las firmas'),
   },
   cobro: {
     titulo: 'El arriendo te llega solo',
     promesa: 'Cobramos el arriendo cada mes y si se atrasa lo perseguimos por ti.',
     puntos: ['Recordatorios al inquilino', 'Cobranza por WhatsApp y llamada', 'Tu plata a tu cuenta'],
-    capturas: [cap('cob-whatsapp', 'Conversación de cobranza por WhatsApp'), cap('erp-recaudo', 'Recaudo del mes')],
+    capturas: [cap('demo-propietario-cobro', 'Tu arriendo y tu estado de cuenta con datos de ejemplo'), cap('cob-whatsapp', 'Conversación de cobranza por WhatsApp')],
+    video: video('propietario-cobro', 'Recorrido por tu arriendo con datos de ejemplo: lo que paga el inquilino mes a mes y tu estado de cuenta con lo girado y lo que va en camino'),
   },
   estudio: {
     titulo: 'Sabes a quién le arriendas',
     promesa: 'Estudiamos al inquilino: identidad, capacidad de pago y listas restrictivas.',
-    puntos: ['Estudio en minutos', 'Puntaje claro', 'Seguro de arrendamiento'],
-    capturas: [cap('inq-detalle', 'Detalle del estudio de un inquilino'), cap('aseg-resumen', 'Cotización con aseguradoras')],
+    // 30-10: «Puntaje claro» salió: el propietario nunca ve un puntaje (F-07), y el video muestra la pantalla.
+    puntos: ['Estudio en minutos', 'De qué vive y cuánto gana', 'Tú escoges a quién'],
+    capturas: [cap('demo-propietario-estudio', 'Los candidatos de tu inmueble con datos de ejemplo'), cap('inq-detalle', 'Detalle del estudio de un inquilino')],
+    video: video('propietario-estudio', 'Recorrido por los candidatos de tu inmueble con datos de ejemplo: la lista corta, de qué vive cada uno y a quién escogiste antes'),
   },
   // Ronda 30 (revisora r27): cada parte cerrada dice lo suyo; antes Inicio, Certificados, Informes y
   // Solicitudes repetían la general y Giros, Aprobaciones y Revisar el canon, la del cobro.
@@ -208,37 +238,43 @@ const DEL_PROPIETARIO: Record<string, DemoDelModulo> = {
     titulo: 'Tu plata a tu cuenta, cada mes',
     promesa: 'Te giramos lo del arriendo con el extracto del mes: qué entró y qué se descontó.',
     puntos: ['Giro a tu cuenta', 'Extracto de cada mes', 'Todo tu historial de giros'],
-    capturas: [cap('erp-dispersiones', 'Giros a propietarios del mes'), cap('erp-recaudo', 'Recaudo del mes')],
+    capturas: [cap('demo-propietario-giros', 'Tus giros con datos de ejemplo'), cap('erp-dispersiones', 'Giros a propietarios del mes')],
+    video: video('propietario-giros', 'Recorrido por tus giros con datos de ejemplo: lo girado en el año, mes por mes, el que se devolvió y la cuenta a la que te giran'),
   },
   aprobaciones: {
     titulo: 'Las reparaciones, con tu visto bueno',
     promesa: 'Te mostramos cada reparación a tu cargo y nada se te descuenta sin tu aprobación.',
     puntos: ['Aprueba o rechaza en un clic', 'Hazla tú si no es urgente', 'Sabes cuánto y por qué'],
-    capturas: [TABLERO],
+    capturas: [cap('demo-propietario-aprobaciones', 'Las reparaciones por aprobar con datos de ejemplo')],
+    video: video('propietario-aprobaciones', 'Recorrido por las reparaciones con datos de ejemplo: las que esperan tu aprobación, la que haces tú y el historial con su detalle'),
   },
   'revisar-canon': {
     titulo: 'El canon justo para tu inmueble',
     promesa: 'Sabes cuánto te cuesta tenerlo desocupado y qué canon pide el mercado, para decidir a tiempo.',
     puntos: ['Avalúo con comparables reales', 'Lo que cuesta cada mes desocupado', 'Tú decides si lo cambias'],
-    capturas: [cap('ava-lista', 'Avalúos con comparables')],
+    capturas: [cap('demo-propietario-revisar-canon', 'La revisión de tu canon con datos de ejemplo'), cap('ava-lista', 'Avalúos con comparables')],
+    video: video('propietario-revisar-canon', 'Recorrido por la revisión del canon con datos de ejemplo: lo que te ha costado el inmueble desocupado y lo que cuesta el canon que escribes'),
   },
   informes: {
     titulo: 'Tu inmueble en cifras',
     promesa: 'Tu certificado anual de ingresos y el historial de reparaciones, siempre a la mano.',
     puntos: ['Certificado anual de ingresos', 'Historial de reparaciones', 'Listo para tu contador'],
-    capturas: [TABLERO],
+    capturas: [cap('demo-propietario-informes', 'Tus informes con datos de ejemplo')],
+    video: video('propietario-informes', 'Recorrido por tus informes con datos de ejemplo: el certificado de ingresos de cada año y el historial de reparaciones'),
   },
   certificados: {
     titulo: 'Tu declaración de renta, sin buscar papeles',
     promesa: 'Lo que los inquilinos te retuvieron en el año, en un certificado listo para declarar.',
     puntos: ['Retenciones del año', 'Certificados y facturas', 'Descárgalos cuando quieras'],
-    capturas: [cap('erp-recaudo', 'Recaudo del mes')],
+    capturas: [cap('demo-propietario-certificados', 'Tus certificados con datos de ejemplo')],
+    video: video('propietario-certificados', 'Recorrido por tus certificados con datos de ejemplo: la retención del año, la certificación del mandatario y las facturas de la comisión'),
   },
   solicitudes: {
     titulo: 'Tus solicitudes, respondidas a tiempo',
     promesa: 'Lo que pides queda con número, plazo y respuesta por escrito.',
     puntos: ['Cada solicitud con su plazo', 'Sabes en qué va', 'Todo queda por escrito'],
-    capturas: [TABLERO],
+    capturas: [cap('demo-propietario-solicitudes', 'Tus solicitudes con datos de ejemplo')],
+    video: video('propietario-solicitudes', 'Recorrido por tus solicitudes con datos de ejemplo: las abiertas primero y el detalle de una con su respuesta'),
   },
 };
 
@@ -271,6 +307,7 @@ const DEL_AGENTE: Record<string, DemoDelModulo> = {
     promesa: 'Recordatorios, enlace de pago y seguimiento de la mora sin que tengas que llamar a nadie.',
     puntos: ['Recordatorios por WhatsApp', 'Enlace de pago', 'Tú sólo ves quién pagó'],
     capturas: [cap('cob-whatsapp', 'Cobranza por WhatsApp')],
+    video: video('cobranza', 'Recorrido por la cobranza con datos de ejemplo: la mora, lo que te toca decidir, la cartera por etapa y cómo la está logrando el agente'),
   },
   estudio: {
     titulo: 'Sabes a quién le arriendas',

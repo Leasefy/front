@@ -27,7 +27,8 @@ import { Collapse, CrossFade, IconButton, Presence } from '@leasefy/cadence';
 import { Sheet, SheetBody, SheetContent, SheetHeader } from '@/components/ui/sheet';
 import { useI18n } from '@/lib/i18n';
 import type { PipelineItem, PipelineStage } from '@/lib/types/inmobiliaria';
-import { PIPELINE_STAGES, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
+import { getPipelineStageInfo } from '@/lib/types/inmobiliaria';
+import { ETAPAS_DEL_TABLERO, columnaDe, mismaColumna } from '@/lib/pipeline/etapas-del-tablero';
 import { PipelineCard, NombresDeAgentesContext, VariosAsesoresContext } from './PipelineCard';
 import { DropdownList, DropdownListContent, DropdownListItem, DropdownListSeparator, DropdownListTrigger } from '@/components/ui/dropdown-menu';
 import { mensajeDelRechazoDelMotivo } from '@/components/inmobiliaria/agenda/MotivoDialog';
@@ -501,8 +502,10 @@ export function PipelineBoard({
     };
 
     items.forEach((item) => {
-      if (grouped[item.stage]) {
-        grouped[item.stage].push(item);
+      // «Evaluación» va en la columna de «Postulación y evaluación» (Juan, 31-10-2026).
+      const columna = columnaDe(item.stage);
+      if (grouped[columna]) {
+        grouped[columna].push(item);
       }
     });
 
@@ -516,8 +519,8 @@ export function PipelineBoard({
    */
   const moverA = useCallback(
     async (item: PipelineItem, newStage: PipelineStage) => {
-      // Check if stage actually changed
-      if (item.stage === newStage) return;
+      // Soltarla en su misma columna no es un cambio (también «Evaluación» en «Postulación y evaluación»).
+      if (mismaColumna(item.stage, newStage)) return;
 
       // La tarjeta ya viene bloqueada; esto cubre un arrastre por teclado.
       // Cerrado y Perdido el back los rechaza con 409 LEAD_TERMINADO.
@@ -644,10 +647,7 @@ export function PipelineBoard({
   // PL-02 (04-10-2026): las columnas van SIEMPRE en el orden del embudo
   // (Interesado → Visita programada → … → Cerrado | Perdido). Antes las que
   // tenían tarjetas se iban adelante y el tablero se leía al revés.
-  const mainStages = useMemo(
-    () => PIPELINE_STAGES.filter((s) => s.stage !== 'lost').map((s) => s.stage),
-    [],
-  );
+  const mainStages = useMemo(() => [...ETAPAS_DEL_TABLERO], []);
 
   /*
    * Ronda 18 (390): sin tablero. Arrastrar entre columnas que no se ven es imposible en el

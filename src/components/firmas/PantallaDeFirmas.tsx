@@ -8,6 +8,7 @@
  * documentos con buscador, filtro por estado y paginación; cada uno abre su cajón (quién firmó, WhatsApp, descargar).
  */
 
+import { PorFirmarPorTi } from './PorFirmarPorTi';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useReleerMientras } from '@/lib/hooks/use-releer-mientras';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -148,6 +149,8 @@ export function PantallaDeFirmas({ donde }: { donde: DondeFirma }) {
           ) : undefined
         }
       />
+      {/* 31-10-2026 (Nico): lo que espera MI firma, para firmar varios con una sola firma. */}
+      {donde === 'inmobiliaria' ? <PorFirmarPorTi onFirmados={() => void leer()} /> : null}
 
       {error ? <FalloDeCarga error={error} onReintentar={leer} queEs="tus firmas" /> : null}
       {vista && !vista.disponible ? (

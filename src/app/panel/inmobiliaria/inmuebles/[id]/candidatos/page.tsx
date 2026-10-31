@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { ApiError } from '@/lib/api/client';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { diaEnColombia, fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
@@ -275,7 +276,14 @@ function CandidatosContent() {
       // `getByIdOrPropertyId` y no `getById`: por acá entran enlaces que sólo
       // tienen el id del INMUEBLE —Postulaciones es uno— y con `getById` caían
       // en «No encontramos esa propiedad» teniendo el mandato en la base.
-      const consignacion = await consignacionesApi.getByIdOrPropertyId(consignacionId);
+      // 31-10-2026 (Nico: «los inmuebles sin propietario no son inmuebles sin nada»): uno publicado sin mandato también
+      // recibe postulaciones; sin mandato (404), el id del enlace ES el del inmueble.
+      const consignacion = await consignacionesApi
+        .getByIdOrPropertyId(consignacionId)
+        .catch((e: unknown) => {
+          if (e instanceof ApiError && e.status === 404) return { propertyId: consignacionId } as { propertyId: string | null };
+          throw e;
+        });
       // Un mandato puede no tener inmueble todavía —los de la migración de
       // cartera nacen así—, y sin inmueble no hay a quién postularse. Se dice,
       // en vez de pedir candidatos de `undefined` y pintar «no hay ninguno».
@@ -326,6 +334,7 @@ function CandidatosContent() {
   const { abrir, pedirAccion, cajon } = useDecisionDeCandidato({
     hermanos: candidates,
     onCambio: fetchData,
+    canonDelInmueble: property?.monthlyRent ?? null,
   });
 
   /**

@@ -25,6 +25,8 @@ import type { ReactNode } from 'react'
 import { Lock } from '@phosphor-icons/react'
 
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
+import { enLaDemo } from '@/lib/demo/en-la-demo'
+import { useModoDemo } from '@/lib/demo/modo-demo'
 import { useI18n } from '@/lib/i18n'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import Link from 'next/link'
@@ -73,6 +75,12 @@ export function AgentModuleGate({
   const { canAccess, isLoading, agentAccessStatus, refetch } =
     usePermissionsContext()
   const { t } = useI18n()
+  const enDemo = useModoDemo()
+
+  // «Ver con datos demo» (30-10-2026): la sección se pinta con sus datos de ejemplo. La puerta pregunta al micro por el
+  // acceso de verdad (que en lo gratis no hay, o el micro ni se toca) y tapaba la demo con «el asistente no está
+  // disponible». En la demo no se guarda nada: pasa.
+  if (enDemo && enLaDemo()) return <>{children}</>
 
   // Sin resolver ≠ denegado.
   if (isLoading || agentAccessStatus === 'resolviendo') {

@@ -257,7 +257,10 @@ export function filtrarCuotas(
     } else if (f.cajon !== cajon) return false
     if (q === '') return true
     const campos = [f.inquilino, f.documento, f.contrato, f.contratoDeLeasefy, f.inmueble]
-    return campos.some((c) => c && normalizar(c).includes(q))
+    if (campos.some((c) => c && normalizar(c).includes(q))) return true
+    // Nico 31-10: «en pagos debería dejar buscar por cédula». Una cédula se escribe con o sin puntos y espacios.
+    const digitos = q.replace(/\D/g, '')
+    return digitos.length >= 4 && /^[\d.\s-]+$/.test(q) && (f.documento ?? '').replace(/\D/g, '').includes(digitos)
   })
 }
 
@@ -810,7 +813,7 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
                 />
                 <Input
                   className="h-9 pl-9"
-                  placeholder="Buscar inquilino o contrato"
+                  placeholder="Buscar inquilino, cédula o contrato"
                   aria-label="Buscar en las cuotas del mes"
                   value={busqueda}
                   onChange={(e) => setBusqueda(e.target.value)}

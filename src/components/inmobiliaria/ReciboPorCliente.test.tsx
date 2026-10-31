@@ -43,6 +43,7 @@ import {
   periodosSinConciliar,
   separarPorVencimiento,
   soloSePuedeAdelantar,
+  CarteraDelClientePanel,
 } from './ReciboPorCliente';
 
 function inquilino(tenantId: string, nombre: string, extra: Partial<Inquilino> = {}): Inquilino {
@@ -313,5 +314,50 @@ describe('<ElegirCliente>', () => {
     expect(reintentar).toBeTruthy();
     await act(async () => reintentar!.click());
     expect(document.body.querySelector('[data-testid="cliente-recibo"]')).toBeTruthy();
+  });
+});
+
+describe('<CarteraDelClientePanel> con saldo a favor del contrato (Juan, 31-10-2026)', () => {
+  let container: HTMLDivElement;
+  let root: Root;
+
+  beforeEach(() => {
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    root = createRoot(container);
+  });
+
+  afterEach(() => {
+    act(() => root.unmount());
+    container.remove();
+  });
+
+  const cartera = (extra: Partial<CarteraDelCliente> = {}): CarteraDelCliente => ({
+    tenantId: 't1',
+    nombre: 'Jose',
+    documento: null,
+    email: null,
+    inmuebles: 1,
+    total: 1_000_000,
+    vencidoCop: 0,
+    futuroCop: 1_000_000,
+    cuotas: [periodo('a', { contractId: 'c-1', vencida: false })],
+    ...extra,
+  });
+
+  it('dice lo que ya tiene a favor (la factura de servicios de entrada que pagó él) y lo que le queda por pagar', async () => {
+    await act(async () => {
+      root.render(<CarteraDelClientePanel cartera={cartera({ anticiposDelContrato: [{ contractId: 'c-1', saldoCop: 177_419 }], anticipoDelContratoCop: 177_419 })} />);
+    });
+    const aFavor = container.querySelector('[data-testid="cartera-a-favor"]');
+    expect(aFavor?.textContent).toContain('$177419');
+    expect(aFavor?.textContent).toContain('recibos.form.cartera.aFavorAyuda');
+  });
+
+  it('sin anticipo no pinta nada nuevo', async () => {
+    await act(async () => {
+      root.render(<CarteraDelClientePanel cartera={cartera()} />);
+    });
+    expect(container.querySelector('[data-testid="cartera-a-favor"]')).toBeNull();
   });
 });

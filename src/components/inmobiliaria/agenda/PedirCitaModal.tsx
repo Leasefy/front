@@ -28,7 +28,7 @@ import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { etiquetaDeInmueble } from '@/components/contratos/VincularInmueble';
 import { aFechaIso, fechaLocal, hoyLocal } from '@/lib/fechas-locales';
-import { useConsignaciones } from '@/lib/hooks/useInmobiliaria';
+import { useConsignaciones, useInmueblesSinConsignacion } from '@/lib/hooks/useInmobiliaria';
 import { useEquipo, useMiUserId } from '@/lib/agenda/use-equipo';
 import { loQueDiceUnSelector } from '@/lib/errores/lo-que-dice-un-selector';
 import { ApiError } from '@/lib/api/client';
@@ -192,14 +192,25 @@ export function PedirCitaModal({
     errorCrudo: errorDeInmuebles,
   } = useConsignaciones();
   const conInmueble = useMemo(() => consignaciones.filter((c) => c.propertyId), [consignaciones]);
-  const opcionesInmueble = useMemo<ComboboxOption[]>(
-    () =>
-      conInmueble
-        .filter((c) => !estaArrendado(c))
-        .sort((a, b) => a.propertyTitle.localeCompare(b.propertyTitle))
-        .map((c) => ({ value: c.propertyId, label: etiquetaDeInmueble(c) })),
-    [conInmueble],
-  );
+  // 🔴 31-10-2026 (Nico: «no aparece un inmueble que fue creado por la cuenta gratis»): los inmuebles SIN
+  // propietario todavía (sin mandato) también reciben visitas; el back ya los acepta.
+  const { inmuebles: sinMandato } = useInmueblesSinConsignacion();
+  const opcionesInmueble = useMemo<ComboboxOption[]>(() => {
+    const conMandato = conInmueble.filter((c) => !estaArrendado(c));
+    const yaEstan = new Set(conMandato.map((c) => c.propertyId));
+    return [
+      ...conMandato.map((c) => ({ value: c.propertyId, label: etiquetaDeInmueble(c), orden: c.propertyTitle })),
+      ...sinMandato
+        .filter((i) => !yaEstan.has(i.propertyId))
+        .map((i) => ({
+          value: i.propertyId,
+          label: `${i.propertyTitle} · ${i.propertyAddress} (sin propietario todavía)`,
+          orden: i.propertyTitle,
+        })),
+    ]
+      .sort((a, b) => a.orden.localeCompare(b.orden))
+      .map(({ value, label }) => ({ value, label }));
+  }, [conInmueble, sinMandato]);
   const arrendadosOcultos = conInmueble.length - opcionesInmueble.length;
 
   const [propertyId, setPropertyId] = useState('');

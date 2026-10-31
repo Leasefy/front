@@ -6,7 +6,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
-import { middleware } from './middleware'
+import { middlewareEnLeasefy as middleware } from './middleware.en-leasefy'
 import { politicaDeContenido } from '@/lib/seguridad/politica-de-contenido'
 
 const pedir = () => middleware(new NextRequest('https://leasefy.co/panel/inmobiliaria/inquilinos'))

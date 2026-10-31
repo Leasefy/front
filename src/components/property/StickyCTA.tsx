@@ -26,7 +26,7 @@ import { useAprobacion } from '@/lib/hooks/use-aprobacion';
 import { seLePuedePrometerSinCodeudor } from '@/lib/api/aprobacion.service';
 import { horaDeLaCasa } from '@/lib/agenda/hora-de-la-casa';
 import { TeLlamamosParaLaVisita } from '@/components/property/TeLlamamosParaLaVisita';
-import { CompartirLaFicha } from '@/components/property/CompartirLaFicha';
+import { CompartirLaFicha, enlaceDelInmueble } from '@/components/property/CompartirLaFicha';
 import type { InmuebleParaCompartir } from '@/lib/inmuebles/ficha-para-compartir';
 
 interface StickyCTAProps {
@@ -193,14 +193,14 @@ function useCompartirInmueble(propertyId: string) {
   // Se calcula en el cliente para no romper la hidratación con el origen.
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      setShareUrl(`${window.location.origin}/propiedades/${propertyId}`);
+      setShareUrl(enlaceDelInmueble(propertyId));
     }
   }, [propertyId]);
 
   const compartir = useCallback(async () => {
     const url =
       shareUrl ||
-      (typeof window !== 'undefined' ? `${window.location.origin}/propiedades/${propertyId}` : '');
+      (typeof window !== 'undefined' ? enlaceDelInmueble(propertyId) : '');
     if (!url) return;
 
     const resultado = await compartirEnlace(url);

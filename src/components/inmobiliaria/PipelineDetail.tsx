@@ -11,7 +11,6 @@ import { useI18n } from '@/lib/i18n';
 import {
   type PipelineItem,
   type PipelineStage,
-  PIPELINE_STAGES,
   formatCurrency,
   getPipelineStageInfo,
 } from '@/lib/types/inmobiliaria';
@@ -30,6 +29,9 @@ import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { revisarMotivoDePerdida } from '@/lib/pipeline/limites-del-pipeline';
 import { useTr } from '@/lib/i18n/use-tr';
 import { diaDeLaProximaAccion } from '@/lib/pipeline/proxima-accion';
+import { ETAPAS_DEL_TABLERO, columnaDe } from '@/lib/pipeline/etapas-del-tablero';
+import { LoQueTocaEnLaEtapa } from '@/components/inmobiliaria/LoQueTocaEnLaEtapa';
+import { Avatar } from '@/components/ui/avatar';
 
 interface PipelineDetailProps {
   isOpen: boolean;
@@ -118,21 +120,10 @@ function hitosReales(item: PipelineItem) {
   return hitos;
 }
 
-// Get next stage in the pipeline
+// La etapa que sigue en el embudo («Postulación y evaluación» es una sola: de ahí sigue «Aprobado»).
 function getNextStage(currentStage: PipelineStage): PipelineStage | null {
-  const stages: PipelineStage[] = [
-    'lead',
-    'visit_scheduled',
-    'visit_done',
-    'application',
-    'evaluation',
-    'approved',
-    'contract',
-    'handover',
-    'completed',
-  ];
-
-  const currentIndex = stages.indexOf(currentStage);
+  const stages = ETAPAS_DEL_TABLERO;
+  const currentIndex = stages.indexOf(columnaDe(currentStage));
   if (currentIndex === -1 || currentIndex === stages.length - 1) return null;
   return stages[currentIndex + 1];
 }
@@ -361,6 +352,17 @@ export function PipelineDetail({
 
         {/* El cuerpo: lo único que scrollea */}
         <SheetBody className="space-y-6">
+          {/* Lo que toca en esta etapa (reunión con Juan, 31-10-2026): primero, porque es la tarea. */}
+          <LoQueTocaEnLaEtapa
+            item={item}
+            puedeEditar={puedeEditar}
+            equipo={equipo}
+            onCambio={onCambio}
+            onPedirVisita={onPedirVisita}
+            onMover={(etapa) => onStageChange?.(item.id, etapa)}
+            onMarcarPerdido={() => setPidiendoMotivo(true)}
+          />
+
           {/* Property Card */}
           <div className="rounded-lg border border-border bg-card overflow-hidden">
             <div className="flex gap-4 p-4">
@@ -446,9 +448,7 @@ export function PipelineDetail({
                     className="w-11 h-11 rounded-full object-cover shrink-0"
                   />
                 ) : (
-                  <div className="w-11 h-11 rounded-full bg-gradient-to-br from-primary to-fg-muted flex items-center justify-center text-white text-sm font-medium shrink-0">
-                    {item.candidateName.split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()}
-                  </div>
+                  <Avatar name={item.candidateName} size="md" className="shrink-0" />
                 )}
                 <p className="font-medium text-foreground">{item.candidateName}</p>
               </div>

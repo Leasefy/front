@@ -294,6 +294,12 @@ Blender (`archivos/identidad-v3/blender/escena.py` en la memoria del proyecto) y
 - **Logo:** proporción 2,08 : 1, nunca deformado. En arquitectura u objetos (fachada, placa, bordado) va como OBJETO REAL
   hecho por el generador, nunca pegado plano; lo plano sólo en pantallas, hojas, paredes pintadas y lonas. Revisar manos
   y letras de cada imagen generada. Nada repetido (Nico, 28-10). Manual: https://claude.ai/artifact/KmyeY1Fqv5qVwAfQmxBX3R
+- **Los modales que invitan a pagar** (el del plan, la invitación por función del plan gratis; Nico 31-10: «haz más
+  hermosos los modales de mejora tu plan… ya te lo había pedido»): `EscenaDeMarca asomando` (foto del banco + velo) con
+  la **`VentanaDelProducto`**: la captura REAL de esa parte de Leasefy (la de su demo, en `public/landing-v2/producto`)
+  en una ventana con esquina y sombra flotante que asoma y se corta en el borde de abajo, y en su esquina el acento —la
+  cuenta de días o el 3D de la función en su `PlacaDe3D`—. Debajo: rótulo DM Mono callado, título `text-h2`, la lista
+  con chulos (`BeneficiosEn3D`) y los botones. Nunca el ícono en una cajita de color con anillos.
 
 ---
 
@@ -426,6 +432,12 @@ cero atenuadas o plegadas («+ 4 etapas sin casos»). Tocar una etapa filtra la 
 - Se valida en el campo antes de enviar, con los MISMOS topes y frases que el DTO del back.
 - Un campo apagado dice por qué; lo verificado lleva su chulo verde y de dónde salió.
 - El botón dice el resultado («Guardar el contrato», no «Enviar»). Un formulario a medias no se pierde sin avisar.
+- **Texto largo con formato (la descripción del inmueble, 31-10-2026, Nico: «lo de bold… agregar emojis»)**:
+  `EditorDeDescripcion` (front `components/property`) = el mismo `Textarea` con una barra de íconos fantasma (negrilla,
+  cursiva, viñetas, numerada, emojis, «Ver cómo queda»). Se guarda con las marcas de WhatsApp y se pinta con
+  `DescripcionConFormato`: la negrilla de la persona va en `font-medium text-fg`, nunca `font-bold`. Los emojis del
+  selector son CONTENIDO de la persona (viven en `lib/inmuebles/emojis-de-la-descripcion.ts`), no adorno de la
+  interfaz: la regla de §16 sigue igual.
 
 ### 12.7 Carga, vacío y error
 

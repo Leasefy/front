@@ -551,14 +551,14 @@ function TesoreriaContent() {
                       {/* Qué es ese canon, en una línea: «causado» no se
                           entiende solo, y es la diferencia con lo recaudado. */}
                       {i === 0 && (
-                        <p className="mt-0.5 text-xs text-fg-muted" data-testid="tesoreria-que-es-el-canon">
+                        <p className="mt-0.5 text-caption text-fg-muted" data-testid="tesoreria-que-es-el-canon">
                           {t(k(base === 'RECAUDADO' ? 'fCanonQueEsRecaudado' : 'fCanonQueEsCausado'))}
                         </p>
                       )}
                     </div>
                   ))}
                   <div className="border-t border-border pt-2.5 flex items-center justify-between lg:col-span-full">
-                    <span className="text-sm font-semibold text-fg flex items-center gap-1.5">
+                    <span className="text-sm font-medium text-fg flex items-center gap-1.5">
                       <Wallet className={cn('w-4 h-4', neto < 0 ? 'text-danger' : 'text-fg-muted')} />
                       {t(k('fNeto'))}
                     </span>
@@ -574,34 +574,34 @@ function TesoreriaContent() {
                     </span>
                   </div>
                   {deduccionesDelMes > 0 && (
-                    <div className="flex items-center justify-between gap-2 text-sm" data-testid="tesoreria-deducciones-total">
+                    <div className="flex items-center justify-between gap-2 text-sm lg:col-span-full" data-testid="tesoreria-deducciones-total">
                       <span className="text-muted-foreground">{t(k('fDeducciones'))}</span>
                       <span className="shrink-0 whitespace-nowrap font-mono tabular-nums text-danger">{conSigno('−', formatCurrency(deduccionesDelMes))}</span>
                     </div>
                   )}
                   {conDeducciones && (aGirarDelMes !== neto || enContraDelMes > 0) && (
                     <>
-                      <div className="flex items-center justify-between gap-2 text-sm">
-                        <span className="font-semibold text-fg">{t(k('fAGirar'))}</span>
+                      <div className="flex items-center justify-between gap-2 text-sm lg:col-span-full">
+                        <span className="font-medium text-fg">{t(k('fAGirar'))}</span>
                         <span className="shrink-0 whitespace-nowrap font-mono tabular-nums text-fg" data-testid="tesoreria-a-girar-total">
                           <AnimatedNumber value={aGirarDelMes} format={formatCurrency} />
                         </span>
                       </div>
                       {enContraDelMes > 0 && (
-                        <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center justify-between gap-2 text-sm lg:col-span-full">
                           <span className="text-muted-foreground">{t(k('fSaldoEnContra'))}</span>
-                          <span className="font-mono tabular-nums text-warning">{formatCurrency(enContraDelMes)}</span>
+                          <span className="shrink-0 whitespace-nowrap font-mono tabular-nums text-warning">{formatCurrency(enContraDelMes)}</span>
                         </div>
                       )}
                     </>
                   )}
                   {/* Los avisos del mes entran y salen al cambiar de mes. */}
-                  <Presence as="p" show={quedanEnCero > 0} initial={false} className="text-xs text-warning" data-testid="tesoreria-quedan-en-cero">
+                  <Presence as="p" show={quedanEnCero > 0} initial={false} className="text-caption text-warning lg:col-span-full" data-testid="tesoreria-quedan-en-cero">
                       {quedanEnCero === 1
                         ? t('inmobiliaria.deducciones.liquidacion.quedanEnContraUno')
                         : t('inmobiliaria.deducciones.liquidacion.quedanEnContraVarios', { cuantos: quedanEnCero })}
                   </Presence>
-                  <Presence as="p" show={quedanDebiendo > 0} initial={false} className="text-xs text-danger" data-testid="tesoreria-quedan-debiendo">
+                  <Presence as="p" show={quedanDebiendo > 0} initial={false} className="text-caption text-danger" data-testid="tesoreria-quedan-debiendo">
                       {/* Con base CAUSADO no se compara contra lo recaudado:
                           contra el canon del mes, pagado o no. */}
                       {quedanDebiendo === 1
@@ -842,7 +842,7 @@ function TesoreriaContent() {
                               )}
                             </TableCell>
                           )}
-                          <TableCell className="max-w-[9rem] text-xs text-fg-muted">
+                          <TableCell className="max-w-[9rem] text-caption text-fg-muted">
                             {/* PG-06: enmascarada, como en la ficha del propietario. */}
                             <CuentaDestino
                               banco={p.propietarioBankName ?? null}

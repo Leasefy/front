@@ -235,6 +235,17 @@ function ConsignacionDetailContent() {
    * 404 en cada ficha abierta desde el contrato.
    */
   const idDelMandato = fetchedConsignacion?.id ?? (entraPorInmueble ? null : consignacionId);
+  /*
+   * 🔴 31-10-2026 (Nico, «Inmuebles compatibles» del cajón del candidato: «sale que la consignación no existe y
+   * sí debe existir, se creó ahorita»): un inmueble SIN propietario todavía no tiene mandato, así que buscarlo
+   * «por inmueble» daba 404. Ese inmueble existe y tiene su ficha propia: se va a ella.
+   */
+  const estadoDelError = (errorConsignacion as { status?: number } | null | undefined)?.status;
+  useEffect(() => {
+    if (entraPorInmueble && !cargandoConsignacion && estadoDelError === 404) {
+      router.replace(`/panel/inmobiliaria/inmuebles/sin-propietario/${consignacionId}`, { scroll: false });
+    }
+  }, [entraPorInmueble, cargandoConsignacion, estadoDelError, consignacionId, router]);
   // Leída sin exigir el proveedor (la ficha también se monta en pruebas sin sesión).
   const sesion = useContext(AuthContext);
   const modoComercial = enModoComercial(sesion?.agency);

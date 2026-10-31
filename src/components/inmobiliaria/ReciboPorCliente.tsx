@@ -89,6 +89,7 @@ import {
 import { mesEnTitulo } from '@/lib/utils/mes';
 import { conceptoSinElRango, fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { esAdelantableComoAnticipo } from '@/lib/recibos/forma-del-adelanto';
+import { saldoAFavorEnElRecibo } from '@/lib/recibos/saldo-a-favor-del-contrato';
 
 // ── Reglas puras (probadas solas en ReciboPorCliente.test.tsx) ───────────────
 
@@ -338,7 +339,7 @@ function TarjetaDePeriodo({
         <div className="flex shrink-0 flex-col items-end gap-1">
           <p
             className={cn(
-              'font-mono text-sm font-semibold tabular-nums',
+              'font-mono text-sm font-medium tabular-nums',
               periodo.vencida ? 'text-warning' : 'text-fg',
             )}
           >
@@ -401,6 +402,7 @@ export function CarteraDelClientePanel({ cartera }: CarteraDelClientePanelProps)
     cartera.cuotas.reduce((s, c) => s + capitalEInteresDelPeriodo(c).interes, 0);
   const masVieja = cartera.cuotas[0]?.id ?? null;
   const adelantoSolo = soloSePuedeAdelantar(cartera);
+  const aFavor = React.useMemo(() => saldoAFavorEnElRecibo(cartera), [cartera]);
 
   return (
     <div className="space-y-3" data-testid="cartera-del-cliente">
@@ -425,7 +427,7 @@ export function CarteraDelClientePanel({ cartera }: CarteraDelClientePanelProps)
         <div className="rounded-lg border border-border bg-surface px-3 py-2">
           <p className="text-caption text-fg-muted">{t(k('vencidoLabel'))}</p>
           <p
-            className="font-mono text-base font-semibold tabular-nums text-warning"
+            className="font-mono text-base font-medium tabular-nums text-warning"
             data-testid="cartera-vencido"
           >
             {formatCurrency(vencidoCop)}
@@ -440,7 +442,7 @@ export function CarteraDelClientePanel({ cartera }: CarteraDelClientePanelProps)
         <div className="rounded-lg border border-border bg-surface px-3 py-2">
           <p className="text-caption text-fg-muted">{t(k('futuroLabel'))}</p>
           <p
-            className="font-mono text-base font-semibold tabular-nums text-fg"
+            className="font-mono text-base font-medium tabular-nums text-fg"
             data-testid="cartera-futuro"
           >
             {formatCurrency(futuroCop)}
@@ -464,7 +466,7 @@ export function CarteraDelClientePanel({ cartera }: CarteraDelClientePanelProps)
       >
         {vencidas.length > 0 && (
           <div className="space-y-2">
-            <p className="text-caption font-medium uppercase tracking-wide text-fg-muted">
+            <p className="font-mono text-caption uppercase tracking-[0.06em] text-fg-subtle">
               {t(k('grupoVencido'))}
             </p>
             {vencidas.map((c) => (
@@ -475,7 +477,7 @@ export function CarteraDelClientePanel({ cartera }: CarteraDelClientePanelProps)
 
         {futuras.length > 0 && (
           <div className="space-y-2" data-testid="grupo-futuro">
-            <p className="text-caption font-medium uppercase tracking-wide text-fg-muted">
+            <p className="font-mono text-caption uppercase tracking-[0.06em] text-fg-subtle">
               {t(k('grupoFuturo'))}
             </p>
             {futuras.map((c) => (
@@ -488,12 +490,29 @@ export function CarteraDelClientePanel({ cartera }: CarteraDelClientePanelProps)
       <div className="flex items-center justify-between rounded-lg border border-border bg-surface-muted px-3 py-2">
         <span className="text-sm font-medium text-fg">{t(k('total'))}</span>
         <span
-          className="font-mono text-base font-semibold tabular-nums text-fg"
+          className="font-mono text-base font-medium tabular-nums text-fg"
           data-testid="cartera-total"
         >
           {formatCurrency(cartera.total)}
         </span>
       </div>
+
+      {/* Juan 31-10: lo que el inquilino ya pagó y es del propietario (la
+          factura de servicios de entrada) es un anticipo de su contrato. El
+          recibo tiene que salir MENOS eso: se dice aquí, con la cifra. */}
+      {aFavor.saldoCop > 0 && (
+        <div className="space-y-1 rounded-lg border border-border bg-surface px-3 py-2" data-testid="cartera-a-favor">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-sm text-fg">{t(k('aFavorLabel'))}</span>
+            <span className="font-mono text-base tabular-nums text-fg">{formatCurrency(aFavor.saldoCop)}</span>
+          </div>
+          <p className="text-caption text-fg-muted">
+            {aFavor.deTodaLaDeudaCop > 0
+              ? t(k('aFavorAyuda'), { monto: formatCurrency(Math.max(0, cartera.total - aFavor.deTodaLaDeudaCop)) })
+              : t(k('aFavorSinDeuda'))}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -619,7 +638,7 @@ export function PlanDeImputacion({ cartera, plan, comoAnticipo = false }: PlanDe
       <div className="flex items-center justify-between gap-3 border-t border-border pt-2 text-sm">
         <span className="text-fg-muted">{t(k('despues'))}</span>
         {/* PG-18: en el cajón a 390 px el monto se partía en dos renglones. */}
-        <span className="shrink-0 whitespace-nowrap font-mono font-semibold tabular-nums text-fg" data-testid="plan-deuda-restante">
+        <span className="shrink-0 whitespace-nowrap font-mono font-medium tabular-nums text-fg" data-testid="plan-deuda-restante">
           {formatCurrency(queda)}
         </span>
       </div>

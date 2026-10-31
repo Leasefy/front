@@ -88,3 +88,14 @@ describe('DetalleDeFirma: cambiar los datos de quien no ha firmado (Nico, 30-10-
     expect(porId('error-de-la-edicion')?.textContent).toContain('cada persona firma una vez');
   });
 });
+
+describe('paisYNumero («Cambiar datos» del firmante)', () => {
+  it('sin «+» es un celular de Colombia (salía de Grecia, +30); con indicativo, su país', async () => {
+    const { paisYNumero } = await import('./DetalleDeFirma');
+    expect(paisYNumero('3005550101')).toEqual({ pais: 'CO', numero: '3005550101' });
+    expect(paisYNumero('+573126543976')).toEqual({ pais: 'CO', numero: '3126543976' });
+    expect(paisYNumero('+34612345678')).toEqual({ pais: 'ES', numero: '612345678' });
+    expect(paisYNumero('0034612345678')).toEqual({ pais: 'ES', numero: '612345678' });
+    expect(paisYNumero(null)).toEqual({ pais: 'CO', numero: '' });
+  });
+});

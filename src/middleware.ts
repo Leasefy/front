@@ -23,6 +23,13 @@ import {
   idiomaParaLaVisita,
   separarIdioma,
 } from '@/lib/idioma/idioma';
+import { destinoEnElDominioPropio, esHostDeLeasefy } from '@/lib/dominio-propio/dominio';
+import { slugDelDominio } from '@/lib/dominio-propio/slug-del-dominio';
+
+/** Lo que no es la página ni las fichas, en el dominio de una inmobiliaria, va a Leasefy. */
+const ORIGEN_DE_LEASEFY = (process.env.NEXT_PUBLIC_SITE_URL || 'https://leasefy.co').replace(/\/+$/, '');
+/** El dominio propio desde el que se está viendo: los enlaces para compartir lo usan (`origenPublico`). */
+export const COOKIE_DEL_DOMINIO_PROPIO = 'lf_dominio_propio';
 
 /**
  * Middleware
@@ -43,7 +50,26 @@ import {
  *   /, /auth, /invitacion/[token], /propiedades, /para/*, /productos/*,
  *   /pricing, /blog, /ayuda, /terminos, /privacidad
  */
-export function middleware(request: NextRequest) {
+export function middleware(request: NextRequest): NextResponse | Promise<NextResponse> {
+  /*
+   * EL DOMINIO PROPIO (Nico, 31-10-2026: «que la inmobiliaria ponga su propio dominio… para que cuando lo comparta sea
+   * ese dominio y no el de leasefy»). Un host que no es de Leasefy se le pregunta al back (con memoria de 5 minutos);
+   * si es el de una inmobiliaria, su inicio es su página (`/i/<slug>`), sus fichas pasan tal cual y lo demás va a
+   * leasefy.co. Si no es de nadie —o el back no responde— todo sigue como siempre. En los hosts de Leasefy no se
+   * pregunta nada y la respuesta sale en el acto, como antes.
+   */
+  const host = request.headers.get('x-forwarded-host') ?? request.headers.get('host') ?? request.nextUrl.hostname;
+  if (esHostDeLeasefy(host)) return atender(request, host, null);
+  return slugDelDominio(host).then((slug) => atender(request, host, slug));
+}
+
+function atender(request: NextRequest, host: string, slugDelHost: string | null): NextResponse {
+  const enSuDominio = slugDelHost ? destinoEnElDominioPropio(request.nextUrl.pathname, slugDelHost) : null;
+  if (enSuDominio?.tipo === 'a-leasefy') {
+    return NextResponse.redirect(`${ORIGEN_DE_LEASEFY}${enSuDominio.ruta}${request.nextUrl.search}`);
+  }
+  if (enSuDominio?.tipo === 'seguir') return NextResponse.next();
+
   /*
    * El idioma de la parte pública (Nico, 16-10-2026): `/es/...` y `/en/...`.
    *   - Lo público SIN prefijo se manda al idioma de la persona: el que eligió
@@ -52,7 +78,10 @@ export function middleware(request: NextRequest) {
    *     mueven) y la página sabe su idioma por `x-idioma`. Navegar en un idioma
    *     lo deja recordado.
    */
-  const separada = separarIdioma(request.nextUrl.pathname);
+  const separada =
+    enSuDominio?.tipo === 'reescribir'
+      ? { ruta: enSuDominio.ruta, idioma: 'es' as const }
+      : separarIdioma(request.nextUrl.pathname);
   const { ruta } = separada;
   /*
    * 🔴 Nico, 28-10-2026: «sigues sin mostrar la imagen de la url que se comparten de nuestras propiedades, y sí o sí
@@ -117,6 +146,9 @@ export function middleware(request: NextRequest) {
       ? NextResponse.rewrite(reescrita, { request: { headers: deLaPeticion } })
       : NextResponse.next({ request: { headers: deLaPeticion } });
   const recordar = (respuesta: NextResponse) => {
+    if (slugDelHost && request.cookies.get(COOKIE_DEL_DOMINIO_PROPIO)?.value !== host) {
+      respuesta.cookies.set(COOKIE_DEL_DOMINIO_PROPIO, host, { path: '/', maxAge: 60 * 60 * 24, sameSite: 'lax' });
+    }
     if (reescrita && idioma && request.cookies.get(COOKIE_DEL_IDIOMA)?.value !== idioma) {
       respuesta.cookies.set(COOKIE_DEL_IDIOMA, idioma, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' });
     }

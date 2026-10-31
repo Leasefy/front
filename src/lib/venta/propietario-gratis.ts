@@ -35,6 +35,12 @@ function esOdebajo(ruta: string, base: string): boolean {
 }
 
 export function abiertaParaElPropietarioGratis(ruta: string): boolean {
+  /*
+   * 🔴 31-10-2026 (Nico: «en cuenta gratis propietario debe quedar prendido, no con demo»): todo el panel del
+   * propietario queda ABIERTO en el plan gratis, con sus datos de verdad (o su vacío). La regla de abajo —lo
+   * que abría y lo que se veía en demo (20-10)— se deja escrita por si se vuelve a cerrar algo.
+   */
+  if (ruta.startsWith('/panel')) return true;
   const limpia = ruta.split(/[?#]/)[0]!.replace(/\/+$/, '') || '/';
   if (ABIERTAS.some((a) => esOdebajo(limpia, a))) return true;
   // `/panel/<id>`: la ficha de SU inmueble (publicar es gratis).
@@ -52,3 +58,16 @@ export function claveDeDemoDelPropietario(ruta: string): string | null {
   if (segundo === 'escoger-inquilino') return 'estudio';
   return null;
 }
+
+/** Cómo se nombra cada sección en la franja de la demo («Así se ven tus giros con Leasefy»), por su clave de demo. */
+export const QUE_ES_CADA_SECCION_DEL_PROPIETARIO: Readonly<Record<string, string>> = {
+  contratos: 'tus contratos',
+  cobro: 'el cobro de tu arriendo',
+  estudio: 'los candidatos de tu inmueble',
+  giros: 'tus giros',
+  aprobaciones: 'las reparaciones por aprobar',
+  'revisar-canon': 'la revisión de tu canon',
+  informes: 'tus informes',
+  certificados: 'tus certificados',
+  solicitudes: 'tus solicitudes',
+};

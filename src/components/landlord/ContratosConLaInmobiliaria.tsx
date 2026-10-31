@@ -57,7 +57,7 @@ export interface ContratosAdministrados {
 /** ¿Lo que tiene es una ficha sin contratos? (tras el 404 `SIN_CONTRATOS` del portal). */
 async function fichaSinContratos(): Promise<{ inmobiliaria: string } | null> {
   try {
-    const d = await informesDelPropietarioApi.disponibles();
+    const d = await informesDelPropietarioApi.disponibles({ deVerdad: true });
     return d.fichas.length > 0 ? { inmobiliaria: d.fichas[0].agencia } : null;
   } catch {
     return null;
@@ -76,8 +76,10 @@ export function useContratosAdministrados(): ContratosAdministrados {
   const [estado, setEstado] = React.useState<ContratosAdministrados>({ doc: null, cargando: true });
   React.useEffect(() => {
     let vivo = true;
+    // `deVerdad`: con «Ver con datos demo» en Estado de cuenta o Informes (la misma lectura), la respuesta de ejemplo
+    // volvía al propietario independiente uno de inmobiliaria.
     estadoDeCuentaApi
-      .mio()
+      .mio({ deVerdad: true })
       .then(async (doc) => {
         if (!vivo) return;
         const propios = doc.contratos.filter((c) => c.rol === 'PROPIETARIO');

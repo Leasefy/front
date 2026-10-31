@@ -212,10 +212,19 @@ describe('PipelineBoard — soltar en «Perdido» (P4 + PL-17: motivos fijos)', 
     const onStageChange = vi.fn(() => Promise.resolve());
     montar(onStageChange);
 
+    await soltar('abierto', 'approved');
+
+    expect(onStageChange).toHaveBeenCalledWith('abierto', 'approved');
+    expect(dialogo()).toBeNull();
+  });
+
+  it('Juan 31-10: «Evaluación» y «Postulación» son la MISMA columna: soltarla ahí no la mueve', async () => {
+    const onStageChange = vi.fn(() => Promise.resolve());
+    montar(onStageChange);
+
     await soltar('abierto', 'application');
 
-    expect(onStageChange).toHaveBeenCalledWith('abierto', 'application');
-    expect(dialogo()).toBeNull();
+    expect(onStageChange).not.toHaveBeenCalled();
   });
 
   it('PL-16: soltar en «Visita programada» no mueve: pide agendar la visita', async () => {

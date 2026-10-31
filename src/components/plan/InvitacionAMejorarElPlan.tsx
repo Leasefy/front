@@ -20,27 +20,27 @@
 
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { motion } from 'framer-motion'
-import {
-  ArrowsLeftRight,
-  Buildings,
-  ChatsCircle,
-  CheckCircle,
-  PhoneCall,
-  Receipt,
-  RocketLaunch,
-} from '@phosphor-icons/react'
-import { enterTransition, Stagger, StaggerItem, usePrefersReducedMotion } from '@leasefy/cadence'
+import type { NombreIlustracion } from '@leasefy/cadence'
 
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogBody, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
+import {
+  BeneficiosEn3D,
+  EscenaDeMarca,
+  FOTOS_DE_LA_ESCENA,
+  PlacaDe3D,
+  VentanaDelProducto,
+} from '@/components/conversion/EscenaDeMarca'
 import { useAuth } from '@/lib/auth/use-auth'
 import { enlaceParaMejorarElPlan } from '@/lib/venta/whatsapp-de-leasefy'
 
 export interface Invitacion {
   clave: string
   rutas: readonly string[]
-  icono: React.ElementType
+  /** El 3D de la función, montado en la esquina de la pantalla. */
+  ilustracion: NombreIlustracion
+  /** La pantalla REAL de esa parte (la captura de su demo) que asoma sobre la foto. */
+  captura: { src: string; alt: string }
   eyebrow: string
   titulo: string
   subtitulo: string
@@ -48,12 +48,14 @@ export interface Invitacion {
 }
 
 const P = '/panel/inmobiliaria'
+const C = '/landing-v2/producto'
 
 export const INVITACIONES: readonly Invitacion[] = [
   {
     clave: 'gestion',
     rutas: [`${P}/inmuebles`, `${P}/contratos`, `${P}/propietarios`, `${P}/inquilinos`, `${P}/pipeline`, `${P}/postulaciones`],
-    icono: Buildings,
+    ilustracion: 'llaves',
+    captura: { src: `${C}/erp-tablero.webp`, alt: 'El tablero de la operación: recaudo, cartera y giros del mes' },
     eyebrow: 'ERP y CRM inmobiliario',
     titulo: 'Tu inmobiliaria completa, en un solo lugar',
     subtitulo:
@@ -67,7 +69,8 @@ export const INVITACIONES: readonly Invitacion[] = [
   {
     clave: 'piloto',
     rutas: [`${P}/piloto`],
-    icono: RocketLaunch,
+    ilustracion: 'novedad_cohete',
+    captura: { src: `${C}/erp-recaudo.webp`, alt: 'El recaudo del mes que se aplica solo' },
     eyebrow: 'Piloto automático',
     titulo: 'Tu inmobiliaria puede ir sola',
     subtitulo:
@@ -81,7 +84,8 @@ export const INVITACIONES: readonly Invitacion[] = [
   {
     clave: 'chat',
     rutas: [`${P}/beta`],
-    icono: ChatsCircle,
+    ilustracion: 'mensajes',
+    captura: { src: `${C}/home-chat.webp`, alt: 'El chat que responde con las cifras de tu cartera' },
     eyebrow: 'Chat de tu inmobiliaria',
     titulo: 'Pregúntale lo que quieras a tu inmobiliaria',
     subtitulo:
@@ -95,7 +99,8 @@ export const INVITACIONES: readonly Invitacion[] = [
   {
     clave: 'cobranza',
     rutas: [`${P}/pagos/cobranza`],
-    icono: PhoneCall,
+    ilustracion: 'sobre_cobro',
+    captura: { src: `${C}/cob-resumen.webp`, alt: 'El resumen de la cobranza del mes' },
     eyebrow: 'Cobranza con IA',
     titulo: 'Cobramos por ti con IA',
     subtitulo:
@@ -109,7 +114,8 @@ export const INVITACIONES: readonly Invitacion[] = [
   {
     clave: 'recaudo',
     rutas: [`${P}/pagos/recaudo`, `${P}/pagos/dispersiones`, `${P}/pagos/liquidaciones`, `${P}/conciliacion`],
-    icono: ArrowsLeftRight,
+    ilustracion: 'banco',
+    captura: { src: `${C}/erp-dispersiones.webp`, alt: 'Los giros a los propietarios con su liquidación' },
     eyebrow: 'Recaudo y giros',
     titulo: 'La plata entra y sale sola',
     subtitulo: 'Recaudo en línea, conciliación con el banco y giros a los propietarios, sin hojas de cálculo.',
@@ -122,7 +128,8 @@ export const INVITACIONES: readonly Invitacion[] = [
   {
     clave: 'facturacion',
     rutas: [`${P}/facturacion`, `${P}/contabilidad`],
-    icono: Receipt,
+    ilustracion: 'factura',
+    captura: { src: `${C}/demo-facturacion.webp`, alt: 'La facturación electrónica con datos de ejemplo' },
     eyebrow: 'Facturación y contabilidad',
     titulo: 'Factura y lleva la contabilidad sin salir de Leasefy',
     subtitulo: 'Facturación electrónica ante la DIAN, asientos automáticos y los informes del mes, al día.',
@@ -165,7 +172,6 @@ function marcarComoMostrada(clave: string) {
 export function InvitacionAMejorarElPlan({ activa }: { activa: boolean }) {
   const ruta = usePathname()
   const { agency, user } = useAuth()
-  const reducido = usePrefersReducedMotion()
   const [abierta, setAbierta] = useState<Invitacion | null>(null)
 
   useEffect(() => {
@@ -181,52 +187,35 @@ export function InvitacionAMejorarElPlan({ activa }: { activa: boolean }) {
   }, [activa, ruta])
 
   if (!abierta) return null
-  const Icono = abierta.icono
+  // Cada función con su foto del banco de Leasefy: dos invitaciones seguidas no se ven iguales.
+  const foto = FOTOS_DE_LA_ESCENA[Math.max(0, INVITACIONES.indexOf(abierta)) % FOTOS_DE_LA_ESCENA.length]
 
+  /*
+   * Nico 31-10-2026: «haz más hermosos los modales de mejora tu plan… ya te lo había pedido». La misma escena que el
+   * modal del plan (foto real + placa), ahora con la pantalla de verdad de esa parte asomando y su 3D en la esquina;
+   * sin el ícono en la cajita de color con anillos (DESIGN.md §1: nada de íconos en cajitas).
+   */
   return (
     <Dialog open onOpenChange={(o) => !o && setAbierta(null)}>
       <DialogContent size="lg" className="overflow-hidden p-0" data-testid={`invitacion-plan-${abierta.clave}`}>
-        <div className="grid md:grid-cols-[minmax(0,14rem)_minmax(0,1fr)]">
-          <div className="relative flex items-center justify-center overflow-hidden rounded-2xl bg-primary-soft px-6 py-12">
-            {/* Anillos suaves detrás del ícono: le dan profundidad sin degradados. */}
-            {[18, 13, 8].map((rem, i) => (
-              <motion.span
-                key={rem}
-                aria-hidden="true"
-                className="absolute rounded-full border border-primary/15"
-                style={{ width: `${rem}rem`, height: `${rem}rem` }}
-                initial={{ opacity: 0, scale: reducido ? 1 : 0.6 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ ...enterTransition(reducido), delay: reducido ? 0 : 0.08 * (3 - i) }}
-              />
-            ))}
-            <motion.div
-              initial={reducido ? { opacity: 0 } : { opacity: 0, scale: 0.8, rotate: -6 }}
-              animate={reducido ? { opacity: 1 } : { opacity: 1, scale: 1, rotate: 0, y: [0, -6, 0] }}
-              transition={
-                reducido
-                  ? enterTransition(true)
-                  : { ...enterTransition(false), y: { duration: 3.2, repeat: Infinity, ease: 'easeInOut', delay: 0.6 } }
-              }
-              className="relative flex h-24 w-24 items-center justify-center rounded-3xl bg-surface shadow-lg ring-1 ring-primary/10"
-            >
-              <Icono className="h-12 w-12 text-primary" weight="duotone" aria-hidden="true" />
-            </motion.div>
-          </div>
-          <div className="space-y-5 p-6 md:p-8">
-            <DialogHeader className="space-y-2 border-0 p-0 text-left">
-              <p className="font-mono text-[11px] uppercase tracking-wider text-primary">{abierta.eyebrow}</p>
-              <DialogTitle className="text-h3 text-fg">{abierta.titulo}</DialogTitle>
+        <DialogBody className="p-0 sm:p-0">
+          <EscenaDeMarca foto={foto} asomando>
+            <VentanaDelProducto
+              captura={abierta.captura.src}
+              alt={abierta.captura.alt}
+              acento={<PlacaDe3D nombre={abierta.ilustracion} tamano={64} />}
+            />
+          </EscenaDeMarca>
+          <div className="space-y-5 p-6 sm:p-8">
+            <div className="space-y-2">
+              <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-fg-muted">{abierta.eyebrow}</p>
+              <DialogTitle className="text-h2 text-fg">{abierta.titulo}</DialogTitle>
               <DialogDescription className="text-body text-fg-muted">{abierta.subtitulo}</DialogDescription>
-            </DialogHeader>
-            <Stagger className="space-y-2.5">
-              {abierta.beneficios.map((b) => (
-                <StaggerItem key={b} className="flex items-start gap-2.5">
-                  <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-success" weight="fill" aria-hidden="true" />
-                  <span className="text-sm text-fg">{b}</span>
-                </StaggerItem>
-              ))}
-            </Stagger>
+            </div>
+            <BeneficiosEn3D
+              className="sm:grid-cols-1"
+              items={abierta.beneficios.map((texto) => ({ ilustracion: abierta.ilustracion, texto }))}
+            />
             <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end">
               <Button variant="ghost" hideArrow onClick={() => setAbierta(null)} data-testid="invitacion-ahora-no">
                 Ahora no
@@ -248,7 +237,7 @@ export function InvitacionAMejorarElPlan({ activa }: { activa: boolean }) {
               </Button>
             </div>
           </div>
-        </div>
+        </DialogBody>
       </DialogContent>
     </Dialog>
   )

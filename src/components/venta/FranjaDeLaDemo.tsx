@@ -12,7 +12,18 @@ import { Presence } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
 import { salirDelModoDemo } from '@/lib/demo/modo-demo';
 
-export function FranjaDeLaDemo({ queEs }: { queEs: string | null }) {
+/**
+ * «Así se ven los contratos», «Así se ve la cobranza»: el verbo concuerda con lo que se nombra (30-10-2026, la franja
+ * decía «Así se ven la cobranza» y «Así se ven el cobro de tu arriendo»).
+ */
+export function asiSeVe(queEs: string | null): string {
+  if (!queEs) return 'Así se ve con Leasefy.';
+  const plural = /^(los|las|tus|sus|mis)\s/i.test(queEs.trim());
+  return `Así se ${plural ? 'ven' : 've'} ${queEs} con Leasefy.`;
+}
+
+/** `pagar`: dónde se abre todo (la inmobiliaria y el agente en su panel; el propietario independiente en el suyo). */
+export function FranjaDeLaDemo({ queEs, pagar = '/panel/inmobiliaria/upgrade' }: { queEs: string | null; pagar?: string }) {
   return (
     <Presence show direction="down">
       <div
@@ -25,7 +36,7 @@ export function FranjaDeLaDemo({ queEs }: { queEs: string | null }) {
           <span>
             <span className="font-mono text-caption uppercase tracking-[0.08em] text-fg-muted">Datos de ejemplo</span>
             <span className="block">
-              {queEs ? `Así se ven ${queEs} con Leasefy.` : 'Así se ve con Leasefy.'} No se guarda nada de lo que hagas aquí.
+              {asiSeVe(queEs)} No se guarda nada de lo que hagas aquí.
             </span>
           </span>
         </p>
@@ -35,7 +46,7 @@ export function FranjaDeLaDemo({ queEs }: { queEs: string | null }) {
           </Button>
           {/* Secundario: la acción principal de la pantalla es la de la sección (DESIGN.md: una sola en voltaje). */}
           <Button asChild variant="secondary" size="sm" hideArrow>
-            <Link href="/panel/inmobiliaria/upgrade">Abrir todo Leasefy</Link>
+            <Link href={pagar}>Abrir todo Leasefy</Link>
           </Button>
         </div>
       </div>

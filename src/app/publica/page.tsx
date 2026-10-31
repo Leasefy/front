@@ -1,7 +1,7 @@
 'use client';
 
 import { getSupabase } from '@/lib/supabase/client';
-import { perfilQuePublicaDeLaCuenta, perfilQuePublicaRecordado } from '@/lib/publica/perfil-que-publica';
+import { perfilQuePublicaDeLaCuenta, perfilQuePublicaRecordado, vieneACrearSuInmobiliaria } from '@/lib/publica/perfil-que-publica';
 import { Suspense, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -144,6 +144,21 @@ function Publica() {
           <Link href="/inquilino">Ir a mi portal</Link>
         </Button>
       </div>
+    );
+  } else if (vieneACrearSuInmobiliaria({ rol: user.role, conInmobiliaria: hasActiveAgencyMembership, perfilElegido: perfilDelEnlace })) {
+    // 31-10-2026 (Nico): tenía cuenta de propietario y esta vez eligió inmobiliaria o agente. Primero se crea la suya
+    // (el mismo registro corto); su inmueble de propietario sigue en su cuenta de propietario.
+    const nombre = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
+    momento = 'datos';
+    contenido = (
+      <RegistroRapido
+        key={`crear-${perfilDelEnlace}`}
+        perfilInicial={perfilDelEnlace}
+        nombreConocido={nombre}
+        alTerminar={async () => {
+          await refreshUser();
+        }}
+      />
     );
   } else if (hasActiveAgencyMembership && (agencyRole === 'CONTADOR' || agencyRole === 'VIEWER')) {
     contenido = (

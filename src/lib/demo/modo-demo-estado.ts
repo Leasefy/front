@@ -12,6 +12,8 @@ const LLAVE = 'leasefy:modo-demo';
 
 export const CODIGO_DEL_MODO_DEMO = 'MODO_DEMO';
 export const MENSAJE_DEL_MODO_DEMO = 'En la demo no se guarda nada: son datos de ejemplo.';
+/** Un PDF o un Excel de la demo saldría del back con ids de ejemplo (un 404): se frena con su frase. */
+export const MENSAJE_DE_DESCARGA_EN_LA_DEMO = 'En la demo no se descargan documentos: son datos de ejemplo.';
 
 const oyentes = new Set<() => void>();
 const avisar = () => oyentes.forEach((f) => f());

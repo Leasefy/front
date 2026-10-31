@@ -120,8 +120,11 @@ export const estadoDeCuentaApi = {
    * ruta está detrás del guard de la inmobiliaria. El back resuelve por la
    * sesión con qué sombrero entra la persona y devuelve el mismo documento.
    */
-  mio(): Promise<EstadoDeCuenta> {
-    return apiClient.get<EstadoDeCuenta>('/portal/estado-de-cuenta');
+  /** `deVerdad`: la pregunta del portal sobre la sesión, nunca la respuesta de ejemplo del modo demo. */
+  mio(opciones?: { deVerdad?: boolean }): Promise<EstadoDeCuenta> {
+    return opciones?.deVerdad
+      ? apiClient.getDeVerdad<EstadoDeCuenta>('/portal/estado-de-cuenta')
+      : apiClient.get<EstadoDeCuenta>('/portal/estado-de-cuenta');
   },
 
   /**

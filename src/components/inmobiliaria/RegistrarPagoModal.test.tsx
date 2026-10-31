@@ -882,6 +882,18 @@ describe('<RegistrarPagoModal> un cliente sin cuotas pendientes (R2)', () => {
   });
 });
 
+describe('<RegistrarPagoModal> lo que falta para emitir (Nico 31-10: «no estás dejando hacer recibos de caja»)', () => {
+  it('sin nada vencido el valor arranca vacío: el botón apagado dice qué falta y lleva al campo', async () => {
+    carteraPorCobro.mockResolvedValue(debeTresMeses({ anticipoDisponible: true }));
+    await abrir({});
+    const falta = document.body.querySelector('[data-testid="recibo-lo-que-falta"]');
+    if (falta) expect(falta.textContent).toMatch(/cuánto recibes|medio de pago|fecha|valor/);
+    escribir('#monto-recibo', '$ 1.200.000');
+    const despues = document.body.querySelector('[data-testid="recibo-lo-que-falta"]');
+    expect(despues?.textContent ?? '').not.toContain('cuánto recibes');
+  });
+});
+
 describe('<RegistrarPagoModal> pagar de más', () => {
   /*
    * 🔴 Pagar de más dejó de ser un error (CEO, 2026-09-15). Lo que NO puede
@@ -1046,6 +1058,37 @@ describe('<RegistrarPagoModal> la deuda nace con el contrato (2026-09-15)', () =
     expect(campo?.value ?? '').toBe('');
     // Y no se puede emitir un recibo vacío.
     expect(porTexto('recibos.form.emitir')[0].disabled).toBe(true);
+  });
+
+  /*
+   * Juan 31-10-2026: «el inquilino pagó [la factura de servicios de entrada]…
+   * El recibo de caja debería aparecer menos ese valor, él ya pagó». Ese saldo
+   * es un anticipo del contrato que el back descuenta solo el día de pago.
+   */
+  it('con saldo a favor en el contrato, lo vencido arranca MENOS ese saldo', async () => {
+    carteraPorCobro.mockResolvedValue(
+      debeTresMeses({ anticiposDelContrato: [{ contractId: 'ct1', saldoCop: 177_419 }], anticipoDelContratoCop: 177_419 }),
+    );
+    const onSubmit = await abrir();
+    expect(document.body.querySelector('[data-testid="cartera-a-favor"]')).toBeTruthy();
+    elegirMedio('efectivo');
+    await enviar();
+
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({ valorCop: 3_000_000 - 177_419 });
+  });
+
+  it('con saldo a favor y nada vencido, «Paga toda la deuda» lo descuenta', async () => {
+    carteraPorCobro.mockResolvedValue(
+      soloDeudaFutura({ anticiposDelContrato: [{ contractId: 'ct1', saldoCop: 177_419 }], anticipoDelContratoCop: 177_419 }),
+    );
+    const onSubmit = await abrir();
+    act(() => {
+      document.body.querySelector<HTMLButtonElement>('[data-testid="atajo-todo"]')!.click();
+    });
+    elegirMedio('efectivo');
+    await enviar();
+
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({ valorCop: 2_000_000 - 177_419 });
   });
 
   it('«Paga toda la deuda» llena el total, incluyendo lo que no vence', async () => {

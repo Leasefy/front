@@ -1,6 +1,8 @@
 'use client';
 
 import { useMemo } from 'react';
+import { cuantosFiltrosDeEspecificaciones, type FiltrosDeEspecificaciones } from '@/lib/inmuebles/especificaciones';
+import { FiltrosDeEspecificacionesDelPortafolio } from '@/components/inmobiliaria/FiltrosDeEspecificacionesDelPortafolio';
 import {
   MagnifyingGlass,
   X,
@@ -54,6 +56,8 @@ export interface ConsignacionFiltersState {
    * vencer o vencido». Opcional: sin él, ninguno.
    */
   comercial?: FiltroComercial;
+  /** 31-10-2026 (Nico: «más filtros, muchos más»): negocio, habitaciones, baños, estrato, área, canon y características. */
+  especificaciones?: FiltrosDeEspecificaciones;
 }
 
 export type FiltroComercial = 'vacante30' | 'mandato';
@@ -151,7 +155,11 @@ export function ConsignacionFilters({
   }, [filters]);
 
   const hasAnyFilter =
-    filters.search || filters.cajon !== 'all' || activeFiltersCount > 0 || Boolean(filters.comercial);
+    filters.search ||
+    filters.cajon !== 'all' ||
+    activeFiltersCount > 0 ||
+    Boolean(filters.comercial) ||
+    cuantosFiltrosDeEspecificaciones(filters.especificaciones) > 0;
 
   const updateFilter = <K extends keyof ConsignacionFiltersState>(
     key: K,
@@ -162,6 +170,7 @@ export function ConsignacionFilters({
 
   /** Cuántos de los filtros del botón «Filtros» están puestos (decisión 25). */
   const filtrosEnElBoton =
+    cuantosFiltrosDeEspecificaciones(filters.especificaciones) +
     (filters.agenteId !== 'all' ? 1 : 0) +
     (filters.propertyType !== 'all' ? 1 : 0) +
     (enElCelular ? (filters.propietarioId !== 'all' ? 1 : 0) + (filters.city !== 'all' ? 1 : 0) : 0);
@@ -344,7 +353,7 @@ export function ConsignacionFilters({
                 {filtrosEnElBoton > 0 ? `Filtros (${filtrosEnElBoton})` : 'Filtros'}
               </Button>
             </PopoverTrigger>
-            <PopoverContent align="end" className="w-72 space-y-3" data-testid="filtros-mas-contenido">
+            <PopoverContent align="end" className="w-80 space-y-3" data-testid="filtros-mas-contenido">
               {enElCelular ? propietarioYCiudad : null}
               {/* Agente Dropdown */}
               <Select
@@ -394,6 +403,10 @@ export function ConsignacionFilters({
                 </SelectContent>
               </Select>
 
+              <FiltrosDeEspecificacionesDelPortafolio
+                valor={filters.especificaciones ?? {}}
+                onCambio={(especificaciones) => updateFilter('especificaciones', especificaciones)}
+              />
             </PopoverContent>
           </Popover>
 

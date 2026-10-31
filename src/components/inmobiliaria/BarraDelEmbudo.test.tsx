@@ -44,7 +44,9 @@ describe('Prospección — la barra del embudo (Nico, 22-10)', () => {
   it('una etapa por cada una con gente, con su número; las vacías se cuentan aparte', () => {
     montar();
     expect(host.querySelector('[data-testid="etapa-del-embudo-lead"]')?.textContent).toContain('2');
-    expect(host.querySelector('[data-testid="etapa-del-embudo-evaluation"]')?.textContent).toContain('1');
+    // Juan 31-10: «Evaluación» cuenta en «Postulación y evaluación» (una sola etapa del tablero).
+    expect(host.querySelector('[data-testid="etapa-del-embudo-application"]')?.textContent).toContain('1');
+    expect(host.querySelector('[data-testid="etapa-del-embudo-evaluation"]')).toBeNull();
     expect(host.querySelector('[data-testid="etapa-del-embudo-contract"]')).toBeNull();
     expect(host.textContent).toContain('etapas sin interesados');
   });

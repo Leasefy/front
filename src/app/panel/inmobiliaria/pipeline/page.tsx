@@ -32,6 +32,7 @@ import {
   mensajeAlNoMoverElLead,
 } from '@/lib/pipeline/errores-del-pipeline';
 import { tasaMedida } from '@/lib/tasas';
+import { columnaDe } from '@/lib/pipeline/etapas-del-tablero';
 import { useSearchParams } from 'next/navigation';
 import { AgendarVisitaDialog } from '@/components/inmobiliaria/AgendarVisitaDialog';
 import { ParaHoyDelEmbudo } from '@/components/inmobiliaria/ParaHoyDelEmbudo';
@@ -159,7 +160,7 @@ function PipelineContent() {
 
     // La etapa tocada en la barra del embudo.
     if (etapa) {
-      result = result.filter((i) => i.stage === etapa);
+      result = result.filter((i) => columnaDe(i.stage) === etapa);
     }
 
     // Filter by agente

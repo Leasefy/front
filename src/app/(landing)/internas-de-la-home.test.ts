@@ -21,7 +21,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { NextRequest } from 'next/server'
-import { middleware } from '@/middleware'
+import { middlewareEnLeasefy as middleware } from '@/middleware.en-leasefy'
 import {
   PRODUCTOS_DE_LAS_INTERNAS,
   PUBLICOS_DE_LAS_INTERNAS,

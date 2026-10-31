@@ -1,8 +1,9 @@
 'use client';
 
 import { NOMBRE_DEL_ESTADO_DE_LA_POSTULACION } from '@/lib/postulaciones/estado-de-la-postulacion';
-import { CalificacionDelPostulante } from '@/components/calificacion/CalificacionDelPostulante';
-import { TarjetaDeCalificacion } from '@/components/calificacion/TarjetaDeCalificacion';
+import { BuroDelCandidato } from '@/components/calificacion/BuroDelCandidato';
+import { StatusBadge, type SemanticTone } from '@leasefy/cadence';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useLenis } from '@/components/providers/SmoothScroll';
@@ -74,6 +75,8 @@ interface CandidateDrawerProps {
    * agencia es la que sabe si el rol (CONTADOR, VIEWER) puede escribir.
    */
   puedeDecidir?: boolean;
+  /** El canon del inmueble al que se postuló: el buró dice si le cabe en su tope (31-10-2026). */
+  canonDelInmueble?: number | null;
   /**
    * Kept for caller compatibility; no longer invoked. The drawer used to call
    * this after triggering a fresh AI re-evaluation — that trigger was removed
@@ -88,6 +91,16 @@ interface CandidateDrawerProps {
 // ============================================================================
 
 const STATUS_LABELS: Record<LandlordApplicationStatus, string> = NOMBRE_DEL_ESTADO_DE_LA_POSTULACION;
+
+/** El tono del estado: se lee por la palabra; el punto sólo acompaña (DESIGN.md §11). */
+const TONO_DEL_ESTADO: Partial<Record<LandlordApplicationStatus, SemanticTone>> = {
+  SUBMITTED: 'info',
+  UNDER_REVIEW: 'info',
+  NEEDS_INFO: 'warning',
+  APPROVED: 'success',
+  REJECTED: 'critical',
+  CONTRACT_FAILED: 'critical',
+};
 
 const LEVEL_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   A: { bg: 'bg-success-soft', text: 'text-success', border: 'border-success/30' },
@@ -205,7 +218,7 @@ export function mensajeDelMatching(error: unknown): string {
   });
 }
 
-export function CandidateDrawer({ candidate, onClose, onAction, puedeDecidir = true }: CandidateDrawerProps) {
+export function CandidateDrawer({ candidate, onClose, onAction, puedeDecidir = true, canonDelInmueble }: CandidateDrawerProps) {
   const ultimo = useUltimoPresente(candidate);
 
   return (
@@ -223,6 +236,7 @@ export function CandidateDrawer({ candidate, onClose, onAction, puedeDecidir = t
             candidate={ultimo}
             onAction={onAction}
             puedeDecidir={puedeDecidir}
+            canonDelInmueble={canonDelInmueble}
           />
         )}
       </SheetContent>
@@ -235,9 +249,10 @@ interface CuerpoDelCandidatoProps {
   candidate: LandlordCandidate;
   onAction: (type: CandidateAction, candidate: LandlordCandidate) => void;
   puedeDecidir: boolean;
+  canonDelInmueble?: number | null;
 }
 
-function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCandidatoProps) {
+function CuerpoDelCandidato({ candidate, onAction, puedeDecidir, canonDelInmueble }: CuerpoDelCandidatoProps) {
   const fechas = useLocaleDeFechas();
   const tr = useTr();
   const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null);
@@ -430,9 +445,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
           {/* Status */}
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm text-fg-muted">{tr("Estado:")}</span>
-            <span className="px-2.5 py-1 rounded-full text-caption font-medium bg-muted text-foreground">
-              {tr(STATUS_LABELS[candidate.status])}
-            </span>
+            <StatusBadge tone={TONO_DEL_ESTADO[candidate.status] ?? 'neutral'}>{tr(STATUS_LABELS[candidate.status])}</StatusBadge>
             {/* 🔴 El estudio es opcional (Nico, 04-10-2026): qué falta, a la
                 vista antes de decidir. */}
             <ChipDeLaMarcaDelEstudio marca={candidate.marcaDelEstudio} />
@@ -465,12 +478,9 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                   {tr("Ver contrato")}
                 </Link>
               ) : (
-                <Link
-                  href={`/panel/inmobiliaria/contratos/nuevo?applicationId=${candidate.id}`}
-                  className="inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg bg-success hover:bg-success text-white text-sm font-medium transition-colors"
-                >
-                  {tr("Crear contrato")}
-                </Link>
+                <Button asChild variant="ink" hideArrow className="w-full">
+                  <Link href={`/panel/inmobiliaria/contratos/nuevo?applicationId=${candidate.id}`}>{tr("Crear contrato")}</Link>
+                </Button>
               )}
             </section>
           )}
@@ -498,6 +508,23 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
             </section>
           )}
 
+          {/* GLOW UP (Nico 31-10-2026: «a 9,5 y todo lo del buró completo»): lo que decide arriba (el buró) y lo
+              demás en pestañas, todas montadas (cada una carga como antes y conserva lo que se escribió). */}
+          <Tabs defaultValue="buro" className="space-y-4">
+            <TabsList className="justify-start" aria-label={tr('Lo del candidato')}>
+              <TabsTrigger value="buro">{tr('Buró')}</TabsTrigger>
+              <TabsTrigger value="estudio">{tr('Estudio')}</TabsTrigger>
+              <TabsTrigger value="analisis">{tr('Análisis')}</TabsTrigger>
+              <TabsTrigger value="documentos">{tr('Documentos')}</TabsTrigger>
+              <TabsTrigger value="compatibles">{tr('Compatibles')}</TabsTrigger>
+              <TabsTrigger value="mensajes">{tr('Mensajes')}</TabsTrigger>
+            </TabsList>
+
+          <TabsContent value="buro" forceMount className="data-[state=inactive]:hidden">
+            <BuroDelCandidato applicationId={candidate.id} canonDelInmueble={canonDelInmueble} />
+          </TabsContent>
+
+          <TabsContent value="estudio" forceMount className="data-[state=inactive]:hidden">
           {/*
             Pre-scoring study — the candidate already paid for and completed
             this study (Fianly) when they applied. The panel reads the result
@@ -507,9 +534,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
           */}
           <section className="rounded-lg border border-border bg-card p-5 space-y-4">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-md bg-primary-soft flex items-center justify-center">
-                <ShieldCheck className="w-4 h-4 text-primary" />
-              </div>
+              <ShieldCheck className="w-4 h-4 shrink-0 text-fg-muted" aria-hidden="true" />
               <div>
                 <h3 className="font-medium text-sm text-foreground">{tr("Estudio de asegurabilidad")}</h3>
                 <p className="text-caption text-fg-muted">{tr("El estudio con que se postuló, si lo hizo: es opcional")}</p>
@@ -524,21 +549,16 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
             <AsegurabilidadManualDeLaPostulacion applicationId={candidate.id} />
           </section>
 
-          {/* La Calificación Leasefy sin estudio (Nico, 19-10-2026: «mostrarla en el cajón»): desde la cuenta
-              de la persona. Con estudio, la trae la evaluación (abajo, en el análisis). */}
-          {!isLoadingAI && !evaluation?.calificacion_leasefy?.calificacion && (
-            <CalificacionDelPostulante applicationId={candidate.id} />
-          )}
+          </TabsContent>
 
+          <TabsContent value="analisis" forceMount className="data-[state=inactive]:hidden">
           {/* AI Scoring Block */}
           <section className={cn(
             'rounded-lg border p-5 space-y-4',
             levelColor ? `${levelColor.bg} ${levelColor.border}` : 'bg-muted border-border'
           )}>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-md bg-surface flex items-center justify-center">
-                <Robot className="w-4 h-4 text-primary" />
-              </div>
+              <Robot className="w-4 h-4 shrink-0 text-fg-muted" aria-hidden="true" />
               <div>
                 <h3 className="font-medium text-sm text-foreground">{tr("Análisis de riesgo con IA")}</h3>
                 <p className="text-caption text-fg-muted">{tr("Generado por el agente de evaluación de riesgo")}</p>
@@ -564,17 +584,6 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
               </div>
             ) : (
               <>
-                {/* La Calificación Leasefy (18-10-2026): documentos + historial en Leasefy. */}
-                {evaluation?.calificacion_leasefy?.calificacion && (
-                  <div className="space-y-1.5">
-                    <TarjetaDeCalificacion calificacion={evaluation.calificacion_leasefy.calificacion} className="p-4" compacta />
-                    <p className="text-caption text-fg-subtle">
-                      {evaluation.calificacion_leasefy.alcance === 'TODO_LEASEFY'
-                        ? tr('Con todo su historial en Leasefy.')
-                        : tr('Sólo lo que pasó con tu inmobiliaria: no autorizó compartir su calificación.')}
-                    </p>
-                  </div>
-                )}
                 {/* El score, con el color del nivel sólo en su ficha. */}
                 {level && totalScore !== undefined && levelColor && (
                   <div className="flex items-center gap-4">
@@ -767,13 +776,14 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
             )}
           </section>
 
+          </TabsContent>
+
+          <TabsContent value="compatibles" forceMount className="data-[state=inactive]:hidden">
           {/* Smart Matching Block */}
           <section className="rounded-lg border border-border bg-card p-5 space-y-4">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-md bg-surface-muted flex items-center justify-center">
-                  <MagnifyingGlass className="w-4 h-4 text-fg-muted" />
-                </div>
+                <MagnifyingGlass className="w-4 h-4 shrink-0 text-fg-muted" aria-hidden="true" />
                 <div>
                   <h3 className="font-medium text-sm text-foreground">{tr("Inmuebles compatibles")}</h3>
                   <p className="text-caption text-fg-muted">{tr("Otras propiedades de tu portafolio que le podrían calzar")}</p>
@@ -870,15 +880,16 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
             )}
           </section>
 
+          </TabsContent>
+
+          <TabsContent value="documentos" forceMount className="data-[state=inactive]:hidden">
           {/* Documents section */}
           <section className="rounded-lg border border-border bg-card p-5 space-y-4">
             <div className="flex items-center gap-2">
               {/* `bg-surface-muted` es un token de TEXTO usado como fondo: pintaba
                   un disco gris claro, y encima el icono iba con ESE MISMO color
                   — invisible. El chip va con superficie, el icono con texto. */}
-              <div className="w-8 h-8 rounded-md bg-surface-muted flex items-center justify-center">
-                <FileText className="w-4 h-4 text-fg-muted" />
-              </div>
+              <FileText className="w-4 h-4 shrink-0 text-fg-muted" aria-hidden="true" />
               <div>
                 <h3 className="font-medium text-sm text-foreground">{tr("Documentos adjuntos")}</h3>
                 <p className="text-caption text-fg-muted">{tr("Archivos cargados por el candidato")}</p>
@@ -932,11 +943,15 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
             )}
           </section>
 
+          </TabsContent>
+
+          <TabsContent value="mensajes" forceMount className="data-[state=inactive]:hidden">
           {/* Messages — chat with the candidate without leaving the drawer */}
-          <section className="space-y-3">
-            <h3 className="font-medium text-sm text-foreground">{tr("Mensajes")}</h3>
+          <section className="space-y-3" aria-label={tr("Mensajes")}>
             <ChatThread applicationId={candidate.id} />
           </section>
+          </TabsContent>
+          </Tabs>
 
         </SheetBody>
 
@@ -979,11 +994,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
             {canApprove && (
               // success/green: Cadence Button has no success variant (logged gap) — real
               // Button keeps all DS states; only the fill is overridden for the missing tone.
-              <Button
-                hideArrow
-                onClick={() => onAction('approve', candidate)}
-                className="bg-success text-white hover:bg-success/90"
-              >
+              <Button variant="ink" hideArrow onClick={() => onAction('approve', candidate)}>
                 {tr("Aprobar")}
               </Button>
             )}
@@ -1527,7 +1538,6 @@ function DocumentRow({ doc, applicationId }: { doc: DocumentItem; applicationId:
   const constancia = doc.subidoEnNombreDelPostulante ?? null;
   const label = tr(DOC_TYPE_LABELS[doc.type] ?? doc.type);
   const sizeKb = doc.size ? `${Math.round(doc.size / 1024)} KB` : null;
-  const isPdf = doc.mimeType === 'application/pdf' || doc.fileName?.endsWith('.pdf');
   const [isOpening, setIsOpening] = useState(false);
 
   const handleOpen = useCallback(async () => {
@@ -1574,9 +1584,7 @@ function DocumentRow({ doc, applicationId }: { doc: DocumentItem; applicationId:
 
   return (
     <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-surface-muted hover:border-primary/30 transition-colors group">
-      <div className="w-8 h-8 rounded-md bg-surface-muted flex items-center justify-center flex-shrink-0">
-        <FileText className={cn('w-4 h-4', isPdf ? 'text-danger' : 'text-fg-muted')} />
-      </div>
+      <FileText className="w-4 h-4 shrink-0 text-fg-muted" aria-hidden="true" />
       <div className="flex-1 min-w-0">
         <p className="text-caption font-medium text-foreground truncate">{label}</p>
         <p className="text-caption text-fg-muted truncate">

@@ -89,6 +89,7 @@ import { useTr } from '@/lib/i18n/use-tr';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { SECCION_DE_LOS_GIROS, TITULO_DE_LOS_GIROS, descripcionDelPaso } from '@/components/giros/PasosDeLosGiros';
 import { LoQueFaltaDelMes } from '@/components/giros/LoQueFaltaDelMes';
+import { CodigoNoEscrito, useConElCodigoDeLaApp } from '@/components/seguridad/CodigoDeLaApp';
 
 // View modes
 type ViewMode = 'table' | 'cards';
@@ -136,6 +137,7 @@ interface InformeDeAprobacion {
  */
 function DispersionesContent() {
   const tr = useTr();
+  const conElCodigo = useConElCodigoDeLaApp();
   const { t, locale } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -443,7 +445,8 @@ function DispersionesContent() {
     const id = `approve-${dispersion.id}`;
     try {
       toast.loading(t('inmobiliaria.dispersiones.toasts.processing', { name: dispersion.propietarioName }), { id });
-      await dispersionesApi.approve(dispersion.id);
+      // 31-10: el giro suelto también lo autoriza un administrador con el código de su aplicación.
+      await conElCodigo(() => dispersionesApi.approve(dispersion.id), { titulo: tr('Autoriza el giro suelto') });
       await refetchDispersiones();
       void cargarResumen();
       // El toast va DESPUÉS de la respuesta, y dice lo que de verdad pasó.
@@ -453,6 +456,10 @@ function DispersionesContent() {
       });
     } catch (error) {
       await refetchDispersiones();
+      if (error instanceof CodigoNoEscrito) {
+        toast.dismiss(id);
+        return;
+      }
       if (esAprobarPorLote(error)) {
         avisarQueEsPorLote(error, id);
         return;
@@ -467,7 +474,7 @@ function DispersionesContent() {
         description: motivoDeLaAccion(error, 'aprobar el giro'),
       });
     }
-  }, [t, refetchDispersiones, cargarResumen, avisarQueEsPorLote, avisarQueEstaEnUnLote]);
+  }, [t, tr, conElCodigo, refetchDispersiones, cargarResumen, avisarQueEsPorLote, avisarQueEstaEnUnLote]);
 
   /**
    * El botón de la fila (tabla y tarjeta).
@@ -577,11 +584,6 @@ function DispersionesContent() {
   const [confirmandoAprobarTodas, setConfirmandoAprobarTodas] = useState(false);
   const [aprobandoTodas, setAprobandoTodas] = useState(false);
   const [informe, setInforme] = useState<InformeDeAprobacion | null>(null);
-
-  const handleProcessAll = useCallback(() => {
-    if (pendientesEnPantalla.length === 0) return;
-    setConfirmandoAprobarTodas(true);
-  }, [pendientesEnPantalla.length]);
 
   const aprobarTodas = useCallback(async () => {
     const lote = pendientesEnPantalla;
@@ -779,11 +781,10 @@ function DispersionesContent() {
       <DispersionResumen
         summary={summary}
         onViewPending={handleViewPending}
-        onProcessAll={
-          !porLote && hasPendingDispersiones && pendientesEnPantalla.length > 0
-            ? handleProcessAll
-            : undefined
-        }
+        // 🔴 31-10-2026 (Nico: «solo aprobé 488 de 506»): «Aprobar todas» mandaba cada giro a giro SUELTO (fuera del
+        // lote) y disparaba todas las aprobaciones a la vez. Ya no se ofrece: se gira con «Girar» en Giros a
+        // propietarios. La aprobación de UNO (la excepción) sigue en su fila.
+        onProcessAll={undefined}
         apruebaPorLote={porLote}
         estimado={resumenDelBack ? undefined : { onReintentar: cargarResumen }}
       />

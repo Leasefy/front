@@ -26,6 +26,8 @@ import { useWishlist } from '@/lib/hooks/useWishlist';
 import type { Property } from '@/lib/types/property';
 import type { AcceptanceProbability } from '@/lib/scoring/propertyMatching';
 import { PostularButton } from '@/components/tenant/PostularButton';
+import { DescripcionConFormato } from '@/components/property/DescripcionConFormato';
+import { descripcionPublica } from '@/lib/inmuebles/descripcion-publica';
 import {
   getMatchScoreBgColor,
   getAcceptanceProbabilityLabel,
@@ -139,7 +141,7 @@ export function PropertyDetailSheet({
                     getMatchScoreBgColor(matchData.matchScore)
                   )}
                 >
-                  <span className="text-sm font-bold text-white">
+                  <span className="text-sm font-medium text-white">
                     {matchData.matchScore}%
                   </span>
                 </div>
@@ -154,7 +156,7 @@ export function PropertyDetailSheet({
                 <div className="flex items-center gap-3 p-3 bg-surface-muted border border-border rounded-lg">
                   <div
                     className={cn(
-                      'flex items-center justify-center w-12 h-12 rounded-lg font-bold text-lg',
+                      'flex items-center justify-center w-12 h-12 rounded-lg font-medium text-lg',
                       getMatchScoreBgColor(matchData.matchScore),
                       'text-white'
                     )}
@@ -252,9 +254,10 @@ export function PropertyDetailSheet({
                 <h3 className="text-sm font-medium text-fg mb-2">
                   Descripción
                 </h3>
-                <p className="text-sm text-fg-muted leading-relaxed">
-                  {property.description}
-                </p>
+                <DescripcionConFormato
+                  texto={descripcionPublica(property.description)}
+                  className="text-sm text-fg-muted leading-relaxed"
+                />
               </div>
 
               {/* Property Accordion */}

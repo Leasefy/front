@@ -39,7 +39,7 @@ const SIN_CABECERA_JUSTIFICADO: Record<string, string> = {
   // Nico, 28-10-2026: los momentos de la conversión con la escena de marca (aurora + 3D) A SANGRE arriba. Una cabecera
   // con filete encima partiría la escena; el título y la descripción van debajo, con su DialogTitle.
   'components/inmobiliaria/plan/ModalDelPlan.tsx':
-    'El modal del plan: la escena de marca a sangre arriba (el 3D del momento, la cuenta de días); el título va debajo.',
+    'El modal del plan: la escena de marca a sangre arriba (la pantalla real asomando, con la cuenta de días o el 3D); el título va debajo.',
   'components/inmobiliaria/plan/MesGratisPendiente.tsx':
     'El regalo del aliado: la escena con el sello «aliado × Leasefy» a sangre arriba; el título va debajo.',
   'components/inmobiliaria/modo-comercial/CandadoDelModoComercial.tsx':
@@ -48,6 +48,10 @@ const SIN_CABECERA_JUSTIFICADO: Record<string, string> = {
     'Los pasos para activar: dos columnas a sangre (la lista de pasos a la izquierda, el paso con su título a la derecha).',
   'components/landlord/PasosDelPropietario.tsx':
     'Los pasos del propietario al pagar: dos columnas a sangre (la lista de pasos y el paso con su título).',
+  'components/conversion/BienvenidaALaCuenta.tsx':
+    'La bienvenida de cada portal (30-10-2026): la escena de marca a sangre arriba, como la de la inmobiliaria; el título va debajo.',
+  'components/plan/InvitacionAMejorarElPlan.tsx':
+    'La invitación a mejorar el plan (31-10-2026): la escena de marca con la pantalla real asomando a sangre arriba, como el modal del plan; el título va debajo.',
 }
 
 function archivosTsx(dir: string, encontrados: string[] = []): string[] {

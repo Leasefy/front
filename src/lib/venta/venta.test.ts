@@ -63,9 +63,9 @@ describe('el propietario en el plan gratis', () => {
     }
   });
 
-  it('el inicio, contratos, cobro y estudio van en demo', () => {
+  it('🔴 31-10 (Nico: «debe quedar prendido, no con demo»): el inicio, contratos, cobro y estudio también quedan abiertos', () => {
     for (const r of ['/panel', '/panel/contratos', '/panel/leases', '/panel/estado-de-cuenta', '/panel/escoger-inquilino', '/panel/upgrade']) {
-      expect(abiertaParaElPropietarioGratis(r)).toBe(false);
+      expect(abiertaParaElPropietarioGratis(r)).toBe(true);
     }
     expect(claveDeDemoDelPropietario('/panel/estado-de-cuenta')).toBe('cobro');
     expect(claveDeDemoDelPropietario('/panel/escoger-inquilino')).toBe('estudio');
@@ -108,7 +108,7 @@ describe('cada sección cerrada tiene su demo', () => {
 })
 
 describe('las demos en video (Nico 28-10-2026: «las demos son videos»)', () => {
-  it.each(['servicios-publicos', 'contratos', 'solicitudes', 'mantenimientos'])('«%s» trae su video (webm, mp4 y portada) y existen en public/', async (clave) => {
+  it.each(['servicios-publicos', 'contratos', 'solicitudes', 'mantenimientos', 'cobranza', 'conciliacion', 'avaluos', 'asegurabilidad', 'matching', 'retencion', 'agente-de-pagos', 'desempeno-ia', 'listas-restrictivas'])('«%s» trae su video (webm, mp4 y portada) y existen en public/', async (clave) => {
     const { existsSync } = await import('node:fs')
     const { join } = await import('node:path')
     const { demoDeLaInmobiliaria } = await import('./demos-del-panel')
@@ -116,4 +116,17 @@ describe('las demos en video (Nico 28-10-2026: «las demos son videos»)', () =>
     expect(v).toBeDefined()
     for (const archivo of [v!.webm, v!.mp4, v!.poster]) expect(existsSync(join(process.cwd(), 'public', archivo))).toBe(true)
   })
+
+  // Nico 30-10-2026: «en la sección de demo de propietario no vi ningún video». Todas las del propietario lo traen.
+  it.each(['contratos', 'cobro', 'estudio', 'giros', 'aprobaciones', 'revisar-canon', 'informes', 'certificados', 'solicitudes'])(
+    'la del propietario «%s» trae su video y existe en public/',
+    async (clave) => {
+      const { existsSync } = await import('node:fs')
+      const { join } = await import('node:path')
+      const { demoDelPropietario } = await import('./demos-del-panel')
+      const v = demoDelPropietario(clave).video
+      expect(v).toBeDefined()
+      for (const archivo of [v!.webm, v!.mp4, v!.poster]) expect(existsSync(join(process.cwd(), 'public', archivo))).toBe(true)
+    },
+  )
 })

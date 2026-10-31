@@ -78,3 +78,44 @@ describe('<OTPVerification> — la espera de reenvío del back (CONTR-4)', () =>
     expect(send).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('<OTPVerification> — el freno de los códigos (Nico 30-10: «no le debiste haber dejado enviar si estaba bloqueado»)', () => {
+  const freno = (segundos: number) =>
+    new ApiError(429, `Hiciste demasiadas solicitudes seguidas. Espera 5 minutos y vuelve a intentar.`, 'DEMASIADAS_SOLICITUDES', {
+      reintentarEnSegundos: segundos,
+    });
+
+  it('al verificar bloqueado: sin «Reenviar», sin el «Enviado por correo» viejo, con lo que falta; al terminar pide el código solo', async () => {
+    vi.useFakeTimers();
+    try {
+      const send = vi.fn().mockResolvedValue({ sentTo: 'ju***c@gmail.com', cooldownSeconds: 60 });
+      const verify = vi.fn().mockRejectedValueOnce(freno(2));
+      const adapter: OtpAdapter = { send, verify };
+      await act(async () => {
+        root.render(<OTPVerification isOpen adapter={adapter} onVerified={vi.fn()} onCancel={vi.fn()} />);
+      });
+      const casillas = Array.from(document.querySelectorAll('input')) as HTMLInputElement[];
+      await act(async () => {
+        for (let i = 0; i < 6; i++) {
+          const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+          set.call(casillas[i], String(i));
+          casillas[i]!.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      });
+      await act(async () => {
+        await Promise.resolve();
+      });
+      const texto = document.body.textContent ?? '';
+      expect(verify).toHaveBeenCalledTimes(1);
+      expect(document.querySelector('[data-testid="otp-bloqueado"]')).not.toBeNull();
+      expect(texto).not.toContain('ju***c@gmail.com');
+      expect(texto).not.toMatch(/Reenviar/i);
+      await act(async () => {
+        vi.advanceTimersByTime(2500);
+      });
+      expect(send).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

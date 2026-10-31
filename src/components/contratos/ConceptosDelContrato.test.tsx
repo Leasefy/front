@@ -147,3 +147,38 @@ describe('<ConceptosDelContrato> — quitar un concepto', () => {
     expect(basura()).toBeNull()
   })
 })
+
+describe('la liquidación de servicios públicos de entrada (Juan, 31-10-2026)', () => {
+  // Pagó el inquilino: 22 días del propietario, que se le descuentan UNA vez del giro y quedan a favor del inquilino.
+  const entrada = concepto({
+    id: 'cc-sp',
+    conceptoId: 'cobro-de-servicios-publicos-propietario',
+    nombre: 'Servicios públicos: energía del 01/10/2026 al 31/10/2026 (22 días antes de la entrega)',
+    paga: 'PROPIETARIO',
+    recibe: 'INQUILINO',
+    valorCop: 177_419,
+    recurrente: false,
+    planDeMeses: [{ mes: '2026-11', valorCop: 177_419 }],
+  })
+
+  it('se lee como una sola vez del giro del propietario, nunca como un cobro mensual', async () => {
+    conceptosMock.mockResolvedValue([entrada])
+    await render()
+
+    const texto = container.textContent ?? ''
+    expect(texto).toContain('una sola vez, de su giro de nov 2026 · a favor del inquilino')
+    expect(texto).not.toContain('Se le cobra al inquilino cada mes')
+    expect(texto).not.toContain('repartidos en los meses elegidos')
+    expect(container.querySelector('[data-testid="una-vez-propietario"]')?.textContent).toContain('177.419')
+  })
+
+  it('con un recurrente del inquilino al lado, el «cada mes» sólo cuenta el recurrente', async () => {
+    conceptosMock.mockResolvedValue([concepto(), entrada])
+    await render()
+
+    const texto = container.textContent ?? ''
+    expect(texto).toContain('Se le cobra al inquilino cada mes')
+    expect(texto).toContain('180.000')
+    expect(container.querySelector('[data-testid="una-vez-propietario"]')).not.toBeNull()
+  })
+})

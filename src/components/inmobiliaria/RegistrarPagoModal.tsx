@@ -101,6 +101,7 @@ import {
 } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
+import { useTr } from '@/lib/i18n/use-tr';
 import { useI18n } from '@/lib/i18n';
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { Button } from '@/components/ui/button';
@@ -131,6 +132,7 @@ import {
   seOfreceElegirLaForma,
   type MesQueSeAdelanta,
 } from '@/lib/recibos/forma-del-adelanto';
+import { saldoAFavorEnElRecibo } from '@/lib/recibos/saldo-a-favor-del-contrato';
 import { nombreDelMes } from '@/lib/utils/mes';
 import { useMediosDePago } from '@/lib/hooks/use-medios-de-pago';
 import { finanzasApi } from '@/lib/api/finanzas.service';
@@ -290,6 +292,7 @@ export function RegistrarPagoModal({
   onConciliar,
 }: RegistrarPagoModalProps) {
   const { t, formatCurrency, locale } = useI18n();
+  const tr = useTr();
   const idioma = locale === 'en' ? 'en' : 'es';
   /*
    * 🔴 PG-01 (03-10-2026): con qué se puede registrar el pago. Primero
@@ -502,6 +505,15 @@ export function RegistrarPagoModal({
   /** Lo que la inmobiliaria reclama HOY. Es el default del campo. */
   const vencido = cartera?.vencidoCop ?? 0;
   const futuro = cartera?.futuroCop ?? 0;
+  /*
+   * Juan 31-10: lo que el inquilino ya tiene a favor en su contrato (la factura
+   * de servicios de entrada que pagó él) se le descuenta solo el día de pago.
+   * Los atajos y el valor de arranque salen MENOS eso: cobrarle la cuota entera
+   * le cobraría dos veces esa plata.
+   */
+  const aFavor = React.useMemo(() => saldoAFavorEnElRecibo(cartera), [cartera]);
+  const vencidoACobrar = Math.max(0, vencido - aFavor.deLoVencidoCop);
+  const todoACobrar = Math.max(0, maximo - aFavor.deTodaLaDeudaCop);
   const sePuedeAdelantar = soloSePuedeAdelantar(cartera);
   const montoValido = Number.isFinite(monto) && monto > 0;
   /*
@@ -584,6 +596,24 @@ export function RegistrarPagoModal({
     fechaDeLaVistaPrevia === fechaElegida &&
     !recalculando;
 
+  /**
+   * Nico 31-10: «no estás dejando hacer recibos de caja». Sin nada vencido el valor arranca VACÍO (un adelanto no se
+   * adivina) y el campo queda abajo de la lista de cuotas: el botón salía apagado sin decir por qué. Lo primero que
+   * falta, dicho junto al botón y con el camino al campo.
+   */
+  const loQueFalta: { texto: string; campo: string } | null =
+    cartera === null || enviando
+      ? null
+      : !montoValido
+        ? { texto: tr('Escribe cuánto recibes'), campo: 'monto-recibo' }
+        : seExcede || superaElTope
+          ? { texto: tr('Revisa el valor'), campo: 'monto-recibo' }
+          : medio === ''
+            ? { texto: tr('Elige el medio de pago'), campo: 'medio-recibo' }
+            : problemaDeLaFecha !== null
+              ? { texto: tr('Revisa la fecha'), campo: 'fecha-recibo' }
+              : null;
+
   const puedeEnviar =
     cartera !== null &&
     // Sin deuda se puede recibir plata SÓLO si hay dónde guardarla a favor.
@@ -622,7 +652,8 @@ export function RegistrarPagoModal({
   const personaAtendida = React.useRef(-1);
   React.useEffect(() => {
     if (!cartera) return;
-    const vencidoDeLaCartera = cartera.vencidoCop ?? 0;
+    const descuento = saldoAFavorEnElRecibo(cartera);
+    const vencidoDeLaCartera = Math.max(0, (cartera.vencidoCop ?? 0) - descuento.deLoVencidoCop);
     if (personaAtendida.current !== cargaDeLaPersona) {
       personaAtendida.current = cargaDeLaPersona;
       origenDelMonto.current = vencidoDeLaCartera > 0 ? 'vencido' : 'manual';
@@ -646,7 +677,7 @@ export function RegistrarPagoModal({
     if (origenDelMonto.current === 'vencido') {
       setMonto(vencidoDeLaCartera > 0 ? vencidoDeLaCartera : NaN);
     } else if (origenDelMonto.current === 'todo') {
-      setMonto(cartera.total);
+      setMonto(Math.max(0, cartera.total - descuento.deTodaLaDeudaCop));
     }
   }, [cartera, cargaDeLaPersona, hoy]);
 
@@ -1095,7 +1126,7 @@ export function RegistrarPagoModal({
                   {/* Dos atajos, no uno: recibir lo vencido es la operación
                       normal; pagar toda la deuda es adelantar, y se elige. */}
                   <div className="flex items-center gap-3">
-                    {vencido > 0 && vencido !== maximo && (
+                    {vencidoACobrar > 0 && vencidoACobrar !== todoACobrar && (
                       <Button
                         type="button"
                         variant="link"
@@ -1104,7 +1135,7 @@ export function RegistrarPagoModal({
                         className="h-auto p-0 text-caption"
                         onClick={() => {
                           origenDelMonto.current = 'vencido';
-                          setMonto(vencido);
+                          setMonto(vencidoACobrar);
                         }}
                         data-testid="atajo-vencido"
                       >
@@ -1119,7 +1150,7 @@ export function RegistrarPagoModal({
                       className="h-auto p-0 text-caption"
                       onClick={() => {
                         origenDelMonto.current = 'todo';
-                        setMonto(maximo);
+                        setMonto(todoACobrar);
                       }}
                       data-testid="atajo-todo"
                     >
@@ -1148,7 +1179,7 @@ export function RegistrarPagoModal({
                   invalid={Boolean(errorDeMonto ?? erroresDelServidor.monto)}
                   aria-invalid={Boolean(errorDeMonto ?? erroresDelServidor.monto) || undefined}
                   aria-describedby="monto-recibo-error"
-                  className="h-12 text-lg font-semibold"
+                  className="h-12 text-lg font-medium"
                 />
                 <p className="text-caption text-fg-muted">
                   {/* Con anticipo habilitado NO es un máximo —se puede pagar de
@@ -1525,6 +1556,20 @@ export function RegistrarPagoModal({
               </Button>
             ) : (
               <>
+                {loQueFalta && !puedeEnviar && (
+                  <button
+                    type="button"
+                    className="mr-auto text-left text-body-sm text-fg-muted underline-offset-2 hover:text-fg hover:underline"
+                    onClick={() => {
+                      const campo = document.getElementById(loQueFalta.campo);
+                      campo?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                      campo?.focus({ preventScroll: true });
+                    }}
+                    data-testid="recibo-lo-que-falta"
+                  >
+                    {loQueFalta.texto}
+                  </button>
+                )}
                 <Button type="button" variant="outline" onClick={cerrar} disabled={enviando}>
                   {t('recibos.form.cancelar')}
                 </Button>

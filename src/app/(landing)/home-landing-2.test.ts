@@ -21,7 +21,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { NextRequest } from 'next/server'
-import { middleware } from '@/middleware'
+import { middlewareEnLeasefy as middleware } from '@/middleware.en-leasefy'
 import { RUTA_DE_LA_HOME, TERCEROS_DE_LA_HOME, politicaDeLaHome } from '@/lib/seguridad/politica-de-contenido'
 
 const CARPETA = 'public/landing'

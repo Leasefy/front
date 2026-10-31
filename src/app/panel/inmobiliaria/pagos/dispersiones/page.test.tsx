@@ -353,57 +353,15 @@ describe('revisora r22, Giros #1 — «Generar» con el mes ya generado', () => 
   });
 });
 
-describe('D2 — «Aprobar todas»', () => {
-  it('pregunta antes, y no aprueba nada hasta confirmar', async () => {
+/*
+ * 🔴 31-10-2026 (Nico: «solo aprobé 488 de 506»): «Aprobar todas» ya no existe. Mandaba cada giro a giro
+ * SUELTO (fuera del lote) y disparaba todas las aprobaciones a la vez; se gira con «Girar» en Giros a
+ * propietarios (`GirosDelMes`).
+ */
+describe('D2 — «Aprobar todas» ya no se ofrece', () => {
+  it('con giros por aprobar en pantalla, el resumen no trae «Aprobar todas»', async () => {
     await montar();
-    await act(async () => {
-      (q('resumen-aprobar-todas') as HTMLButtonElement).click();
-    });
-    const dialogo = document.querySelector('[role="alertdialog"]');
-    expect(dialogo?.textContent).toContain('Vas a aprobar 3 giros por');
-    expect(dialogo?.textContent).toContain('¿Seguimos?');
-    expect(m.approve).not.toHaveBeenCalled();
-  });
-
-  it('con 1 rechazo de 3: el informe dice «2 aprobadas · 1 con error» y el motivo', async () => {
-    m.approve.mockImplementation(async (id: string) => {
-      if (id === 'd-2') throw new ApiError(409, 'Esta dispersión ya no está pendiente.', 'ESTADO');
-      return fila(id, { status: 'processing' });
-    });
-    await montar();
-    await act(async () => {
-      (q('resumen-aprobar-todas') as HTMLButtonElement).click();
-    });
-    await act(async () => {
-      (q('confirmar-aprobar-todas', document.body) as HTMLButtonElement).click();
-    });
-    await asentar();
-
-    // Se intentaron las tres, cada una por su lado.
-    expect(m.approve).toHaveBeenCalledTimes(3);
-    const informe = q('informe-aprobar-todas') as HTMLElement;
-    expect(informe.textContent).toContain('2 aprobadas · 1 con error');
-    expect(informe.textContent).toContain('Propietario d-2');
-    expect(informe.textContent).toContain('Esta dispersión ya no está pendiente.');
-    expect(m.toast.error).toHaveBeenCalledWith(
-      '2 aprobadas · 1 con error',
-      expect.objectContaining({ description: 'Esta dispersión ya no está pendiente.' }),
-    );
-    expect(m.refetch).toHaveBeenCalled();
-  });
-
-  it('si salen todas: toast de éxito y sin informe de errores', async () => {
-    m.approve.mockResolvedValue(fila('x', { status: 'processing' }));
-    await montar();
-    await act(async () => {
-      (q('resumen-aprobar-todas') as HTMLButtonElement).click();
-    });
-    await act(async () => {
-      (q('confirmar-aprobar-todas', document.body) as HTMLButtonElement).click();
-    });
-    await asentar();
-    expect(m.toast.success).toHaveBeenCalledWith('3 aprobadas', expect.anything());
-    expect(q('informe-aprobar-todas')).toBeNull();
+    expect(q('resumen-aprobar-todas')).toBeNull();
   });
 });
 
@@ -426,9 +384,9 @@ describe('D3 — la agencia aprueba por lote', () => {
     expect(q('resumen-ir-a-lotes')).not.toBeNull();
   });
 
-  it('agencia que aprueba una por una: «Aprobar» vive en la fila y en el resumen', async () => {
+  it('agencia que aprueba una por una: «Aprobar» vive en la fila (el resumen ya no aprueba en bloque, 31-10)', async () => {
     await montar();
-    expect(q('resumen-aprobar-todas')).not.toBeNull();
+    expect(q('resumen-aprobar-todas')).toBeNull();
     expect(host.querySelectorAll('[data-testid="fila-aprobar"]')).toHaveLength(3);
     expect(q('detalle')?.getAttribute('data-por-lote')).toBe('no');
     // D4: el cajón recibe quién está mirando.
@@ -606,24 +564,6 @@ describe('02-10 — aprobar y girar con la regla de oro', () => {
     m.approve.mockRejectedValue(new ApiError(409, 'Esta dispersión ya no está pendiente.'));
     const { descripcion } = await aprobarDesdeElCajon();
     expect(descripcion).toBe('Esta dispersión ya no está pendiente.');
-  });
-
-  it('🔴 «Aprobar todas» con un 5xx: el informe lleva la referencia de soporte', async () => {
-    m.approve.mockImplementation(async (id: string) => {
-      if (id === 'd-2') throw fallo500();
-      return fila(id, { status: 'processing' });
-    });
-    await montar();
-    await act(async () => {
-      (q('resumen-aprobar-todas') as HTMLButtonElement).click();
-    });
-    await act(async () => {
-      (q('confirmar-aprobar-todas', document.body) as HTMLButtonElement).click();
-    });
-    await asentar();
-    const informe = q('informe-aprobar-todas') as HTMLElement;
-    expect(informe.textContent).toContain('de nuestro lado');
-    expect(informe.textContent).toContain('ab12cd34');
   });
 
   it('🔴 registrar el giro con un 400 de la referencia: se lo devuelve al cajón y no hay toast rojo', async () => {

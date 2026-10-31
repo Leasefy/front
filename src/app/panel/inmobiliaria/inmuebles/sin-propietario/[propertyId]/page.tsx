@@ -13,7 +13,9 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { CompletarMandatoDialog } from '@/components/inmobiliaria/CompletarMandatoDialog';
 import { FotosDelInmueble } from '@/components/inmobiliaria/FotosDelInmueble';
-import { PropertyEditModal } from '@/components/inmobiliaria/PropertyEditModal';
+import { ConsignacionEditForm } from '@/components/inmobiliaria/ConsignacionEditForm';
+import { FichaDelInmueble } from '@/components/inmobiliaria/ficha/FichaDelInmueble';
+import type { Consignacion } from '@/lib/types/inmobiliaria';
 import { ObservacionesInternas } from '@/components/inmobiliaria/ficha/ObservacionesInternas';
 import { EstadoDelInmueble } from '@/components/inmobiliaria/ficha/EstadoDelInmueble';
 import { useAgentes, useInmueblesSinConsignacion, usePropietarios } from '@/lib/hooks/useInmobiliaria';
@@ -104,12 +106,18 @@ function FichaSinPropietario({ propertyId }: { propertyId: string }) {
         </div>
       </div>
 
-      <Tabs defaultValue="multimedia">
+      {/* 🔴 31-10-2026 (Nico: «en la ficha del inmueble no aparece todo lo que puede tener y la posibilidad de
+          llenarlo, así como lo tendría un inmueble migrado»): la ficha completa, con «Lo que falta» y su editar. */}
+      <Tabs defaultValue="ficha">
         <TabsList>
+          <TabsTrigger value="ficha">Ficha</TabsTrigger>
           <TabsTrigger value="multimedia">Multimedia</TabsTrigger>
           <TabsTrigger value="observaciones">Observaciones internas</TabsTrigger>
           <TabsTrigger value="propietario">Propietario</TabsTrigger>
         </TabsList>
+        <TabsContent value="ficha" className="mt-4">
+          <FichaDelInmueble property={inmueble} onEditar={() => setEditando(true)} loQueFaltaEnLaLista />
+        </TabsContent>
         <TabsContent value="multimedia" className="mt-4">
           <FotosDelInmueble propertyId={propertyId} onCambio={() => void refetch()} />
         </TabsContent>
@@ -128,13 +136,30 @@ function FichaSinPropietario({ propertyId }: { propertyId: string }) {
       </Tabs>
 
       {editando ? (
-        <PropertyEditModal
-          property={{ ...inmueble, agents: [] }}
-          onClose={() => setEditando(false)}
-          onSuccess={() => {
-            setEditando(false);
-            void refetch();
-          }}
+        <ConsignacionEditForm
+          abierto
+          soloElInmueble
+          onCerrar={() => setEditando(false)}
+          // Sin mandato todavía: el cajón sólo edita el inmueble (sin la sección del mandato).
+          consignacion={
+            {
+              id: '',
+              propertyId,
+              listingType: inmueble.listingType === 'sale' ? 'sale' : 'rent',
+              status: 'active',
+              propertyTitle: inmueble.title,
+              propertyAddress: inmueble.address,
+              propertyCity: inmueble.city,
+              propertyZone: inmueble.neighborhood ?? '',
+              monthlyRent: inmueble.monthlyRent ?? null,
+              adminFee: inmueble.adminFee ?? 0,
+              commissionPercent: 0,
+              agenteId: null,
+            } as unknown as Consignacion
+          }
+          property={inmueble}
+          onGuardado={() => undefined}
+          onGuardadoElInmueble={() => void refetch()}
         />
       ) : null}
 

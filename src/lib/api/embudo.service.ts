@@ -23,7 +23,53 @@ export interface AgendarVisitaInput {
   nota?: string;
 }
 
+/** Lo que toca en la etapa del interesado (reunión con Juan, 31-10-2026; back `etapa-del-interesado.service.ts`). */
+export interface LoDeLaEtapa {
+  visita: {
+    visitId: string;
+    fecha: string;
+    horaInicio: string;
+    horaFin: string;
+    modalidad: 'IN_PERSON' | 'VIRTUAL';
+    estado: string;
+    asesorUserId: string | null;
+    /** Ya terminó y nadie dijo si se hizo. */
+    yaPaso: boolean;
+  } | null;
+  postulacion: { applicationId: string; estado: string; documentos: number; enviadaEl: string | null } | null;
+  contratos: {
+    arrendamiento: { contractId: string; estado: string; firmado: boolean } | null;
+    administracion: { consignacionId: string; estado: 'FIRMADA' | 'PENDIENTE' | 'SIN_FIRMA' } | null;
+    ambosFirmados: boolean;
+  };
+  entrega: {
+    tareaId: string;
+    fecha: string;
+    hora: string | null;
+    responsableUserId: string | null;
+    estado: string;
+    yaPaso: boolean;
+  } | null;
+}
+
 export const embudoApi = {
+  async etapa(pipelineItemId: string): Promise<LoDeLaEtapa> {
+    return apiClient.get(`/inmobiliaria/pipeline/${pipelineItemId}/etapa`);
+  },
+
+  /** Agendar o reprogramar la entrega del inmueble (pasa a «Entrega»). */
+  async agendarEntrega(
+    pipelineItemId: string,
+    input: { fecha: string; hora?: string; responsableUserId?: string; nota?: string },
+  ): Promise<LoDeLaEtapa['entrega']> {
+    return apiClient.post(`/inmobiliaria/pipeline/${pipelineItemId}/entrega`, input);
+  },
+
+  /** La entrega se hizo: pasa a «Cerrado - Arrendado». */
+  async entregaHecha(pipelineItemId: string): Promise<{ stage: string }> {
+    return apiClient.post(`/inmobiliaria/pipeline/${pipelineItemId}/entrega/hecha`, {});
+  },
+
   async notas(pipelineItemId: string): Promise<{ disponible: boolean; notas: NotaDelLead[] }> {
     return apiClient.get(`/inmobiliaria/pipeline/${pipelineItemId}/notas`);
   },
@@ -62,11 +108,11 @@ export const embudoApi = {
   },
 };
 
-/** PL-13: las marcas de la sincronización (`application:<id>`, `visit:<id>`) no son notas. */
+/** PL-13: las marcas de la sincronización (`application:<id>`, `visit:<id>`, `entrega:<id>`) no son notas. */
 export function notasSinMarcas(notas: string | null | undefined): string {
   return (notas ?? '')
     .split('\n')
-    .filter((l) => !/^\s*(application|visit|source):[\w:-]+\s*$/i.test(l))
+    .filter((l) => !/^\s*(application|visit|source|entrega):[\w:-]+\s*$/i.test(l))
     .join('\n')
     .trim();
 }

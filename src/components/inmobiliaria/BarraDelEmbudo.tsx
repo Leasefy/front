@@ -22,7 +22,8 @@ import { useTr } from '@/lib/i18n/use-tr';
 import { KpiValor } from '@/components/estado/KpiValor';
 import { textoDeTasa } from '@/lib/tasas';
 import type { PipelineItem, PipelineStage } from '@/lib/types/inmobiliaria';
-import { PIPELINE_STAGES, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
+import { getPipelineStageInfo } from '@/lib/types/inmobiliaria';
+import { ETAPAS_DEL_TABLERO, columnaDe } from '@/lib/pipeline/etapas-del-tablero';
 
 /**
  * De qué color va el tramo de cada etapa (revisora r25: el embudo pintaba de
@@ -68,8 +69,8 @@ export function BarraDelEmbudo({
 }) {
   const { t } = useI18n();
   const tr = useTr();
-  const etapas = PIPELINE_STAGES.filter((s) => s.stage !== 'lost').map((s) => s.stage);
-  const cuantos = (st: PipelineStage) => items.filter((i) => i.stage === st).length;
+  const etapas = ETAPAS_DEL_TABLERO;
+  const cuantos = (st: PipelineStage) => items.filter((i) => columnaDe(i.stage) === st).length;
   const conGente = etapas.filter((st) => cuantos(st) > 0);
   const enLaBarra = conGente.reduce((n, st) => n + cuantos(st), 0);
   const sinGente = etapas.length - conGente.length;

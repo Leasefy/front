@@ -145,6 +145,12 @@ export function OTPVerification({
    * fijo y sin ningún botón: la única salida era Cancelar.
    */
   const [esperandoParaEnviar, setEsperandoParaEnviar] = useState(false);
+  /**
+   * Nico 30-10: «lo bloqueaste y le apareció reenviar código… pero no le llegó correo». Con el freno de los códigos
+   * (10 en la ventana del back, al pedir y al verificar) no se ofrece reenviar ni se deja «Enviado por correo»: se dice
+   * cuánto falta y, al terminar, el código nuevo se pide solo.
+   */
+  const [bloqueado, setBloqueado] = useState(false);
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const hasSentRef = useRef(false);
@@ -157,12 +163,20 @@ export function OTPVerification({
   );
 
   // Send OTP al abrir el modal
+  /** Lo que se había enviado ya no vale mientras dure el bloqueo: fuera el «Enviado por correo». */
+  const bloquear = useCallback(() => {
+    setBloqueado(true);
+    setSentTo('');
+    setChannels([]);
+  }, []);
+
   const sendOtp = useCallback(async () => {
     setStatus('sending');
     setSendError(null);
     try {
       const { sentTo: maskedEmail, cooldownSeconds, channels: canales } = await otp.send();
       setSentTo(maskedEmail);
+      setBloqueado(false);
       setCooldown(cooldownSeconds || 60);
       setChannels(canales ?? []);
       setStatus('idle');
@@ -174,6 +188,7 @@ export function OTPVerification({
       if (d.segundosDeEspera) {
         setCooldown(d.segundosDeEspera);
         setEsperandoParaEnviar(true);
+        if (codigoDelError(err) !== 'CODIGO_EN_ESPERA') bloquear();
         setStatus('idle');
         return;
       }
@@ -184,7 +199,7 @@ export function OTPVerification({
       if (d.channels?.length) setChannels(d.channels);
       setStatus('error');
     }
-  }, [otp]);
+  }, [otp, bloquear]);
 
   // Trigger send cuando abre el modal — una sola vez por apertura
   useEffect(() => {
@@ -203,6 +218,7 @@ export function OTPVerification({
       setSendError(null);
       setChannels([]);
       setEsperandoParaEnviar(false);
+      setBloqueado(false);
     }
   }, [isOpen, sendOtp]);
 
@@ -239,6 +255,16 @@ export function OTPVerification({
       setTimeout(() => onVerified(verificationToken), 600);
     } catch (err) {
       const d = describirErrorDeOtp(err);
+      // El freno de los códigos también cuenta las verificaciones: bloqueado, nada de «Reenviar» (no saldría nada).
+      if (d.segundosDeEspera) {
+        setCooldown(d.segundosDeEspera);
+        setEsperandoParaEnviar(true);
+        bloquear();
+        setError(null);
+        setStatus('idle');
+        setDigits(Array(OTP_LENGTH).fill(''));
+        return;
+      }
       // CODIGO_INCORRECTO trae cuántos intentos quedan (contract.md §3.3) —
       // se suma al mensaje del back, que ya es autosuficiente sin ese dato.
       const msg = d.mensaje
@@ -251,7 +277,7 @@ export function OTPVerification({
       setDigits(Array(OTP_LENGTH).fill(''));
       setTimeout(() => inputRefs.current[0]?.focus(), 100);
     }
-  }, [otp, onVerified]);
+  }, [otp, onVerified, bloquear]);
 
   // Handle input change
   const handleChange = useCallback((index: number, value: string) => {
@@ -413,10 +439,18 @@ export function OTPVerification({
                 data-testid="otp-esperando"
               >
                 <Spinner size="sm" variant="current" />
-                <span>
-                  Te enviamos un código hace un momento. Pedimos uno nuevo en{' '}
-                  <span className="font-mono tabular-nums font-medium text-fg">{cooldown}s</span>.
-                </span>
+                {bloqueado ? (
+                  <span data-testid="otp-bloqueado">
+                    Hiciste varios intentos seguidos y por seguridad pausamos los códigos. En{' '}
+                    <span className="font-mono tabular-nums font-medium text-fg">{tiempoDeEspera(cooldown)}</span> te mandamos
+                    uno nuevo, sin que hagas nada.
+                  </span>
+                ) : (
+                  <span>
+                    Te enviamos un código hace un momento. Pedimos uno nuevo en{' '}
+                    <span className="font-mono tabular-nums font-medium text-fg">{cooldown}s</span>.
+                  </span>
+                )}
               </div>
             )}
 
@@ -495,4 +529,17 @@ export function OTPVerification({
       </DialogContent>
     </Dialog>
   );
+}
+
+/** El código del error del back (`CODIGO_EN_ESPERA` es la espera corta del servicio; lo demás, el freno general). */
+function codigoDelError(err: unknown): string | undefined {
+  return typeof err === 'object' && err !== null && typeof (err as { code?: unknown }).code === 'string'
+    ? (err as { code: string }).code
+    : undefined;
+}
+
+/** «4:05 min» o «45 s». */
+export function tiempoDeEspera(segundos: number): string {
+  if (segundos < 60) return `${segundos} s`;
+  return `${Math.floor(segundos / 60)}:${String(segundos % 60).padStart(2, '0')} min`;
 }

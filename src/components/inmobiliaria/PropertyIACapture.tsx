@@ -53,6 +53,7 @@ import {
   PropertyExtractUnavailableError,
 } from '@/lib/api/property-capture.service';
 import type { PropertyFichaExtraida } from '@/lib/api/property-capture.types';
+import { EditorDeDescripcion } from '@/components/property/EditorDeDescripcion';
 
 type Step = 'capture' | 'extracting' | 'review' | 'error';
 
@@ -456,7 +457,7 @@ export function PropertyIACapture() {
           </div>
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-fg">{t(k('fDescription'))} *</label>
-            <Textarea value={form.description} onChange={(e) => updateForm('description', e.target.value)} rows={4} className="resize-none" />
+            <EditorDeDescripcion value={form.description} onChange={(e) => updateForm('description', e.target.value)} rows={4} className="resize-none" />
           </div>
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-fg">{t(k('fType'))} *</label>

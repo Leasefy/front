@@ -63,9 +63,9 @@ describe('el propietario en el plan gratis', () => {
     }
   });
 
-  it('el inicio, contratos, cobro y estudio van en demo', () => {
+  it('🔴 31-10 (Nico: «debe quedar prendido, no con demo»): el inicio, contratos, cobro y estudio también quedan abiertos', () => {
     for (const r of ['/panel', '/panel/contratos', '/panel/leases', '/panel/estado-de-cuenta', '/panel/escoger-inquilino', '/panel/upgrade']) {
-      expect(abiertaParaElPropietarioGratis(r)).toBe(false);
+      expect(abiertaParaElPropietarioGratis(r)).toBe(true);
     }
     expect(claveDeDemoDelPropietario('/panel/estado-de-cuenta')).toBe('cobro');
     expect(claveDeDemoDelPropietario('/panel/escoger-inquilino')).toBe('estudio');

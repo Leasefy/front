@@ -1,3 +1,4 @@
+import { enLaDemo } from './en-la-demo';
 /**
  * @vitest-environment happy-dom
  *
@@ -155,15 +156,12 @@ describe('los datos de ejemplo de Propietarios (Nico 30-10)', () => {
 });
 
 describe('el propietario independiente en lo gratis (Nico 30-10)', () => {
-  it('sus partes cerradas sirven los datos de ejemplo; lo abierto (sus inmuebles) va al back', async () => {
+  it('🔴 31-10 (Nico: «prendido, no con demo»): sus secciones van al back, ninguna sale de la demo', async () => {
     entrarAlModoDemo();
     window.history.pushState({}, '', '/panel/giros');
-    const g = await apiClient.get<{ giros: Array<{ estado: string }> }>('/portal/propietario/giros');
-    expect(g.giros.some((x) => x.estado === 'REGIRADO')).toBe(true);
-    expect(pedir).not.toHaveBeenCalled();
-    window.history.pushState({}, '', '/panel/propiedades');
     await apiClient.get('/portal/propietario/giros').catch(() => null);
     expect(pedir).toHaveBeenCalled();
+    // Los datos de ejemplo siguen escritos (por si se vuelve a cerrar algo).
     expect(hayDatosDeEjemploDelPropietario('giros')).toBe(true);
     expect(hayDatosDeEjemploDelPropietario('contratos-que-no-existen')).toBe(false);
   });
@@ -223,26 +221,12 @@ describe('las demás secciones del propietario independiente (Nico 30-10: «cada
     expect(lecturaDeLaDemo('/portal/aprobaciones-de-reparacion/demo-apr-1/detalle')).toMatchObject({ id: 'demo-apr-1' });
   });
 
-  it('🔴 la pregunta del portal sobre la sesión NUNCA sale de la demo (si no, el independiente se volvía de inmobiliaria)', async () => {
+  it('🔴 31-10 (Nico: «prendido, no con demo»): en el panel del propietario gratis no se está en la demo', async () => {
     entrarAlModoDemo();
-    window.history.pushState({}, '', '/panel/estado-de-cuenta');
-    const deEjemplo = await apiClient.get<{ contratos: unknown[] }>('/portal/estado-de-cuenta');
-    expect(deEjemplo.contratos).toHaveLength(1);
-    expect(pedir).not.toHaveBeenCalled();
-    const deVerdad = await apiClient.getDeVerdad<{ delBack?: boolean }>('/portal/estado-de-cuenta');
-    expect(deVerdad).toEqual({ delBack: true });
-    expect(pedir).toHaveBeenCalledTimes(1);
-  });
-
-  it('en la demo no se bajan documentos: se frena con su frase, sin pedirle nada al back', async () => {
-    entrarAlModoDemo();
-    window.history.pushState({}, '', '/panel/certificados');
-    await expect(apiClient.getBlob('/portal/propietario/facturas/demo-fc-2026-10/pdf')).rejects.toMatchObject({
-      status: 403,
-      code: 'MODO_DEMO',
-      message: 'En la demo no se descargan documentos: son datos de ejemplo.',
-    });
-    expect(pedir).not.toHaveBeenCalled();
+    for (const ruta of ['/panel/estado-de-cuenta', '/panel/certificados', '/panel/giros', '/panel']) {
+      window.history.pushState({}, '', ruta);
+      expect(enLaDemo()).toBe(false);
+    }
   });
 });
 

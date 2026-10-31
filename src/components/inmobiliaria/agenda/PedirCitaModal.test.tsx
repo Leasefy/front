@@ -43,6 +43,8 @@ vi.mock('@/lib/api/agenda.service', () => ({
 }))
 
 vi.mock('@/lib/hooks/useInmobiliaria', () => ({
+  // 31-10: los inmuebles sin propietario todavía también reciben visitas.
+  useInmueblesSinConsignacion: () => ({ inmuebles: [] }),
   useConsignaciones: () => ({
     consignaciones: [
       { id: 'c-1', propertyId: 'p-libre', propertyTitle: 'Casa Envigado', propertyAddress: 'Cra 43', availability: 'available', arrendado: false },

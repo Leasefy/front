@@ -34,6 +34,7 @@ import { useUnreadMessages } from '@/lib/hooks/useMessages';
 import { SeccionesDelPortal } from '@/components/portales/SeccionesDelPortal';
 import { BarraDelMesGratis } from '@/components/inmobiliaria/plan/BarraDelMesGratis';
 import { PasosDelPropietario } from '@/components/landlord/PasosDelPropietario';
+import { SelloGestionadoPorLeasefy, useGestionadoPorLeasefy } from '@/components/landlord/SelloGestionadoPorLeasefy';
 import { MesGratisPendiente } from '@/components/inmobiliaria/plan/MesGratisPendiente';
 import { SiguePublicando } from '@/components/publica/SiguePublicando';
 import { conversionApi } from '@/lib/api/conversion.service';
@@ -131,7 +132,9 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
   const esCuentaDeInquilino = user?.role !== 'landlord';
   const esPropietarioConfirmado =
     !administrados.cargando && (administrados.doc !== null || Boolean(administrados.fichaSinContratos));
-  const showUpgrade = !deInmobiliaria && subscription?.planId === 'starter';
+  // Nico, 31-10-2026: el propietario al que Leasefy le gestiona los inmuebles lleva el sello y no la invitación.
+  const gestionadoPorLeasefy = useGestionadoPorLeasefy(!deInmobiliaria && user?.role === 'landlord');
+  const showUpgrade = !deInmobiliaria && !gestionadoPorLeasefy && subscription?.planId === 'starter';
   // El propietario independiente en el plan gratis (Nico, 20-10-2026): sus
   // inmuebles, candidatos y visitas abiertos; lo demás en demo con WhatsApp.
   // 27-10-2026 (Nico): el mes gratis de un aliado le abre todo al propietario independiente mientras dure.
@@ -214,6 +217,7 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
         upgradeLabel={propietarioGratis ? 'Que Leasefy lo administre' : 'Mejorar Plan'}
         // Ronda 30 (Nico, 23-10): en el portal gratis «Que Leasefy lo administre» va en tinta: una sola acción azul por pantalla.
         upgradeEnTinta={propietarioGratis}
+        footerCards={gestionadoPorLeasefy ? <SelloGestionadoPorLeasefy /> : undefined}
         // Ronda 28 (revisora r27): en Mi perfil no sale: ahí la misma lista ya dice lo que falta (eran dos).
         profileCompletion={user && !perfilCompleto && pathname !== '/panel/perfil' ? {
           percentage,

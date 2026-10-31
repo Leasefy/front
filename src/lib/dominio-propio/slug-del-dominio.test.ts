@@ -9,7 +9,7 @@ describe('de qué inmobiliaria es un dominio (middleware)', () => {
   beforeEach(() => olvidarLosDominios());
 
   it('pregunta al back una vez y recuerda la respuesta 5 minutos', async () => {
-    const pedir = vi.fn(async () => respuesta(200, { slug: 'inmobiliaria-loza' }));
+    const pedir = vi.fn(async (_url: string) => respuesta(200, { slug: 'inmobiliaria-loza' }));
     const o = { backend: 'https://api.leasefy.co/', pedir: pedir as unknown as typeof fetch, ahora: 1_000 };
     expect(await slugDelDominio('Inmuebles.Loza.co', o)).toBe('inmobiliaria-loza');
     expect(await slugDelDominio('inmuebles.loza.co', { ...o, ahora: 200_000 })).toBe('inmobiliaria-loza');

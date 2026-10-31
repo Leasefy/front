@@ -5,6 +5,7 @@
  *
  * Una lectura que no está aquí sigue al back como siempre (la pantalla muestra lo suyo, vacío si no tiene nada).
  */
+import { AGENTES_DEL_BACK_DEMO } from './agentes-del-back';
 import { APROBACIONES_DEL_PROPIETARIO_DEMO } from './del-propietario-aprobaciones';
 import { CERTIFICADOS_DEL_PROPIETARIO_DEMO } from './del-propietario-certificados';
 import { COBRO_DEL_PROPIETARIO_DEMO } from './del-propietario-cobro';
@@ -44,6 +45,8 @@ const LECTURAS: readonly LecturaDeLaDemo[] = [
   ...NOMINA_DEMO,
   ...CONTABILIDAD_DEMO,
   ...PAGOS_DEMO,
+  // Avalúos y los enlaces de pago del Agente de pagos (las secciones de IA que leen del back).
+  ...AGENTES_DEL_BACK_DEMO,
   // El propietario independiente (sus rutas `/portal/propietario/*` no chocan con las de la inmobiliaria).
   ...GIROS_DEL_PROPIETARIO_DEMO,
   ...COBRO_DEL_PROPIETARIO_DEMO,
@@ -56,7 +59,7 @@ const LECTURAS: readonly LecturaDeLaDemo[] = [
 ];
 
 /** Las secciones del panel (su clave en `arquitectura-del-panel.ts`) que ya tienen datos de ejemplo. */
-const SECCIONES_CON_DATOS_DE_EJEMPLO: ReadonlySet<string> = new Set(['servicios-publicos', 'contratos', 'solicitudes', 'mantenimientos', 'reportes', 'documentos', 'facturacion', 'nomina', 'contabilidad', 'pagos', 'propietarios', 'cobranza']);
+const SECCIONES_CON_DATOS_DE_EJEMPLO: ReadonlySet<string> = new Set(['servicios-publicos', 'contratos', 'solicitudes', 'mantenimientos', 'reportes', 'documentos', 'facturacion', 'nomina', 'contabilidad', 'pagos', 'propietarios', 'cobranza', 'avaluos', 'matching', 'asegurabilidad', 'conciliacion', 'retencion', 'agente-de-pagos', 'desempeno-ia']);
 
 export function hayDatosDeEjemplo(claveDelModulo: string | null | undefined): boolean {
   return Boolean(claveDelModulo && SECCIONES_CON_DATOS_DE_EJEMPLO.has(claveDelModulo));

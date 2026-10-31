@@ -108,7 +108,7 @@ describe('cada sección cerrada tiene su demo', () => {
 })
 
 describe('las demos en video (Nico 28-10-2026: «las demos son videos»)', () => {
-  it.each(['servicios-publicos', 'contratos', 'solicitudes', 'mantenimientos', 'cobranza'])('«%s» trae su video (webm, mp4 y portada) y existen en public/', async (clave) => {
+  it.each(['servicios-publicos', 'contratos', 'solicitudes', 'mantenimientos', 'cobranza', 'conciliacion', 'avaluos', 'asegurabilidad', 'matching', 'retencion', 'agente-de-pagos', 'desempeno-ia'])('«%s» trae su video (webm, mp4 y portada) y existen en public/', async (clave) => {
     const { existsSync } = await import('node:fs')
     const { join } = await import('node:path')
     const { demoDeLaInmobiliaria } = await import('./demos-del-panel')

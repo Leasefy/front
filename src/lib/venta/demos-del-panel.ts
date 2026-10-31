@@ -49,24 +49,28 @@ const DE_LA_INMOBILIARIA: Record<string, DemoDelModulo> = {
     promesa: 'Cada pago del extracto se cruza con su inquilino y su recibo.',
     puntos: ['Sube el extracto y se concilia solo', 'Lo dudoso te lo propone', 'Cierre del mes firmado'],
     capturas: [cap('conc-resumen', 'Resumen de la conciliación'), cap('conc-movimientos', 'Movimientos del banco conciliados')],
+    video: video('conciliacion', 'Recorrido por la conciliación con datos de ejemplo: lo que falta por conciliar, los casos por tipo y lo que hizo el agente'),
   },
   avaluos: {
     titulo: 'Avalúos en minutos',
     promesa: 'El canon y el precio correctos para cada inmueble, con comparables reales.',
     puntos: ['Canon sugerido por zona', 'Comparables del mercado', 'Informe para el propietario'],
     capturas: [cap('ava-lista', 'Lista de avalúos')],
+    video: video('avaluos', 'Recorrido por los avalúos con datos de ejemplo: los listos para entregar y la lista por estado con su certificado'),
   },
   asegurabilidad: {
     titulo: 'Contratos protegidos',
     promesa: 'Cotiza el seguro de arrendamiento con varias aseguradoras a la vez.',
     puntos: ['Cotización en minutos', 'Varias aseguradoras', 'Todo atado al contrato'],
     capturas: [cap('aseg-resumen', 'Cotización con aseguradoras')],
+    video: video('asegurabilidad', 'Recorrido por el seguro de arrendamiento con datos de ejemplo: las últimas cotizaciones y cómo responde cada aseguradora'),
   },
   matching: {
     titulo: 'El inquilino correcto, el mismo día',
     promesa: 'A cada interesado le ofrecemos los inmuebles que de verdad le sirven.',
     puntos: ['Cruce automático interesado-inmueble', 'Opciones el mismo día', 'Menos tiempo vacante'],
     capturas: [cap('match-ofrecer', 'Qué ofrecerle a cada interesado')],
+    video: video('matching', 'Recorrido por Afinidad con datos de ejemplo: los interesados por etapa y lo último que hizo el agente'),
   },
   estudio: {
     titulo: 'Estudio del inquilino en minutos',
@@ -79,6 +83,7 @@ const DE_LA_INMOBILIARIA: Record<string, DemoDelModulo> = {
     promesa: 'Te avisa qué inquilinos y propietarios están por irse, a tiempo.',
     puntos: ['Riesgo de cada contrato', 'Renovaciones a tiempo', 'Acciones sugeridas'],
     capturas: [cap('ret-tablero', 'Tablero de retención')],
+    video: video('retencion', 'Recorrido por la retención con datos de ejemplo: quién se puede ir, por qué y qué ofrecerle'),
   },
   contratos: {
     // Nico, 27-10-2026: «aquí es "Administra tus contratos de arrendamiento"».
@@ -166,6 +171,20 @@ const DE_LA_INMOBILIARIA: Record<string, DemoDelModulo> = {
     capturas: [cap('demo-propietarios', 'Propietarios con datos de ejemplo'), cap('erp-dispersiones', 'Giros a propietarios')],
     video: video('propietarios', 'Recorrido por Propietarios con datos de ejemplo: los giros atrasados, la lista completa y la ficha de un propietario'),
   },
+  'agente-de-pagos': {
+    titulo: 'Los pagos que se cobran y se recuperan solos',
+    promesa: 'El enlace de pago de cada cuota por WhatsApp, los pagos que fallan recuperados y cada giro revisado.',
+    puntos: ['Enlace de pago por cuota', 'Recupera los pagos que fallan', 'Sabes cuánto entró por enlace'],
+    capturas: [cap('demo-agente-de-pagos', 'El agente de pagos con datos de ejemplo')],
+    video: video('agente-de-pagos', 'Recorrido por el agente de pagos con datos de ejemplo: lo pagado por enlace y el enlace de cada cuota, por estado'),
+  },
+  'desempeno-ia': {
+    titulo: 'Lo que hace cada agente, en cifras',
+    promesa: 'La actividad de cada agente de IA con sus propias cifras: casos, recaudo, conciliación y cotizaciones.',
+    puntos: ['Una tarjeta por agente', 'Cifras de su propia actividad', 'Ninguna es una estimación'],
+    capturas: [cap('demo-desempeno-ia', 'El desempeño de los agentes con datos de ejemplo')],
+    video: video('desempeno-ia', 'Recorrido por el desempeño de los agentes con datos de ejemplo: cobranza, pagos, conciliación, afinidad, seguros y estudio'),
+  },
 };
 
 const GENERAL: DemoDelModulo = {
@@ -177,11 +196,9 @@ const GENERAL: DemoDelModulo = {
 
 /** Claves del panel que comparten demo. */
 const ALIAS: Record<string, string> = {
-  'agente-de-pagos': 'pagos',
   juridico: 'cobranza',
   inquilinos: 'estudio',
   proveedores: 'mantenimientos',
-  'desempeno-ia': 'reportes',
   'calidad-publicaciones': 'matching',
 };
 

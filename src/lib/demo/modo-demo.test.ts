@@ -42,7 +42,7 @@ describe('el modo demo', () => {
   it('en una parte cerrada, el micro tampoco se toca: la lectura dice «no disponible» y la escritura se frena; el chat de Ori sigue', async () => {
     entrarAlModoDemo();
     const micro = 'http://localhost:4300/api/agency/a1';
-    const lectura = await agentFetch(`${micro}/ai-hub/agentes/pagos/overview`);
+    const lectura = await agentFetch(`${micro}/ai-hub/agentes/estudio/overview`);
     expect(lectura.status).toBe(404);
     const escritura = await agentFetch(`${micro}/ai-hub/work-items/pagos/w1/acciones`, { method: 'POST', body: '{}' });
     expect(escritura.status).toBe(403);
@@ -270,5 +270,37 @@ describe('las secciones de IA de la inmobiliaria en la demo (Nico 30-10: «cómo
     }
     expect(pedir).not.toHaveBeenCalled();
     expect(hayDatosDeEjemplo('cobranza')).toBe(true);
+  });
+});
+
+describe('las demás secciones de IA en la demo', () => {
+  it.each([
+    ['avaluos', '/panel/inmobiliaria/inmuebles/avaluos', [], ['/inmobiliaria/avaluos']],
+    ['matching', '/panel/inmobiliaria/postulaciones/matching', ['ai-hub/agentes/matching/overview'], []],
+    ['asegurabilidad', '/panel/inmobiliaria/postulaciones/asegurabilidad', ['cotizador/overview'], []],
+    ['conciliacion', '/panel/inmobiliaria/conciliacion', ['ai-hub/agentes/conciliacion/overview', 'conciliacion/summary'], []],
+    ['retencion', '/panel/inmobiliaria/retencion', ['retencion/riesgo', 'retencion/metricas', 'retencion/decisions?reviewableOnly=true', 'retencion/umbral'], []],
+    ['agente-de-pagos', '/panel/inmobiliaria/pagos/agente', ['ai-hub/inbox', 'ai-hub/gobierno'], ['/inmobiliaria/cobros/links?mes=2026-10', '/inmobiliaria/cobros/links/resumen?mes=2026-10']],
+    ['desempeno-ia', '/panel/inmobiliaria/reportes/ia', ['ai-hub/agentes/cobranza/overview', 'ai-hub/agentes/pagos/overview', 'ai-hub/agentes/cotizador/overview'], []],
+  ] as const)('«%s» trae sus datos de ejemplo, del micro y del back, sin salir de la pestaña', async (clave, ruta, delMicro, delBack) => {
+    entrarAlModoDemo();
+    window.history.pushState({}, '', ruta);
+    const micro = `${process.env.NEXT_PUBLIC_AGENT_URL ?? 'http://localhost:4300'}/api/agency/a1`;
+    for (const r of delMicro) expect((await agentFetch(`${micro}/${r}`)).status).toBe(200);
+    for (const r of delBack) expect(await apiClient.get(r)).toBeTruthy();
+    expect(pedir).not.toHaveBeenCalled();
+    expect(hayDatosDeEjemplo(clave)).toBe(true);
+  });
+
+  it('Retención va en la forma del cable (`decisions`), y los 14 retenidos son contratos más propietarios', async () => {
+    entrarAlModoDemo();
+    window.history.pushState({}, '', '/panel/inmobiliaria/retencion');
+    const micro = `${process.env.NEXT_PUBLIC_AGENT_URL ?? 'http://localhost:4300'}/api/agency/a1`;
+    const cola = (await (await agentFetch(`${micro}/retencion/decisions?reviewableOnly=true`)).json()) as { decisions: unknown[] };
+    expect(cola.decisions.length).toBeGreaterThan(0);
+    const riesgo = (await (await agentFetch(`${micro}/retencion/riesgo`)).json()) as { enRiesgo: { inquilinos: number; propietarios: number }; casos: Array<{ enRiesgo: boolean; poblacion: string }> };
+    const enRiesgo = riesgo.casos.filter((c) => c.enRiesgo);
+    expect(enRiesgo.filter((c) => c.poblacion === 'inquilino')).toHaveLength(riesgo.enRiesgo.inquilinos);
+    expect(enRiesgo.filter((c) => c.poblacion === 'propietario')).toHaveLength(riesgo.enRiesgo.propietarios);
   });
 });

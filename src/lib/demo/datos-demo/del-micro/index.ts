@@ -4,9 +4,10 @@
  * `agentFetch` lo pregunta antes de responder «esta parte no trae datos de ejemplo».
  */
 import type { LecturaDeLaDemo } from '../index';
+import { AGENTES_DEL_MICRO_DEMO } from './agentes';
 import { COBRANZA_DEL_MICRO_DEMO } from './cobranza';
 
-const LECTURAS: readonly LecturaDeLaDemo[] = [...COBRANZA_DEL_MICRO_DEMO];
+const LECTURAS: readonly LecturaDeLaDemo[] = [...COBRANZA_DEL_MICRO_DEMO, ...AGENTES_DEL_MICRO_DEMO];
 
 /** Lo que responde la demo a una lectura del micro (camino con su `?query`, sin el dominio), o `undefined`. */
 export function lecturaDelMicroEnLaDemo(camino: string): unknown {

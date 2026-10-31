@@ -114,6 +114,8 @@ const NOMBRES: Record<string, string> = {
   matching: 'el cruce de interesados',
   estudio: 'el estudio del inquilino',
   retencion: 'la retención',
+  'agente-de-pagos': 'el agente de pagos',
+  'desempeno-ia': 'el desempeño de tus agentes',
   contratos: 'los contratos',
   pagos: 'los pagos y giros',
   facturacion: 'la facturación electrónica',

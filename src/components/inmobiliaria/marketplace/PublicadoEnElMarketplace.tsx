@@ -14,9 +14,7 @@ import { Storefront } from '@phosphor-icons/react'
 import { CompartirLaFicha } from '@/components/property/CompartirLaFicha'
 import { cn } from '@/lib/utils'
 import { SUPERFICIE_DE_LA_FICHA } from '@/components/pantalla/TarjetaDeLaFicha'
-import Link from 'next/link'
 import { Switch } from '@/components/ui/switch'
-import { captacionApi, papelesEnPalabras } from '@/lib/api/crm.service'
 import { toast } from '@/components/ui/toast'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import {
@@ -28,13 +26,12 @@ import type { InmuebleParaCompartir } from '@/lib/inmuebles/ficha-para-compartir
 
 export function PublicadoEnElMarketplace({
   propertyId,
-  consignacionId,
   puedeCambiar,
   ficha,
   onVerAviso,
 }: {
   propertyId: string
-  /** Para decir, si no se puede publicar todavía, cuántos papeles faltan (22-10). */
+  /** Ya no se usa aquí (31-10: los papeles se ven en su pestaña); se acepta para no romper a quien lo pasa. */
   consignacionId?: string
   puedeCambiar: boolean
   /**
@@ -48,9 +45,6 @@ export function PublicadoEnElMarketplace({
 }) {
   const [inmueble, setInmueble] = useState<InmuebleParaElegir | null>(null)
   const [guardando, setGuardando] = useState(false)
-  /** Qué papeles faltan «antes de publicar», nombrados; `null` = no se sabe o no falta nada. */
-  const [papelesQueFaltan, setPapelesQueFaltan] = useState<string | null>(null)
-
   const leer = useCallback(async () => {
     try {
       const r = await marketplaceDelPortafolioApi.uno(propertyId)
@@ -63,23 +57,6 @@ export function PublicadoEnElMarketplace({
   useEffect(() => {
     void leer()
   }, [leer])
-
-  useEffect(() => {
-    if (!consignacionId) return
-    let vivo = true
-    captacionApi
-      .sePuedePublicar(consignacionId)
-      .then((r) => {
-        if (!vivo) return
-        setPapelesQueFaltan(!r.puede && !r.sinMigracion && r.falta?.length ? papelesEnPalabras(r.falta) : null)
-      })
-      .catch(() => {
-        /* Sin el dato, la tarjeta dice lo de siempre. */
-      })
-    return () => {
-      vivo = false
-    }
-  }, [consignacionId])
 
   if (!inmueble) return null
 
@@ -96,13 +73,10 @@ export function PublicadoEnElMarketplace({
     }
   }
 
-  // 22-10 (revisión): si faltan papeles «antes de publicar», se dice AQUÍ, junto al
-  // interruptor (antes sólo lo decía la pestaña del mandato).
-  const faltanPapeles = !inmueble.publicado && !!papelesQueFaltan
+  // 🔴 31-10-2026 (Nico: «este mensaje no es cierto, coloca algo general»): la lista de papeles «antes de
+  // publicar» no frena el interruptor, así que aquí no se presenta como requisito; los papeles se ven en su pestaña.
   const explicacion = !inmueble.publicado
-    ? faltanPapeles
-      ? `Para publicarlo falta: ${papelesQueFaltan}.`
-      : 'No sale en el marketplace. Actívalo para publicarlo.'
+    ? 'No sale en el marketplace. Actívalo para publicarlo.'
     : inmueble.seVe
       ? 'Sale en el marketplace de Leasefy.'
       : `Publicado, pero todavía no sale: ${(inmueble.porQueNoSeVe ?? '').replace(/^./, (c) => c.toLowerCase())}`
@@ -120,17 +94,6 @@ export function PublicadoEnElMarketplace({
             <p className="text-sm font-medium text-fg">Publicado en el marketplace</p>
             <p className="text-body-sm text-fg-muted" data-testid="explicacion-del-marketplace">
               {explicacion}
-              {faltanPapeles && consignacionId ? (
-                <>
-                  {' '}
-                  <Link
-                    href={`/panel/inmobiliaria/inmuebles/${consignacionId}?pestana=mandato#papeles`}
-                    className="font-medium text-primary underline-offset-4 hover:underline"
-                  >
-                    Ver los papeles
-                  </Link>
-                </>
-              ) : null}
             </p>
           </div>
         </div>

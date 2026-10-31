@@ -27,6 +27,7 @@ import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { useIdioma } from '@/lib/idioma/use-idioma';
 import { fichaDelInmueble, textoDeLaFicha } from '@/lib/inmuebles/ficha-para-compartir';
 import { copiarTextoQueLlega } from '@/lib/inmuebles/copiar-texto-que-llega';
+import { useDominioActivo } from '@/lib/dominio-propio/use-dominio-activo';
 
 /** El inmueble existe pero no sale en el marketplace. */
 class NoSeVeEnElMarketplace extends Error {
@@ -37,6 +38,8 @@ class NoSeVeEnElMarketplace extends Error {
 
 export function useCopiarLaFicha(publicar?: (propertyIds: string[]) => void) {
   const idioma = useIdioma();
+  // Nico 31-10: con el dominio propio activo, la ficha se comparte con ese dominio.
+  const dominio = useDominioActivo();
 
   return useCallback(
     async (propertyId: string) => {
@@ -50,7 +53,7 @@ export function useCopiarLaFicha(publicar?: (propertyIds: string[]) => void) {
         }
         // La imagen de la vista previa queda armada antes de que la peguen en WhatsApp.
         calentarLaVistaPrevia(inmueble);
-        return textoDeLaFicha(fichaDelInmueble(inmueble), enlaceDelInmueble(propertyId), idioma);
+        return textoDeLaFicha(fichaDelInmueble(inmueble), enlaceDelInmueble(propertyId, dominio), idioma);
       });
 
       const copiada = await copiarTextoQueLlega(texto);
@@ -84,6 +87,6 @@ export function useCopiarLaFicha(publicar?: (propertyIds: string[]) => void) {
         description: 'Pégala en WhatsApp: el enlace suma la vista previa con la foto.',
       });
     },
-    [idioma, publicar],
+    [idioma, publicar, dominio],
   );
 }

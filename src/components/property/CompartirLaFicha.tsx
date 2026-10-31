@@ -22,11 +22,18 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/toast';
 import { useIdioma } from '@/lib/idioma/use-idioma';
 import { textoDeLaFicha, type InmuebleParaCompartir } from '@/lib/inmuebles/ficha-para-compartir';
+import { enlaceDeLaFichaEn } from '@/lib/dominio-propio/dominio';
+
+/** Espejo de `COOKIE_DEL_DOMINIO_PROPIO` del middleware (no se importa: el middleware no entra al navegador). */
+const COOKIE_DEL_DOMINIO_PROPIO = 'lf_dominio_propio';
 import { cn } from '@/lib/utils';
 
-/** El enlace público del inmueble, con el origen de donde se está. */
-export function enlaceDelInmueble(propertyId: string): string {
-  return `${origenPublico()}/propiedades/${propertyId}`;
+/**
+ * El enlace público del inmueble, con el origen de donde se está. Con el dominio propio ACTIVO de la inmobiliaria
+ * (Nico 31-10: «que cuando lo comparta sea ese dominio y no el de leasefy»), con su dominio.
+ */
+export function enlaceDelInmueble(propertyId: string, dominioActivo?: string | null): string {
+  return enlaceDeLaFichaEn(origenPublico(), propertyId, dominioActivo);
 }
 
 /**
@@ -38,7 +45,14 @@ export function origenPublico(): string {
   const publico = (process.env.NEXT_PUBLIC_SITE_URL || 'https://leasefy.co').replace(/\/+$/, '');
   if (typeof window === 'undefined') return publico;
   const { hostname, origin } = window.location;
-  return hostname === 'localhost' || hostname === '127.0.0.1' ? origin : publico;
+  if (hostname === 'localhost' || hostname === '127.0.0.1') return origin;
+  // En el dominio propio de una inmobiliaria (el middleware deja la marca), lo que se comparte sale con ese dominio.
+  return enElDominioPropio(hostname) ? origin : publico;
+}
+
+function enElDominioPropio(hostname: string): boolean {
+  const marca = document.cookie.split('; ').find((c) => c.startsWith(`${COOKIE_DEL_DOMINIO_PROPIO}=`));
+  return marca?.slice(COOKIE_DEL_DOMINIO_PROPIO.length + 1) === hostname;
 }
 
 /** WhatsApp con el texto escrito; quien comparte elige el chat. */
@@ -61,10 +75,12 @@ interface CompartirLaFichaProps {
   ficha: InmuebleParaCompartir;
   /** Suma «Copiar enlace» (en el panel, donde no hay otro botón que lo copie). */
   conEnlace?: boolean;
+  /** El dominio propio activo de la inmobiliaria (en el panel, `useDominioActivo`). */
+  dominio?: string | null;
   className?: string;
 }
 
-export function CompartirLaFicha({ propertyId, ficha, conEnlace = false, className }: CompartirLaFichaProps) {
+export function CompartirLaFicha({ propertyId, ficha, conEnlace = false, dominio = null, className }: CompartirLaFichaProps) {
   const idioma = useIdioma();
   const en = idioma === 'en';
 
@@ -77,28 +93,28 @@ export function CompartirLaFicha({ propertyId, ficha, conEnlace = false, classNa
   }, [en]);
 
   const copiarFicha = useCallback(async () => {
-    const ok = await copiar(textoDeLaFicha(ficha, enlaceDelInmueble(propertyId), idioma));
+    const ok = await copiar(textoDeLaFicha(ficha, enlaceDelInmueble(propertyId, dominio), idioma));
     if (!ok) return falloAlCopiar();
     toast.success(en ? 'We copied the listing card' : 'Copiamos la ficha del inmueble', {
       description: en
         ? 'Paste it in a chat: the link adds the photo preview.'
         : 'Pégala en el chat: el enlace suma la vista previa con la foto.',
     });
-  }, [en, falloAlCopiar, ficha, idioma, propertyId]);
+  }, [en, falloAlCopiar, ficha, idioma, propertyId, dominio]);
 
   const copiarEnlace = useCallback(async () => {
-    const ok = await copiar(enlaceDelInmueble(propertyId));
+    const ok = await copiar(enlaceDelInmueble(propertyId, dominio));
     if (!ok) return falloAlCopiar();
     toast.success(en ? 'We copied the link' : 'Copiamos el enlace del inmueble');
-  }, [en, falloAlCopiar, propertyId]);
+  }, [en, falloAlCopiar, propertyId, dominio]);
 
   const enviarPorWhatsapp = useCallback(() => {
     window.open(
-      enlaceDeWhatsapp(textoDeLaFicha(ficha, enlaceDelInmueble(propertyId), idioma)),
+      enlaceDeWhatsapp(textoDeLaFicha(ficha, enlaceDelInmueble(propertyId, dominio), idioma)),
       '_blank',
       'noopener,noreferrer',
     );
-  }, [ficha, idioma, propertyId]);
+  }, [ficha, idioma, propertyId, dominio]);
 
   return (
     <div className={cn('grid gap-2', conEnlace ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-2', className)}>

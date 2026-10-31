@@ -23,6 +23,7 @@ import {
   type InmuebleParaElegir,
 } from '@/lib/api/marketplace-del-portafolio.service'
 import type { InmuebleParaCompartir } from '@/lib/inmuebles/ficha-para-compartir'
+import { useDominioActivo } from '@/lib/dominio-propio/use-dominio-activo'
 
 export function PublicadoEnElMarketplace({
   propertyId,
@@ -45,6 +46,8 @@ export function PublicadoEnElMarketplace({
 }) {
   const [inmueble, setInmueble] = useState<InmuebleParaElegir | null>(null)
   const [guardando, setGuardando] = useState(false)
+  // Nico 31-10: con el dominio propio activo, el enlace sale con ese dominio.
+  const dominio = useDominioActivo()
   const leer = useCallback(async () => {
     try {
       const r = await marketplaceDelPortafolioApi.uno(propertyId)
@@ -122,7 +125,7 @@ export function PublicadoEnElMarketplace({
             Compártelo con un cliente: la ficha lleva el precio, los m², las habitaciones y los baños, y el enlace arma la vista
             previa con la foto.
           </p>
-          <CompartirLaFicha propertyId={propertyId} ficha={ficha} conEnlace />
+          <CompartirLaFicha propertyId={propertyId} ficha={ficha} conEnlace dominio={dominio} />
         </div>
       )}
     </div>

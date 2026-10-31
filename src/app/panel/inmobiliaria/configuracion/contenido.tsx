@@ -21,6 +21,7 @@ import { ChatLessonsPanel } from '@/components/inmobiliaria/ai/lessons/ChatLesso
 
 import { SeccionBranding } from './SeccionBranding';
 import { SeccionTuPagina } from './SeccionTuPagina';
+import { SeccionTuDominio } from './SeccionTuDominio';
 import { SeccionEquipo } from './SeccionEquipo';
 import { SeccionFacturacion } from './SeccionFacturacion';
 import { SeccionIntegraciones } from './SeccionIntegraciones';
@@ -82,7 +83,13 @@ export function ContenidoDeSeccion({ id }: { id: SeccionId }) {
     case 'perfil':
       return <SeccionPerfil />;
     case 'tu-pagina':
-      return <SeccionTuPagina />;
+      return (
+        <div className="space-y-10">
+          <SeccionTuPagina />
+          {/* Nico 31-10-2026: su página y sus fichas en su propio dominio (planes de pago). */}
+          <SeccionTuDominio />
+        </div>
+      );
     case 'branding':
       return <SeccionBranding />;
     case 'facturacion':

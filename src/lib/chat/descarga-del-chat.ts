@@ -25,6 +25,12 @@ const RUTAS_DE_DESCARGA: ReadonlyArray<{ patron: RegExp; forma: FormaDeLaDescarg
   { patron: new RegExp(`^/inmobiliaria/procesos/${UUID}/descarga$`, 'i'), forma: 'enlace' },
   { patron: /^\/inmobiliaria\/contabilidad\/exogena\/[0-9]{4}\/archivo\?anio=[0-9]{4}$/, forma: 'archivo' },
   { patron: new RegExp(`^/inmobiliaria/documents/${UUID}/pdf$`, 'i'), forma: 'archivo' },
+  // Vuelta 4 (31-10): los documentos que el chat deja para bajar (el PDF del contrato, el mandato
+  // firmado, el acta de consignación y el extracto del mes).
+  { patron: new RegExp(`^/contracts/${UUID}/pdf$`, 'i'), forma: 'enlace' },
+  { patron: new RegExp(`^/inmobiliaria/captacion/firmas/${UUID}/pdf$`, 'i'), forma: 'enlace' },
+  { patron: new RegExp(`^/inmobiliaria/consignaciones/${UUID}/acta\\.pdf$`, 'i'), forma: 'archivo' },
+  { patron: new RegExp(`^/inmobiliaria/propietarios/${UUID}/extracto\\.pdf\\?month=[0-9]{4}-[0-9]{2}$`, 'i'), forma: 'archivo' },
 ]
 
 /** La forma si la ruta es una descarga conocida y segura del back; `null` si no. */

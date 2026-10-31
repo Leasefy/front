@@ -25,6 +25,22 @@ describe('D1 · descargar dentro del chat', () => {
     }
   })
 
+  it('vuelta 4: el PDF del contrato, el mandato firmado, el acta de consignación y el extracto del mes', () => {
+    expect(formaDeLaRutaDeDescarga(`/contracts/${PROCESO}/pdf`)).toBe('enlace')
+    expect(formaDeLaRutaDeDescarga(`/inmobiliaria/captacion/firmas/${PROCESO}/pdf`)).toBe('enlace')
+    expect(formaDeLaRutaDeDescarga(`/inmobiliaria/consignaciones/${PROCESO}/acta.pdf`)).toBe('archivo')
+    expect(formaDeLaRutaDeDescarga(`/inmobiliaria/propietarios/${PROCESO}/extracto.pdf?month=2026-09`)).toBe('archivo')
+    for (const mala of [
+      `/contracts/${PROCESO}/pdf/sellar`,
+      '/contracts/24/pdf',
+      `/inmobiliaria/consignaciones/${PROCESO}/actaXpdf`,
+      `/inmobiliaria/propietarios/${PROCESO}/extracto.pdf`,
+      `/inmobiliaria/propietarios/${PROCESO}/extracto.pdf?month=2026-09&x=1`,
+    ]) {
+      expect(formaDeLaRutaDeDescarga(mala)).toBeNull()
+    }
+  })
+
   it('la forma la decide la ruta, no el cuerpo', () => {
     expect(leerDescargaDelChat({ ruta: EXOGENA, nombre: 'e.csv', forma: 'archivo' })).toEqual({ ruta: EXOGENA, nombre: 'e.csv', forma: 'archivo' })
     expect(leerDescargaDelChat({ ruta: EXOGENA, nombre: 'e.csv', forma: 'enlace' })).toBeNull()

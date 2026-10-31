@@ -29,12 +29,19 @@ import { ESTADO_DEL_DOCUMENTO, fechaYHora, FORMA_DE_PAGO, textoDeLaPruebaDeVida 
 /** Cada cuánto se vuelve a leer el documento abierto mientras falten firmas. */
 const RELEER_CADA_MS = 10_000;
 
-/** «+573126543976» → país «CO» y «3126543976», para el campo del celular (el país con el indicativo más largo). */
-function paisYNumero(e164: string | null): { pais: string; numero: string } {
-  const d = (e164 ?? '').replace(/\D/g, '');
+/**
+ * «+573126543976» → país «CO» y «3126543976», para el campo del celular (el país con el indicativo más largo). Sólo un
+ * número con «+» (o «00») trae su indicativo: «3005550101», sin él, es un celular de Colombia (antes salía de Grecia,
+ * +30, al abrir «Cambiar datos»).
+ */
+export function paisYNumero(e164: string | null): { pais: string; numero: string } {
+  const crudo = (e164 ?? '').trim();
+  const d = crudo.replace(/\D/g, '');
   if (!d) return { pais: 'CO', numero: '' };
-  const pais = [...paisesDelMundo()].sort((a, b) => b.indicativo.length - a.indicativo.length).find((p) => d.startsWith(p.indicativo));
-  return pais ? { pais: pais.iso, numero: d.slice(pais.indicativo.length) } : { pais: 'CO', numero: d };
+  if (!/^(\+|00)/.test(crudo)) return { pais: 'CO', numero: d };
+  const conIndicativo = crudo.startsWith('00') ? d.slice(2) : d;
+  const pais = [...paisesDelMundo()].sort((a, b) => b.indicativo.length - a.indicativo.length).find((p) => conIndicativo.startsWith(p.indicativo));
+  return pais ? { pais: pais.iso, numero: conIndicativo.slice(pais.indicativo.length) } : { pais: 'CO', numero: conIndicativo };
 }
 
 interface Edicion {
